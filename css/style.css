@@ -814,6 +814,59 @@ input[type="number"] { text-align: center; }
   color: var(--red);
 }
 
+/* ---- GROUPED SHOPPING ITEMS ---- */
+.shopping-grouped-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  background: var(--bg);
+  border: 0.5px solid var(--border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+.shopping-grouped-item .shopping-item-main {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border);
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.shopping-grouped-item .shopping-item-total {
+  font-weight: 500;
+  font-size: 15px;
+}
+.shopping-grouped-item .shopping-remove {
+  margin-left: auto;
+}
+.shopping-group-breakdown {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  background: var(--bg-secondary);
+  padding: 8px 14px;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text-muted);
+}
+.shopping-group-contribution {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 0;
+}
+.shopping-group-contribution .contrib-qty {
+  font-weight: 500;
+  color: var(--text);
+  min-width: 50px;
+  font-variant-numeric: tabular-nums;
+}
+.shopping-group-contribution .contrib-recipe {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 /* ---- SERVINGS CTRL ---- */
 .servings-ctrl {
   display: flex;

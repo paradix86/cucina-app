@@ -539,15 +539,93 @@ function renderShoppingList() {
     return;
   }
 
-  listEl.innerHTML = `<div class="shopping-list-rows">` + items.map(item => `
-      <div class="shopping-item${item.checked ? ' is-checked' : ''}">
+  // Group items intelligently
+  const { grouped, ungrouped } = groupShoppingItems(items);
+
+  // Build grouped section first
+  const groupedHtml = grouped.map(group => {
+    const groupId = `group-${group.baseName.replace(/\s+/g, '-')}`;
+    const itemsHtml = group.items.map(item => {
+      const parsed = parseIngredient(item.text);
+      const displayQty = parsed.parsedQty
+        ? `${formatQuantity(parsed.parsedQty)} ${parsed.parsedUnit}`
+        : '';
+      const recipeName = item.sourceRecipeName || '?';
+      return `
+        <div class="shopping-group-contribution">
+          <span class="contrib-qty">${displayQty}</span>
+          <span class="contrib-recipe">· ${recipeName}</span>
+        </div>`;
+    }).join('');
+
+    return `
+      <div class="shopping-grouped-item">
         <label class="shopping-item-main">
-          <input type="checkbox" ${item.checked ? 'checked' : ''} onchange="toggleShoppingListItemUI('${item.id}')">
-          <span class="shopping-item-text">${item.text}</span>
+          <input type="checkbox"
+            class="shopping-group-checkbox"
+            data-group="${groupId}"
+            ${group.items.some(i => !i.checked) ? '' : 'checked'}
+            onchange="toggleShoppingGroupCheckboxes('${groupId}', this.checked)">
+          <span class="shopping-item-text shopping-item-total">
+            ${group.baseName} — ${group.displayQty} ${group.unit}
+          </span>
         </label>
-        <button class="shopping-remove" onclick="removeShoppingListItemUI('${item.id}')" aria-label="${t('shopping_remove')}">✕</button>
-      </div>
-    `).join('') + `</div>`;
+        <button class="shopping-remove" onclick="removeShoppingGroupUI('${groupId}')"
+          aria-label="${t('shopping_remove')}">✕</button>
+        <div class="shopping-group-breakdown">
+          ${itemsHtml}
+        </div>
+      </div>`;
+  }).join('');
+
+  // Build ungrouped section
+  const ungroupedHtml = ungrouped.map(item => `
+    <div class="shopping-item${item.checked ? ' is-checked' : ''}">
+      <label class="shopping-item-main">
+        <input type="checkbox" ${item.checked ? 'checked' : ''}
+          onchange="toggleShoppingListItemUI('${item.id}')">
+        <span class="shopping-item-text">${item.text}</span>
+      </label>
+      <button class="shopping-remove" onclick="removeShoppingListItemUI('${item.id}')"
+        aria-label="${t('shopping_remove')}">✕</button>
+    </div>`).join('');
+
+  listEl.innerHTML = `<div class="shopping-list-rows">` +
+    (groupedHtml || '') +
+    (ungroupedHtml || '') +
+    `</div>`;
+}
+
+function toggleShoppingGroupCheckboxes(groupId, checked) {
+  const items = loadShoppingList();
+  const baseName = groupId.replace('group-', '').replace(/-/g, ' ');
+  const parsed = items
+    .filter(item => {
+      const p = parseIngredient(item.text);
+      return p.parsedName === baseName;
+    });
+
+  parsed.forEach(item => {
+    item.checked = checked;
+  });
+
+  saveShoppingList(items);
+  renderShoppingList();
+}
+
+function removeShoppingGroupUI(groupId) {
+  const items = loadShoppingList();
+  const baseName = groupId.replace('group-', '').replace(/-/g, ' ');
+
+  // Remove all items in this group
+  const filtered = items.filter(item => {
+    const p = parseIngredient(item.text);
+    return p.parsedName !== baseName;
+  });
+
+  if (filtered.length === items.length) return; // Nothing removed
+  saveShoppingList(filtered);
+  renderShoppingList();
 }
 
 function toggleShoppingListItemUI(id) {
@@ -607,16 +685,16 @@ function renderSavedSourceFilter() {
     ? `<div class="saved-filter-group">
       <span class="filter-group-label">${window.t('filter_site')}:</span>
       <div class="filter-row">` +
-      `<button class="site-pill${activeSavedSiteFilter === 'all' ? ' active' : ''}"
+    `<button class="site-pill${activeSavedSiteFilter === 'all' ? ' active' : ''}"
         onclick="activeSavedSiteFilter='all'; renderSavedSourceFilter(); renderRecipeBook();">${window.t('filter_all_sites')} <span class="pill-count">(${allRecipes.length})</span></button>` +
-      domains.map(d => {
-        const label = getSourceDomainLabel(d);
-        const active = activeSavedSiteFilter === d ? ' active' : '';
-        const safeD = d.replace(/'/g, "\\'");
-        return `<button class="site-pill${active}"
+    domains.map(d => {
+      const label = getSourceDomainLabel(d);
+      const active = activeSavedSiteFilter === d ? ' active' : '';
+      const safeD = d.replace(/'/g, "\\'");
+      return `<button class="site-pill${active}"
           onclick="activeSavedSiteFilter='${safeD}'; renderSavedSourceFilter(); renderRecipeBook();">${label} <span class="pill-count">(${siteCounts[d] || 0})</span></button>`;
-      }).join('') +
-      '</div></div>'
+    }).join('') +
+    '</div></div>'
     : '';
 
   container.innerHTML =

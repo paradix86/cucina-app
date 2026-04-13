@@ -117,6 +117,109 @@ const BUILTIN_RECIPES = [
     timerMinutes: 8,
   },
 
+  {
+    id: 'b8', name: 'Gnocchi gourmet ricotta e zucchine', category: 'Primi', bimby: false,
+    emoji: '🥟', time: '25 min', servings: '2', source: 'classica',
+    ingredients: [
+      '500g gnocchi di patate',
+      '2 zucchine medie',
+      '120g ricotta',
+      '30g parmigiano grattugiato',
+      '1 scalogno',
+      'olio evo',
+      'sale',
+      'pepe nero',
+      'scorza di limone (opz.)'
+    ],
+    steps: [
+      'Taglia le zucchine a rondelle sottili o a mezzaluna e trita finemente lo scalogno.',
+      'In una padella scalda un filo di olio evo e fai appassire lo scalogno a fuoco medio per 2-3 min.',
+      'Aggiungi le zucchine, sala leggermente e cuoci 6-8 min finché diventano morbide ma ancora verdi.',
+      'In una ciotola lavora la ricotta con parmigiano, pepe e poca scorza di limone se gradita.',
+      'Cuoci gli gnocchi in acqua salata e scolali appena salgono a galla.',
+      'Trasferisci gli gnocchi nella padella con le zucchine, aggiungi la crema di ricotta e manteca a fuoco dolce con 1-2 cucchiai di acqua di cottura.',
+      'Servi subito con altro pepe nero e poco parmigiano sopra.',
+    ],
+    timerMinutes: 15,
+  },
+
+  {
+    id: 'b9', name: 'Riso con macinato, cipolla rossa e salsa yogurt', category: 'Primi', bimby: false,
+    emoji: '🍚', time: '30 min', servings: '2', source: 'classica',
+    ingredients: [
+      '160g riso bianco',
+      '250g carne macinata di manzo',
+      '1 cipolla rossa di Tropea piccola',
+      '150g salsa di pomodoro leggera',
+      '120g yogurt greco',
+      '1 cucchiaino miele',
+      'scorza di limone',
+      'olio evo',
+      'sale',
+      'pepe nero'
+    ],
+    steps: [
+      'Cuoci il riso in acqua salata secondo i tempi indicati, poi scolalo e tienilo da parte.',
+      'Affetta finemente la cipolla rossa di Tropea.',
+      'In una padella scalda un filo di olio evo e fai rosolare la cipolla per 3-4 min.',
+      'Aggiungi il macinato di manzo, sgranalo bene e cuocilo finché risulta ben rosolato.',
+      'Unisci la salsa di pomodoro, regola di sale e pepe e lascia restringere per qualche minuto.',
+      'In una ciotolina mescola yogurt greco, miele e scorza di limone fino a ottenere una salsa cremosa.',
+      'Impiatta il riso, aggiungi sopra il macinato al pomodoro e completa con la salsa yogurt.',
+    ],
+    timerMinutes: 20,
+  },
+  {
+    id: 'b10', name: 'Pollo speziato marinato in friggitrice ad aria', category: 'Secondi', bimby: false,
+    emoji: '🍗', time: '15 min + marinatura', servings: '4', source: 'classica',
+    ingredients: [
+      '800g cosce o sovracosce di pollo',
+      '2 cucchiai olio evo',
+      '1 cucchiaino paprika',
+      '1 cucchiaino aglio in polvere',
+      '1 cucchiaino cumino',
+      'sale',
+      'pepe nero'
+    ],
+    steps: [
+      'Tampona bene il pollo con carta cucina.',
+      'In una ciotola mescola olio evo, paprika, aglio in polvere, cumino, sale e pepe.',
+      'Massaggia accuratamente il pollo con la marinatura e lascialo insaporire almeno 30 min.',
+      'Disponi i pezzi nel cestello senza sovrapporli.',
+      'Cuoci a 170 °C per 12 min per iniziare una cottura più dolce e uniforme.',
+      'Gira il pollo.',
+      'Prosegui a 190 °C per 8-10 min fino a doratura e pelle ben cotta.',
+      'Controlla la cottura al cuore prima di servire.',
+      'Se usi pezzi più piccoli o meno peso totale, riduci leggermente l’ultima fase; se usi pezzi grandi o cestello molto pieno, prolunga di 2-4 min.',
+    ],
+    timerMinutes: 22,
+    scaling: {
+      baseWeightGrams: 800,
+      basePieces: 4,
+      supportedCuts: ['cosce', 'sovracosce'],
+      marinadePer800g: {
+        oilTbsp: 2,
+        paprikaTsp: 1,
+        garlicPowderTsp: 1,
+        cuminTsp: 1,
+        saltTsp: 1,
+        pepperTsp: 0.5,
+      },
+      cookProfile: {
+        stage1: { tempC: 170, minutes: 12 },
+        stage2: { tempC: 190, minutes: 8 },
+        extraMinutesIfLargePieces: 2,
+        extraMinutesIfBasketCrowded: 2,
+        maxSuggestedStage2Minutes: 12,
+      },
+      notes: [
+        'Per 700g mantieni la stessa tecnica ma usa circa il 90% della marinatura.',
+        'Per 1.2-1.4kg aumenta proporzionalmente la marinatura e cuoci in più giri se il cestello è affollato.',
+        'Le cosce con osso richiedono spesso un po’ più tempo delle sovracosce piccole.',
+      ],
+    },
+  },
+
   /* ==================== BIMBY TM5 ==================== */
 
   {
