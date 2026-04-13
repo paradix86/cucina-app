@@ -254,6 +254,7 @@ function buildDetailHtml(r, onBack) {
 
       <div class="sec-label" style="margin-top:1rem">${t('detail_ingredients')}</div>
       <ul class="ing-list">${ingHtml}</ul>
+      <div style="margin-top:0.8rem">${shoppingBtn}</div>
 
       <div class="sec-label" style="margin-top:1rem">${stepsLabel}</div>
       ${stepHtml}
@@ -261,7 +262,7 @@ function buildDetailHtml(r, onBack) {
       <button class="btn-cooking" onclick="startCookingMode('${r.id}')">${t('cooking_start')}</button>
 
       ${origLink}
-      <div class="detail-actions">${shoppingBtn}${timerBtn}</div>
+      <div class="detail-actions">${timerBtn}</div>
     </div>`;
 }
 
