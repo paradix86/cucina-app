@@ -1,29 +1,37 @@
 /**
- * timer.js — Gestione timer multipli in parallelo
+ * timer.js — Multiple parallel timers
  */
 
 let timers = {};
 let timerInterval = null;
 
 function addTimer() {
-  const nome = document.getElementById('t-name').value.trim() || 'Pietanza';
-  const min  = parseInt(document.getElementById('t-min').value)  || 0;
-  const sec  = parseInt(document.getElementById('t-sec').value)  || 0;
-  const tot  = min * 60 + sec;
-  if (tot <= 0) { alert('Inserisci un tempo valido!'); return; }
+  const name  = document.getElementById('t-name').value.trim() || 'Pietanza';
+  const min   = parseInt(document.getElementById('t-min').value) || 0;
+  const sec   = parseInt(document.getElementById('t-sec').value) || 0;
+  const total = min * 60 + sec;
+  if (total <= 0) { alert(t('timer_invalid')); return; }
 
   const id = 't' + Date.now();
-  timers[id] = { nome, totale: tot, rimasto: tot, running: true };
+  timers[id] = { name, total, remaining: total, running: true };
   renderTimers();
-  ensureInterval();
+  ensureTimerInterval();
   document.getElementById('t-name').value = '';
 }
 
-function avviaTimerDaRicetta(nome, min) {
+function startRecipeTimer(name, min) {
+  const existing = Object.values(timers).find(
+    timer => timer.name === name && timer.remaining > 0
+  );
+  if (existing) {
+    showTab('timer', document.querySelectorAll('.tab')[3]);
+    return;
+  }
+
   const id = 't' + Date.now();
-  timers[id] = { nome, totale: min * 60, rimasto: min * 60, running: true };
+  timers[id] = { name, total: min * 60, remaining: min * 60, running: true };
   renderTimers();
-  ensureInterval();
+  ensureTimerInterval();
   showTab('timer', document.querySelectorAll('.tab')[3]);
 }
 
@@ -35,8 +43,8 @@ function toggleTimer(id) {
 
 function resetTimer(id) {
   if (!timers[id]) return;
-  timers[id].rimasto = timers[id].totale;
-  timers[id].running = false;
+  timers[id].remaining = timers[id].total;
+  timers[id].running   = false;
   renderTimers();
 }
 
@@ -45,12 +53,12 @@ function deleteTimer(id) {
   renderTimers();
 }
 
-function fmtTime(s) {
+function formatTime(s) {
   const h  = Math.floor(s / 3600);
   const m  = Math.floor((s % 3600) / 60);
   const ss = s % 60;
-  if (h > 0) return `${h}:${String(m).padStart(2,'0')}:${String(ss).padStart(2,'0')}`;
-  return `${String(m).padStart(2,'0')}:${String(ss).padStart(2,'0')}`;
+  if (h > 0) return `${h}:${String(m).padStart(2, '0')}:${String(ss).padStart(2, '0')}`;
+  return `${String(m).padStart(2, '0')}:${String(ss).padStart(2, '0')}`;
 }
 
 function renderTimers() {
@@ -59,38 +67,38 @@ function renderTimers() {
   const ids   = Object.keys(timers);
 
   if (!ids.length) {
-    grid.innerHTML = '';
+    grid.innerHTML     = '';
     empty.style.display = 'block';
     return;
   }
   empty.style.display = 'none';
 
   grid.innerHTML = ids.map(id => {
-    const t    = timers[id];
-    const cls  = t.rimasto <= 0 ? 'done' : t.running ? 'running' : '';
-    const disp = t.rimasto <= 0 ? 'PRONTO!' : fmtTime(t.rimasto);
-    const btnLabel = (t.running && t.rimasto > 0) ? 'Pausa' : 'Avvia';
+    const timer    = timers[id];
+    const cls      = timer.remaining <= 0 ? 'done' : timer.running ? 'running' : '';
+    const disp     = timer.remaining <= 0 ? t('timer_ready') : formatTime(timer.remaining);
+    const btnLabel = (timer.running && timer.remaining > 0) ? t('timer_pause') : t('timer_start');
 
     return `<div class="timer-card">
-      <div class="t-name">${t.nome}</div>
+      <div class="t-name">${timer.name}</div>
       <div class="t-display ${cls}">${disp}</div>
       <div class="t-btns">
         <button onclick="toggleTimer('${id}')">${btnLabel}</button>
-        <button onclick="resetTimer('${id}')">Reset</button>
+        <button onclick="resetTimer('${id}')">${t('timer_reset')}</button>
         <button class="t-del" onclick="deleteTimer('${id}')">✕</button>
       </div>
     </div>`;
   }).join('');
 }
 
-function ensureInterval() {
+function ensureTimerInterval() {
   if (timerInterval) return;
   timerInterval = setInterval(() => {
     let changed = false;
     Object.keys(timers).forEach(id => {
-      const t = timers[id];
-      if (t.running && t.rimasto > 0) { t.rimasto--; changed = true; }
-      if (t.rimasto === 0 && t.running) { t.running = false; changed = true; }
+      const timer = timers[id];
+      if (timer.running && timer.remaining > 0) { timer.remaining--; changed = true; }
+      if (timer.remaining === 0 && timer.running) { timer.running = false; changed = true; }
     });
     if (changed) renderTimers();
   }, 1000);

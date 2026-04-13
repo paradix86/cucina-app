@@ -1,0 +1,53 @@
+# Codex files
+
+# MCP & Claude Code
+.mcp.json
+.claude/
+mcp-logs/
+*.mcp.log
+
+# Playwright
+test-screenshots/
+playwright-report/
+test-results/
+.playwright/
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editors
+.vscode/settings.json
+.idea/
+*.swp
+*.swo
+
+# Logs
+*.log
+logs/
+npm-debug.log*
+
+# Node (in case someone adds a package.json later)
+node_modules/
+.npm/
+
+# PWA cache (generated, not source)
+.cache/
+
+# Env / secrets (never commit API keys)
+.env
+.env.local
+.env*.local
+
+# Backup files
+*.bak
+*.backup
+*~
+
+# Keep committed
+!.vscode/
+!.vscode/extensions.json
+!manifest.json
+!sw.js
+!icons/
