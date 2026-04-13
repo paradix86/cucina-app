@@ -593,6 +593,10 @@ function renderSavedSourceFilter() {
   // Site filter: dynamically built from persisted sourceDomain values
   const allRecipes = loadRecipeBook();
   const domains = [...new Set(allRecipes.map(r => r.sourceDomain).filter(Boolean))];
+  const siteCounts = domains.reduce((acc, domain) => {
+    acc[domain] = allRecipes.filter(r => r.sourceDomain === domain).length;
+    return acc;
+  }, {});
   domains.sort((a, b) => getSourceDomainLabel(a).localeCompare(getSourceDomainLabel(b)));
   if (activeSavedSiteFilter !== 'all' && !domains.includes(activeSavedSiteFilter)) activeSavedSiteFilter = 'all';
   const siteFilterHtml = domains.length
@@ -600,13 +604,13 @@ function renderSavedSourceFilter() {
       <span class="filter-group-label">${window.t('filter_site')}:</span>
       <div class="filter-row">` +
       `<button class="site-pill${activeSavedSiteFilter === 'all' ? ' active' : ''}"
-        onclick="activeSavedSiteFilter='all'; renderSavedSourceFilter(); renderRecipeBook();">${window.t('filter_all_sites')}</button>` +
+        onclick="activeSavedSiteFilter='all'; renderSavedSourceFilter(); renderRecipeBook();">${window.t('filter_all_sites')} <span class="pill-count">(${allRecipes.length})</span></button>` +
       domains.map(d => {
         const label = getSourceDomainLabel(d);
         const active = activeSavedSiteFilter === d ? ' active' : '';
         const safeD = d.replace(/'/g, "\\'");
         return `<button class="site-pill${active}"
-          onclick="activeSavedSiteFilter='${safeD}'; renderSavedSourceFilter(); renderRecipeBook();">${label}</button>`;
+          onclick="activeSavedSiteFilter='${safeD}'; renderSavedSourceFilter(); renderRecipeBook();">${label} <span class="pill-count">(${siteCounts[d] || 0})</span></button>`;
       }).join('') +
       '</div></div>'
     : '';

@@ -8,7 +8,7 @@ const APP_META = {
   buildDate: '2026-04-13',
   authorLine: 'Made with ❤️ by Alan in Switzerland',
 };
-const SW_RELOAD_FLAG = 'cucina_sw_reloaded_once';
+const SW_RELOAD_FLAG = `cucina_sw_reloaded_${APP_META.buildDate}`;
 
 function formatEuropeanDate(isoDate) {
   const match = String(isoDate || '').match(/^(\d{4})-(\d{2})-(\d{2})$/);

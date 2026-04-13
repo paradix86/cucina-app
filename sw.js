@@ -2,7 +2,7 @@
  * sw.js — Service Worker: cache-first per tutti gli asset statici
  */
 
-const CACHE_NAME = 'cucina-v21';
+const CACHE_NAME = 'cucina-v23';
 
 const STATIC_ASSETS = [
   './',
@@ -49,23 +49,42 @@ self.addEventListener('message', event => {
   }
 });
 
-/* ---- Fetch: cache-first, poi rete ---- */
+function isNavigationRequest(request) {
+  return request.mode === 'navigate' || request.destination === 'document';
+}
+
+function updateCache(request, response) {
+  if (!response || response.status !== 200 || response.type !== 'basic') return response;
+  const clone = response.clone();
+  caches.open(CACHE_NAME).then(cache => cache.put(request, clone));
+  return response;
+}
+
+/* ---- Fetch: navigazioni network-first, asset statici cache-first ---- */
 self.addEventListener('fetch', event => {
   // Solo GET; ignora richieste API Anthropic (sempre live)
   if (event.request.method !== 'GET') return;
   if (event.request.url.includes('api.anthropic.com')) return;
+
+  if (isNavigationRequest(event.request)) {
+    event.respondWith(
+      fetch(event.request)
+        .then(response => updateCache(event.request, response))
+        .catch(async () => {
+          const cachedPage = await caches.match(event.request);
+          if (cachedPage) return cachedPage;
+          return caches.match('./index.html');
+        })
+    );
+    return;
+  }
 
   event.respondWith(
     caches.match(event.request).then(cached => {
       if (cached) return cached;
 
       return fetch(event.request).then(response => {
-        // Cache solo risposte OK same-origin
-        if (response && response.status === 200 && response.type === 'basic') {
-          const clone = response.clone();
-          caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
-        }
-        return response;
+        return updateCache(event.request, response);
       });
     })
   );
