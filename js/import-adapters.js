@@ -37,15 +37,66 @@ function parseImportMinutes(s) {
   return hours * 60 + minutes;
 }
 
-function inferImportCategory(text) {
-  const t = (text || '').toLowerCase();
-  if (t.includes('primo piatto') || t.includes('primi piatti')) return 'Primi';
-  if (t.includes('secondo piatto') || t.includes('secondi piatti')) return 'Secondi';
-  if (t.includes('dolci')) return 'Dolci';
-  if (t.includes('antipasti')) return 'Antipasti';
-  if (t.includes('zuppe')) return 'Zuppe';
-  if (t.includes('sughi')) return 'Sughi';
-  return 'Primi';
+function normalizeImportCategory(category) {
+  return ['Primi', 'Secondi', 'Dolci', 'Antipasti', 'Zuppe', 'Sughi', 'Bevande'].includes(category)
+    ? category
+    : '';
+}
+
+function normalizeCategorySignal(text) {
+  return String(text || '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim();
+}
+
+function mapCategorySignalToAppCategory(text) {
+  const t = normalizeCategorySignal(text);
+  if (!t) return '';
+  if (/drink|bevande|cocktail|frullat|frappe|sorbett|granite|succo|smoothie|tisane|liquori/.test(t)) return 'Bevande';
+  if (/primo piatto|primi piatti|\bpasta\b|\briso\b|risott|gnocchi|lasagn|cannelloni/.test(t)) return 'Primi';
+  if (/secondo piatto|secondi piatti|polpett|arrost|frittat|burger|cotolett|carne|pesce|pollo/.test(t)) return 'Secondi';
+  if (/dolci|dessert|torte|crostat|biscott|dolcetti|gelat|semifredd|cheesecake|muffin|cupcake|plumcake|crema pasticcera|tiramisu/.test(t)) return 'Dolci';
+  if (/antipast|bruschett|crostini|hummus|sfizi/.test(t)) return 'Antipasti';
+  if (/zuppe|minestre|vellutat/.test(t)) return 'Zuppe';
+  if (/sughi|salse|condiment|ragu|pesto|besciamella/.test(t)) return 'Sughi';
+  return '';
+}
+
+function getLastImportHeadingIndex(markdown, title) {
+  const lines = String(markdown || '').split('\n').map(line => line.trim());
+  const cleanTitle = normalizeCategorySignal(stripImportLinksAndImages(title));
+  let found = -1;
+  lines.forEach((line, index) => {
+    if (!line.startsWith('#')) return;
+    const cleanLine = normalizeCategorySignal(stripImportLinksAndImages(line.replace(/^#+\s*/, '')));
+    if (cleanLine.includes(cleanTitle)) found = index;
+  });
+  return found;
+}
+
+function extractNearbyCategorySignal(markdown, title) {
+  const lines = String(markdown || '').split('\n').map(line => line.trim());
+  const headingIdx = getLastImportHeadingIndex(markdown, title);
+  if (headingIdx === -1) return '';
+
+  const start = Math.max(0, headingIdx - 18);
+  const nearby = lines.slice(start, headingIdx)
+    .map(line => stripImportLinksAndImages(line))
+    .filter(line => line && !/^men[uù]$/i.test(line));
+
+  for (let i = nearby.length - 1; i >= 0; i--) {
+    const mapped = mapCategorySignalToAppCategory(nearby[i]);
+    if (mapped) return mapped;
+  }
+  return '';
+}
+
+function inferImportCategoryFromTitleAndText(title, text = '') {
+  const local = `${title || ''}\n${text || ''}`;
+  const mapped = mapCategorySignalToAppCategory(local);
+  return normalizeImportCategory(mapped);
 }
 
 function inferImportEmoji(category) {
@@ -113,7 +164,7 @@ function buildImportedRecipe(url, fields) {
   return {
     id: 'imp_' + Date.now(),
     name: '',
-    category: 'Primi',
+    category: '',
     emoji: '🍴',
     time: 'n.d.',
     servings: '4',
@@ -191,10 +242,13 @@ function parseGialloZafferanoAdapter(markdown, url) {
 
   const prep = prepMatch ? prepMatch[1].trim() : '';
   const cook = cookMatch ? cookMatch[1].trim() : '';
-  const category = inferImportCategory(md);
+  const cleanTitle = cleanGialloZafferanoTitle(titleMatch[1]).replace(/:.*$/, '').trim();
+  const localCategory = extractNearbyCategorySignal(md, cleanTitle);
+  const presentationSection = (md.match(/## PRESENTAZIONE\s*\n([\s\S]*?)(?:\n##\s*|$)/i) || [])[1] || '';
+  const category = normalizeImportCategory(localCategory || inferImportCategoryFromTitleAndText(cleanTitle, presentationSection));
 
   return buildImportedRecipe(url, {
-    name: cleanGialloZafferanoTitle(titleMatch[1]).replace(/:.*$/, '').trim(),
+    name: cleanTitle,
     category,
     emoji: inferImportEmoji(category),
     time: [prep, cook].filter(Boolean).join(' + ') || 'n.d.',
@@ -244,13 +298,12 @@ function parseRicettePerBimbyAdapter(markdown, url) {
 
   const prep = prepTimeMatch ? prepTimeMatch[1].trim() : '';
   const total = totalTimeMatch ? totalTimeMatch[1].trim() : '';
-  const inferred = inferImportCategory(md);
-  const category = inferred === 'Primi' && /drink|frullat|frapp[eé]|sorbett|granita/i.test(md)
-    ? 'Bevande'
-    : inferred;
+  const cleanTitle = cleanRicettePerBimbyTitle(titleMatch[1]);
+  const localCategory = extractNearbyCategorySignal(md, cleanTitle);
+  const category = normalizeImportCategory(localCategory || inferImportCategoryFromTitleAndText(cleanTitle));
 
   return buildImportedRecipe(url, {
-    name: cleanRicettePerBimbyTitle(titleMatch[1]),
+    name: cleanTitle,
     category,
     emoji: inferImportEmoji(category),
     time: [prep, total && total !== prep ? total : ''].filter(Boolean).join(' + ') || 'n.d.',
@@ -289,7 +342,7 @@ function parseGenericReadableRecipe(markdown, url) {
   if (!ingredients.length || !steps.length) return null;
 
   const domain = normalizeSourceDomain(url);
-  const category = inferImportCategory(md);
+  const category = normalizeImportCategory(inferImportCategoryFromTitleAndText(titleMatch[1], stepsSection[1]));
   return buildImportedRecipe(url, {
     name: stripImportMarkdownNoise(titleMatch[1]).trim(),
     category,

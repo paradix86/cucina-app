@@ -137,6 +137,7 @@ const TRANSLATIONS = {
     // Misc
     delete_confirm: 'Eliminare questa ricetta dal ricettario?',
     app_subtitle: 'Ricette · Bimby TM5 · Timer',
+    app_refresh: 'Aggiorna app',
     theme_label: 'Tema',
     theme_system: 'Sistema',
     theme_light: 'Chiaro',
@@ -270,6 +271,7 @@ const TRANSLATIONS = {
 
     delete_confirm: 'Remove this recipe from your book?',
     app_subtitle: 'Recipes · Bimby TM5 · Timer',
+    app_refresh: 'Refresh app',
     theme_label: 'Theme',
     theme_system: 'System',
     theme_light: 'Light',
@@ -402,6 +404,7 @@ const TRANSLATIONS = {
 
     delete_confirm: 'Dieses Rezept aus dem Buch entfernen?',
     app_subtitle: 'Rezepte · Bimby TM5 · Timer',
+    app_refresh: 'App aktualisieren',
     theme_label: 'Design',
     theme_system: 'System',
     theme_light: 'Hell',
@@ -534,6 +537,7 @@ const TRANSLATIONS = {
 
     delete_confirm: 'Supprimer cette recette du livre?',
     app_subtitle: 'Recettes · Bimby TM5 · Minuteur',
+    app_refresh: 'Actualiser l’app',
     theme_label: 'Thème',
     theme_system: 'Système',
     theme_light: 'Clair',
@@ -666,6 +670,7 @@ const TRANSLATIONS = {
 
     delete_confirm: '¿Eliminar esta receta del recetario?',
     app_subtitle: 'Recetas · Bimby TM5 · Temporizador',
+    app_refresh: 'Actualizar app',
     theme_label: 'Tema',
     theme_system: 'Sistema',
     theme_light: 'Claro',
@@ -696,6 +701,7 @@ function setLanguage(lang) {
   currentLang = lang;
   localStorage.setItem(LANG_STORAGE_KEY, lang);
   applyLanguage();
+  if (typeof renderFooter === 'function') renderFooter();
   renderRecipeBook();
   renderBuiltinCategories();
   renderBuiltinRecipes();

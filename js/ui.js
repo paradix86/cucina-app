@@ -202,6 +202,10 @@ function formatTimerLabel(min) {
   return `${min} ${t('minutes_short')}`;
 }
 
+function joinMetaParts(parts) {
+  return (parts || []).filter(Boolean).join(' · ');
+}
+
 function buildDetailHtml(r, onBack) {
   _detailRecipe = r;
   _currentDetailRecipe = r;
@@ -242,7 +246,7 @@ function buildDetailHtml(r, onBack) {
     <button class="detail-back" onclick="${onBack}">${t('detail_back')}</button>
     <div class="detail-wrap">
       <h2 class="detail-title">${r.emoji || '🍴'} ${r.name}</h2>
-      <p class="detail-meta">${r.category || ''} · ${r.time || ''}${r.difficolta ? ' · ' + r.difficolta : ''}</p>
+      <p class="detail-meta">${joinMetaParts([r.category, r.time, r.difficolta])}</p>
       ${methodHtml}
       ${sourceDomainHtml}
 
@@ -689,7 +693,7 @@ function renderRecipeBook() {
         onclick="event.stopPropagation(); toggleRecipeFavorite('${r.id}'); renderRecipeBook();"
         title="${r.favorite ? t('favorite_remove') : t('favorite_add')}">${r.favorite ? '★' : '☆'}</button>
       <div class="card-name">${highlight(r.name || '', q)}</div>
-      <div class="card-meta">${r.category || ''} · ${r.time || ''}</div>
+      <div class="card-meta">${joinMetaParts([r.category, r.time])}</div>
       ${domainLabel ? `<div class="card-origin">${domainLabel}</div>` : ''}
     </div>`;
   }).join('');

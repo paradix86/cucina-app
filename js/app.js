@@ -16,11 +16,29 @@ function formatEuropeanDate(isoDate) {
   return `${match[3]}-${match[2]}-${match[1]}`;
 }
 
+function getRefreshButtonLabel() {
+  const translated = typeof t === 'function' ? t('app_refresh') : '';
+  if (translated && translated !== 'app_refresh') return translated;
+
+  const lang = document.documentElement.getAttribute('lang') || 'en';
+  const fallbackByLang = {
+    it: 'Aggiorna app',
+    en: 'Refresh app',
+    de: 'App aktualisieren',
+    fr: 'Actualiser l’app',
+    es: 'Actualizar app',
+  };
+  return fallbackByLang[lang] || fallbackByLang.en;
+}
+
 function renderFooter() {
   const footer = document.getElementById('app-footer');
   if (!footer) return;
   const year = new Date().getFullYear();
-  footer.textContent = `${APP_META.authorLine} · ${year} · ${APP_META.version} · build ${formatEuropeanDate(APP_META.buildDate)}`;
+  footer.innerHTML = `
+    <span class="footer-meta">${APP_META.authorLine} · ${year} · ${APP_META.version} · build ${formatEuropeanDate(APP_META.buildDate)}</span>
+    <button class="footer-refresh" onclick="refreshAppRuntime()">${getRefreshButtonLabel()}</button>
+  `;
 }
 
 function applyThemePreference(theme) {
@@ -50,6 +68,28 @@ function setThemePreference(theme) {
 }
 
 window.setThemePreference = setThemePreference;
+
+async function refreshAppRuntime() {
+  try {
+    sessionStorage.removeItem(SW_RELOAD_FLAG);
+    if ('serviceWorker' in navigator) {
+      const regs = await navigator.serviceWorker.getRegistrations();
+      await Promise.all(regs.map(reg => reg.update().catch(() => {})));
+      regs.forEach(reg => {
+        if (reg.waiting) reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+      });
+    }
+    if ('caches' in window) {
+      const keys = await caches.keys();
+      await Promise.all(keys.map(key => caches.delete(key)));
+    }
+  } catch (err) {
+    console.warn('App refresh failed:', err);
+  }
+  window.location.reload();
+}
+
+window.refreshAppRuntime = refreshAppRuntime;
 
 function initServiceWorkerUpdates() {
   if (!('serviceWorker' in navigator)) return;
@@ -83,10 +123,10 @@ function initServiceWorkerUpdates() {
 }
 
 function bootApp() {
-  renderFooter();
   initTheme();
   migrateFromV2();   // one-time localStorage migration v2 → v3
   initI18n();        // detect/restore language, apply translations
+  renderFooter();
   const backupInput = document.getElementById('backup-file-input');
   if (backupInput && !backupInput.dataset.bound) {
     backupInput.addEventListener('change', handleImportBackup);

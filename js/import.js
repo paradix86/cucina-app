@@ -184,7 +184,9 @@ function _escHtml(s) {
 function showImportPreview(r) {
   document.getElementById('preview-title').textContent = `${r.emoji || '🍴'} ${r.name}`;
   document.getElementById('preview-meta').textContent =
-    `${r.category} · ${r.time} · ${r.servings} ${t('detail_servings').toLowerCase()}${r.difficolta ? ' · ' + r.difficolta : ''}`;
+    [r.category, r.time, `${r.servings} ${t('detail_servings').toLowerCase()}`, r.difficolta]
+      .filter(Boolean)
+      .join(' · ');
 
   /* ---- metadata section ---- */
   const metaEl = document.getElementById('preview-metadata');
