@@ -174,10 +174,60 @@ Rispondi SOLO con un oggetto JSON valido, senza backtick, senza testo aggiuntivo
   btn.disabled = false;
 }
 
+/* ---- tiny HTML helpers (import preview only) ---- */
+function _escHtml(s) {
+  const d = document.createElement('div');
+  d.textContent = String(s || '');
+  return d.innerHTML;
+}
+
 function showImportPreview(r) {
   document.getElementById('preview-title').textContent = `${r.emoji || '🍴'} ${r.name}`;
   document.getElementById('preview-meta').textContent =
     `${r.category} · ${r.time} · ${r.servings} ${t('detail_servings').toLowerCase()}${r.difficolta ? ' · ' + r.difficolta : ''}`;
+
+  /* ---- metadata section ---- */
+  const metaEl = document.getElementById('preview-metadata');
+  if (metaEl) {
+    const prettyDomain = (typeof getSourceDomainLabel === 'function')
+      ? getSourceDomainLabel(r.sourceDomain) || r.sourceDomain || ''
+      : r.sourceDomain || '';
+    const prepType = r.preparationType || 'classic';
+    const tags = Array.isArray(r.tags) ? r.tags : [];
+
+    const prepPillsHtml = ['classic', 'bimby', 'airfryer'].map(p =>
+      `<button class="prep-pill${p === prepType ? ' active' : ''}" data-prep="${p}"
+         onclick="selectImportPrepType(this)">${_escHtml(t('prep_' + p))}</button>`
+    ).join('');
+
+    const tagsHtml = tags.map(tag =>
+      `<span class="preview-tag" data-tag="${_escHtml(tag)}">${_escHtml(tag)}<button class="tag-remove" onclick="removeImportTag(this)" aria-label="remove">×</button></span>`
+    ).join('');
+
+    const sourceRow = prettyDomain
+      ? `<div class="preview-meta-row">
+           <span class="preview-meta-label">${_escHtml(t('import_source_site'))}:</span>
+           <span class="preview-meta-value">${_escHtml(prettyDomain)}</span>
+         </div>`
+      : '';
+
+    metaEl.innerHTML = `<div class="preview-metadata">${sourceRow}
+      <div class="preview-meta-row">
+        <span class="preview-meta-label">${_escHtml(t('import_prep_type'))}:</span>
+        <div class="prep-type-pills" id="preview-prep-type">${prepPillsHtml}</div>
+      </div>
+      <div class="preview-meta-row">
+        <span class="preview-meta-label">${_escHtml(t('import_tags'))}:</span>
+        <div class="preview-tags-wrap" id="preview-tags-container">
+          ${tagsHtml}
+          <input type="text" class="tag-add-input" id="preview-tag-input"
+            placeholder="${_escHtml(t('import_tag_add_placeholder'))}"
+            onkeydown="if(event.key==='Enter'){addImportTag();event.preventDefault();}" />
+          <button class="tag-add-btn" onclick="addImportTag()">+</button>
+        </div>
+      </div>
+    </div>`;
+  }
 
   document.getElementById('preview-ing').innerHTML =
     (r.ingredients || []).map(i => `<li>${i}</li>`).join('');
@@ -190,8 +240,47 @@ function showImportPreview(r) {
   document.getElementById('preview-box').style.display = 'block';
 }
 
+function selectImportPrepType(btn) {
+  document.querySelectorAll('#preview-prep-type .prep-pill').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+function removeImportTag(btn) {
+  btn.closest('.preview-tag')?.remove();
+}
+
+function addImportTag() {
+  const input = document.getElementById('preview-tag-input');
+  if (!input) return;
+  const value = input.value.trim();
+  if (!value) return;
+  const container = document.getElementById('preview-tags-container');
+  if (!container) return;
+  // Deduplicate
+  const existing = Array.from(container.querySelectorAll('.preview-tag')).map(el => el.dataset.tag);
+  if (existing.includes(value)) { input.value = ''; return; }
+  const tagEl = document.createElement('span');
+  tagEl.className = 'preview-tag';
+  tagEl.dataset.tag = value;
+  tagEl.innerHTML = `${_escHtml(value)}<button class="tag-remove" onclick="removeImportTag(this)" aria-label="remove">×</button>`;
+  container.insertBefore(tagEl, input);
+  input.value = '';
+}
+
 function savePreviewed() {
   if (!pendingRecipe) return;
+
+  // Read back user-edited preparation type
+  const activePrepBtn = document.querySelector('#preview-prep-type .prep-pill.active');
+  if (activePrepBtn) {
+    pendingRecipe.preparationType = activePrepBtn.dataset.prep;
+    pendingRecipe.bimby = activePrepBtn.dataset.prep === 'bimby';
+  }
+
+  // Read back user-edited tags
+  const tagEls = document.querySelectorAll('#preview-tags-container .preview-tag');
+  pendingRecipe.tags = Array.from(tagEls).map(el => el.dataset.tag).filter(Boolean);
+
   const ok = addRecipe(pendingRecipe);
   if (ok) {
     document.getElementById('preview-box').style.display = 'none';

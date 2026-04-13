@@ -143,6 +143,7 @@ function getSourceDomainLabel(domain) {
   if (!normalized) return '';
   const pretty = {
     'giallozafferano.it': 'GialloZafferano',
+    'ricetteperbimby.it': 'RicettePerBimby',
     'youtube.com': 'YouTube',
     'youtu.be': 'YouTube',
     'instagram.com': 'Instagram',
@@ -505,6 +506,7 @@ function goHome() {
 
 let activeSavedSourceFilter = 'all';
 let activeSavedFilterType = 'all'; // 'all', 'favorites', 'recent'
+let activeSavedSiteFilter = 'all'; // 'all' | a sourceDomain value
 
 function renderSavedSourceFilter() {
   const container = document.getElementById('saved-source-filter');
@@ -522,21 +524,45 @@ function renderSavedSourceFilter() {
     web: window.t('source_web'),
     manual: window.t('source_manual')
   };
-  container.innerHTML = '<div class="filter-row">' +
+
+  // Site filter: dynamically built from persisted sourceDomain values
+  const allRecipes = loadRecipeBook();
+  const domains = [...new Set(allRecipes.map(r => r.sourceDomain).filter(Boolean))];
+  domains.sort((a, b) => getSourceDomainLabel(a).localeCompare(getSourceDomainLabel(b)));
+  if (activeSavedSiteFilter !== 'all' && !domains.includes(activeSavedSiteFilter)) activeSavedSiteFilter = 'all';
+  const siteFilterHtml = domains.length
+    ? `<div class="saved-filter-group">
+      <span class="filter-group-label">${window.t('filter_site')}:</span>
+      <div class="filter-row">` +
+      `<button class="site-pill${activeSavedSiteFilter === 'all' ? ' active' : ''}"
+        onclick="activeSavedSiteFilter='all'; renderSavedSourceFilter(); renderRecipeBook();">${window.t('filter_all_sites')}</button>` +
+      domains.map(d => {
+        const label = getSourceDomainLabel(d);
+        const active = activeSavedSiteFilter === d ? ' active' : '';
+        const safeD = d.replace(/'/g, "\\'");
+        return `<button class="site-pill${active}"
+          onclick="activeSavedSiteFilter='${safeD}'; renderSavedSourceFilter(); renderRecipeBook();">${label}</button>`;
+      }).join('') +
+      '</div></div>'
+    : '';
+
+  container.innerHTML =
+    '<div class="saved-filter-group"><div class="filter-row">' +
     sources.map(s => {
       const label = sourceLabels[s];
       const active = activeSavedSourceFilter === s ? ' active' : '';
       return `<button class="src-pill${active}"
         onclick="activeSavedSourceFilter='${s}'; renderSavedSourceFilter(); renderRecipeBook();">${label}</button>`;
     }).join('') +
-    '</div><div class="filter-row">' +
-    types.map(t => {
-      const label = t === 'all' ? window.t('filter_all') : window.t(`filter_${t}`);
-      const active = activeSavedFilterType === t ? ' active' : '';
+    '</div></div><div class="saved-filter-group"><div class="filter-row">' +
+    types.map(tp => {
+      const label = tp === 'all' ? window.t('filter_all') : window.t(`filter_${tp}`);
+      const active = activeSavedFilterType === tp ? ' active' : '';
       return `<button class="type-pill${active}"
-        onclick="activeSavedFilterType='${t}'; renderSavedSourceFilter(); renderRecipeBook();">${label}</button>`;
+        onclick="activeSavedFilterType='${tp}'; renderSavedSourceFilter(); renderRecipeBook();">${label}</button>`;
     }).join('') +
-    '</div>';
+    '</div>' +
+    siteFilterHtml;
 }
 
 function renderRecipeBook() {
@@ -549,7 +575,8 @@ function renderRecipeBook() {
     const matchT = activeSavedFilterType === 'all' ||
       (activeSavedFilterType === 'favorites' && r.favorite) ||
       (activeSavedFilterType === 'recent' && r.lastViewedAt);
-    return matchQ && matchS && matchT;
+    const matchSite = activeSavedSiteFilter === 'all' || r.sourceDomain === activeSavedSiteFilter;
+    return matchQ && matchS && matchT && matchSite;
   });
 
   // Sort for recent

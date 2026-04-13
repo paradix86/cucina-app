@@ -24,6 +24,7 @@ function normalizeStoredRecipe(recipe) {
     bimby: recipe?.bimby != null ? recipe.bimby : preparationType === 'bimby',
     favorite: recipe?.favorite || false,
     lastViewedAt: recipe?.lastViewedAt || undefined,
+    tags: Array.isArray(recipe?.tags) ? recipe.tags : [],
   };
 }
 

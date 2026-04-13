@@ -8,6 +8,7 @@ const APP_META = {
   buildDate: '2026-04-13',
   authorLine: 'Made with ❤️ by Alan in Switzerland',
 };
+const SW_RELOAD_FLAG = 'cucina_sw_reloaded_once';
 
 function formatEuropeanDate(isoDate) {
   const match = String(isoDate || '').match(/^(\d{4})-(\d{2})-(\d{2})$/);
@@ -50,6 +51,37 @@ function setThemePreference(theme) {
 
 window.setThemePreference = setThemePreference;
 
+function initServiceWorkerUpdates() {
+  if (!('serviceWorker' in navigator)) return;
+
+  let hasReloadedForUpdate = sessionStorage.getItem(SW_RELOAD_FLAG) === '1';
+
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (hasReloadedForUpdate) return;
+    hasReloadedForUpdate = true;
+    sessionStorage.setItem(SW_RELOAD_FLAG, '1');
+    window.location.reload();
+  });
+
+  navigator.serviceWorker.register('./sw.js').then(reg => {
+    reg.update().catch(() => {});
+
+    if (reg.waiting) reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+
+    reg.addEventListener('updatefound', () => {
+      const installing = reg.installing;
+      if (!installing) return;
+      installing.addEventListener('statechange', () => {
+        if (installing.state === 'installed' && navigator.serviceWorker.controller) {
+          installing.postMessage({ type: 'SKIP_WAITING' });
+        }
+      });
+    });
+  }).catch(err => {
+    console.warn('Service Worker registration failed:', err);
+  });
+}
+
 function bootApp() {
   renderFooter();
   initTheme();
@@ -74,8 +106,4 @@ if (document.readyState === 'loading') {
 }
 
 /* ---- PWA: Service Worker registration ---- */
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('./sw.js').catch(err => {
-    console.warn('Service Worker registration failed:', err);
-  });
-}
+initServiceWorkerUpdates();

@@ -47,6 +47,10 @@ async function importRecipe() {
     if (source === 'web') {
       _fetchedMarkdown = await fetchReadableImportPage(url);
       const recipe = importWebsiteRecipeWithAdapters(_fetchedMarkdown, url);
+      // Enrich with suggested tags if none already set by the adapter
+      if (!recipe.tags || !recipe.tags.length) {
+        recipe.tags = suggestImportTags(recipe.sourceDomain, recipe.preparationType, recipe.category, recipe.name);
+      }
       pendingRecipe = recipe;
       showImportPreview(recipe);
       setImportStatus(t('import_success'), 'ok');
@@ -110,11 +114,12 @@ Rispondi SOLO con un oggetto JSON valido, senza backtick, senza testo aggiuntivo
   } catch (e) {
     console.error(e);
     const rawError = String(e.message || e).trim();
+    // "Unsupported site" only for truly unsupported domains or network-level failures.
+    // Adapter parse errors (GZ_*, RPB_*) mean the adapter ran but the page was wrong
+    // (e.g. URL 404'd, page structure changed) — those are generic errors, not site blocks.
     const isWebImportLimit = source === 'web' && (
       rawError.includes('UNSUPPORTED_WEB_IMPORT') ||
-      rawError.includes('WEB_FETCH') ||
-      rawError.includes('GZ_') ||
-      rawError.includes('RPB_')
+      rawError.includes('WEB_FETCH')
     );
 
     if (source === 'web') {

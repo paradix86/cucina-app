@@ -40,6 +40,10 @@ const TRANSLATIONS = {
     import_invalid_url: 'Inserisci un link valido.',
     import_save: 'Salva nel ricettario',
     import_discard: 'Scarta',
+    import_source_site: 'Sito',
+    import_prep_type: 'Preparazione',
+    import_tags: 'Tag',
+    import_tag_add_placeholder: 'Aggiungi tag…',
     import_diag_title: 'Dettagli diagnostica',
     import_diag_domain: 'Dominio rilevato',
     import_diag_adapter: 'Adapter',
@@ -114,6 +118,8 @@ const TRANSLATIONS = {
 
     filter_favorites: 'Preferiti',
     filter_recent: 'Recenti',
+    filter_all_sites: 'Tutti i siti',
+    filter_site: 'Sito',
     favorite_add: 'Aggiungi ai preferiti',
     favorite_remove: 'Rimuovi dai preferiti',
 
@@ -161,6 +167,10 @@ const TRANSLATIONS = {
     import_invalid_url: 'Please enter a valid link.',
     import_save: 'Save to recipe book',
     import_discard: 'Discard',
+    import_source_site: 'Source',
+    import_prep_type: 'Preparation',
+    import_tags: 'Tags',
+    import_tag_add_placeholder: 'Add tag…',
     import_diag_title: 'Diagnostics',
     import_diag_domain: 'Detected domain',
     import_diag_adapter: 'Adapter',
@@ -231,6 +241,8 @@ const TRANSLATIONS = {
 
     filter_favorites: 'Favorites',
     filter_recent: 'Recent',
+    filter_all_sites: 'All sites',
+    filter_site: 'Site',
     favorite_add: 'Add to favorites',
     favorite_remove: 'Remove from favorites',
 
@@ -277,6 +289,10 @@ const TRANSLATIONS = {
     import_invalid_url: 'Bitte einen gültigen Link eingeben.',
     import_save: 'Im Rezeptbuch speichern',
     import_discard: 'Verwerfen',
+    import_source_site: 'Quelle',
+    import_prep_type: 'Zubereitung',
+    import_tags: 'Tags',
+    import_tag_add_placeholder: 'Tag hinzufügen…',
     import_diag_title: 'Diagnose',
     import_diag_domain: 'Erkannte Domain',
     import_diag_adapter: 'Adapter',
@@ -346,6 +362,8 @@ const TRANSLATIONS = {
 
     filter_favorites: 'Favoriten',
     filter_recent: 'Kürzlich',
+    filter_all_sites: 'Alle Webseiten',
+    filter_site: 'Website',
     favorite_add: 'Zu Favoriten hinzufügen',
     favorite_remove: 'Aus Favoriten entfernen',
 
@@ -392,6 +410,10 @@ const TRANSLATIONS = {
     import_invalid_url: 'Veuillez entrer un lien valide.',
     import_save: 'Sauvegarder dans le livre',
     import_discard: 'Abandonner',
+    import_source_site: 'Source',
+    import_prep_type: 'Préparation',
+    import_tags: 'Tags',
+    import_tag_add_placeholder: 'Ajouter un tag…',
     import_diag_title: 'Diagnostics',
     import_diag_domain: 'Domaine détecté',
     import_diag_adapter: 'Adaptateur',
@@ -461,6 +483,8 @@ const TRANSLATIONS = {
 
     filter_favorites: 'Favoris',
     filter_recent: 'Récents',
+    filter_all_sites: 'Tous les sites',
+    filter_site: 'Site',
     favorite_add: 'Ajouter aux favoris',
     favorite_remove: 'Retirer des favoris',
 
@@ -507,6 +531,10 @@ const TRANSLATIONS = {
     import_invalid_url: 'Por favor introduce un enlace válido.',
     import_save: 'Guardar en el recetario',
     import_discard: 'Descartar',
+    import_source_site: 'Fuente',
+    import_prep_type: 'Preparación',
+    import_tags: 'Etiquetas',
+    import_tag_add_placeholder: 'Añadir etiqueta…',
     import_diag_title: 'Diagnóstico',
     import_diag_domain: 'Dominio detectado',
     import_diag_adapter: 'Adaptador',
@@ -576,6 +604,8 @@ const TRANSLATIONS = {
 
     filter_favorites: 'Favoritos',
     filter_recent: 'Recientes',
+    filter_all_sites: 'Todos los sitios',
+    filter_site: 'Sitio',
     favorite_add: 'Añadir a favoritos',
     favorite_remove: 'Quitar de favoritos',
 

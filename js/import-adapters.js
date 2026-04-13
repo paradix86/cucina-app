@@ -69,6 +69,46 @@ function normalizeImportedServings(text, fallback = '1') {
   return cleaned || fallback;
 }
 
+/**
+ * Infer preparation type from page content and/or source domain.
+ * Priority: domain > bimby signals > airfryer signals > classic fallback.
+ */
+function inferImportPreparationType(text, domain) {
+  if (domain === 'ricetteperbimby.it') return 'bimby';
+  const lower = (text || '').toLowerCase();
+  if (/\bbimby\b|tm[56]\b|tm31\b|varoma\b|nel boccale|vel\./.test(lower)) return 'bimby';
+  if (/air\s*fryer|friggitrice\s+ad\s+aria|\bcestello\b/.test(lower)) return 'airfryer';
+  return 'classic';
+}
+
+const DOMAIN_TAG_MAP = {
+  'giallozafferano.it': 'GialloZafferano',
+  'ricetteperbimby.it': 'RicettePerBimby',
+};
+
+/**
+ * Generate a small list of high-confidence suggested tags for the import preview.
+ *
+ * Rules (conservative — fewer tags, higher confidence):
+ *  - Domain tag:    always, if in DOMAIN_TAG_MAP
+ *  - Prep tag:      Bimby / Air Fryer if preparationType is non-classic
+ *  - Drink:         only if the recipe *name* contains a strong beverage keyword
+ *                   (category alone is too unreliable — page sidebars pollute it)
+ *  - No other semantic tags by default
+ */
+function suggestImportTags(domain, preparationType, category, name) {
+  const tags = [];
+  const domainTag = DOMAIN_TAG_MAP[domain];
+  if (domainTag) tags.push(domainTag);
+  if (preparationType === 'bimby') tags.push('Bimby');
+  if (preparationType === 'airfryer') tags.push('Air Fryer');
+  // Drink only when the title itself is a strong signal
+  if (/frullat|frapp[eé]|smoothie|succo\b|bevanda|cocktail|granita|sorbett/i.test(name || '')) {
+    tags.push('Drink');
+  }
+  return tags;
+}
+
 function buildImportedRecipe(url, fields) {
   return {
     id: 'imp_' + Date.now(),
@@ -85,6 +125,7 @@ function buildImportedRecipe(url, fields) {
     source: 'web',
     sourceDomain: normalizeSourceDomain(url),
     url,
+    tags: [],
     ...fields,
   };
 }
@@ -247,6 +288,7 @@ function parseGenericReadableRecipe(markdown, url) {
 
   if (!ingredients.length || !steps.length) return null;
 
+  const domain = normalizeSourceDomain(url);
   const category = inferImportCategory(md);
   return buildImportedRecipe(url, {
     name: stripImportMarkdownNoise(titleMatch[1]).trim(),
@@ -254,7 +296,7 @@ function parseGenericReadableRecipe(markdown, url) {
     emoji: inferImportEmoji(category),
     ingredients,
     steps,
-    preparationType: 'classic',
+    preparationType: inferImportPreparationType(md, domain),
   });
 }
 
