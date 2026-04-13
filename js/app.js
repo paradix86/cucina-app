@@ -3,6 +3,18 @@
  */
 
 const THEME_STORAGE_KEY = 'cucina_theme';
+const APP_META = {
+  version: 'v0.10.0',
+  buildDate: '2026-04-13',
+  authorLine: 'Made with <3 by Alan in Switzerland',
+};
+
+function renderFooter() {
+  const footer = document.getElementById('app-footer');
+  if (!footer) return;
+  const year = new Date().getFullYear();
+  footer.textContent = `${APP_META.authorLine} · ${year} · ${APP_META.version} · build ${APP_META.buildDate}`;
+}
 
 function applyThemePreference(theme) {
   if (theme === 'light' || theme === 'dark') {
@@ -33,6 +45,7 @@ function setThemePreference(theme) {
 window.setThemePreference = setThemePreference;
 
 function bootApp() {
+  renderFooter();
   initTheme();
   migrateFromV2();   // one-time localStorage migration v2 → v3
   initI18n();        // detect/restore language, apply translations

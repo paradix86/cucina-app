@@ -94,7 +94,23 @@ function cleanGialloZafferanoTitle(title) {
   return stripMarkdownNoise(title)
     .replace(/^Ricetta\s+/i, '')
     .replace(/\s*-\s*La Ricetta di GialloZafferano\s*$/i, '')
+      .trim();
+}
+
+function stripLinksAndImages(s) {
+  return normalizeText(
+    (s || '')
+      .replace(/!\[[^\]]*]\([^)]*\)/g, ' ')
+      .replace(/\[([^\]]+)\]\([^)]*\)/g, '$1')
+  );
+}
+
+function normalizeImportedServings(text, fallback = '1') {
+  const cleaned = normalizeText(text)
+    .replace(/\s*persone?\b/gi, '')
+    .replace(/\s*persona\b/gi, '')
     .trim();
+  return cleaned || fallback;
 }
 
 function parseGialloZafferanoIngredients(block) {
@@ -174,10 +190,70 @@ function parseGialloZafferanoRecipe(markdown, url) {
   };
 }
 
+function cleanRicettePerBimbyTitle(title) {
+  return stripMarkdownNoise(title)
+    .replace(/\s*-\s*Ricette Bimby\s*$/i, '')
+    .trim();
+}
+
+function parseRicettePerBimbyRecipe(markdown, url) {
+  const md = normalizeText(markdown);
+  const titleMatch = md.match(/^#\s+(.+)$/m);
+  const difficultyMatch = md.match(/Difficoltà\s*\n+\s*([^\n]+)/i);
+  const totalTimeMatch = md.match(/Tempo totale\s*\n+\s*([^\n]+)/i);
+  const prepTimeMatch = md.match(/Preparazione\s*\n+\s*([^\n]+)/i);
+  const servingsMatch = md.match(/Quantità\s*\n+\s*([^\n]+)/i);
+
+  const ingredientsStart = md.indexOf('## Ingredienti');
+  const stepsStart = md.indexOf('## Come fare il', ingredientsStart);
+  if (ingredientsStart === -1 || stepsStart === -1) throw new Error('RPB_SECTIONS_NOT_FOUND');
+
+  const ingredientsBlock = md.slice(ingredientsStart, stepsStart);
+  const ingredients = ingredientsBlock
+    .split('\n')
+    .map(line => line.trim())
+    .filter(line => line.startsWith('*'))
+    .map(line => line.replace(/^\*\s+/, '').trim())
+    .filter(Boolean);
+
+  const stepsBlock = md.slice(stepsStart);
+  const steps = [...stepsBlock.matchAll(/^\d+\.\s+(.*)$/gm)]
+    .map(match => stripLinksAndImages(match[1]))
+    .filter(Boolean);
+
+  if (!titleMatch || !ingredients.length || !steps.length) throw new Error('RPB_PARSE_INCOMPLETE');
+
+  const prep = prepTimeMatch ? prepTimeMatch[1].trim() : '';
+  const total = totalTimeMatch ? totalTimeMatch[1].trim() : '';
+  const category = inferCategoryFromText(md) === 'Primi' && /drink|frullat|frapp[eé]|sorbett|granita/i.test(md)
+    ? 'Bevande'
+    : inferCategoryFromText(md);
+
+  return {
+    id: 'imp_' + Date.now(),
+    name: cleanRicettePerBimbyTitle(titleMatch[1]),
+    category,
+    emoji: category === 'Bevande' ? '🥤' : inferEmoji(category),
+    time: [prep, total && total !== prep ? total : ''].filter(Boolean).join(' + ') || 'n.d.',
+    servings: servingsMatch ? normalizeImportedServings(servingsMatch[1], '1') : '1',
+    difficolta: difficultyMatch ? difficultyMatch[1].trim() : '',
+    ingredients,
+    steps,
+    timerMinutes: parseMinutesFromText(total || prep),
+    preparationType: 'bimby',
+    source: 'web',
+    sourceDomain: normalizeSourceDomain(url),
+    url,
+  };
+}
+
 async function importGenericWebsiteRecipe(url) {
   const markdown = await fetchReadablePage(url);
   if (/giallozafferano\.it/i.test(url)) {
     return parseGialloZafferanoRecipe(markdown, url);
+  }
+  if (/ricetteperbimby\.it/i.test(url)) {
+    return parseRicettePerBimbyRecipe(markdown, url);
   }
   throw new Error('UNSUPPORTED_WEB_IMPORT');
 }
