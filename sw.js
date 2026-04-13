@@ -2,21 +2,22 @@
  * sw.js — Service Worker: cache-first per tutti gli asset statici
  */
 
-const CACHE_NAME = 'cucina-v6';
+const CACHE_NAME = 'cucina-v8';
 
 const STATIC_ASSETS = [
   './',
   './index.html',
   './manifest.json',
-  './css/style.css?v=5',
-  './js/i18n.js?v=5',
+  './css/style.css',
+  './js/i18n.js',
   './js/data.js',
   './js/storage.js',
-  './js/toast.js?v=5',
-  './js/timer.js?v=5',
+  './js/toast.js',
+  './js/timer.js',
   './js/import.js',
-  './js/ui.js?v=5',
-  './js/app.js?v=5',
+  './js/import-web.js',
+  './js/ui.js',
+  './js/app.js',
   './icons/icon-192.svg',
   './icons/icon-512.svg',
 ];

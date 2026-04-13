@@ -1,19 +1,9 @@
 /**
- * import.js — Recipe import from URL via Claude AI
- *
- * Uses the Anthropic /v1/messages endpoint to analyse a link
- * and extract (or synthesise) a structured recipe.
- *
- * NOTE: the API key is injected by the claude.ai proxy when the app
- * runs inside the widget. For standalone use (e.g. GitHub Pages),
- * set your API key in ANTHROPIC_API_KEY below or use a backend proxy.
+ * import-web.js — pragmatic browser-side fallback for generic recipe pages.
+ * Loaded after import.js so it can override importRecipe() with web support.
  */
 
-const ANTHROPIC_API_KEY = ''; // leave empty when using the claude.ai proxy
-
-let pendingRecipe = null;
-
-function normalizeText(s) {
+function normalizeImportText(s) {
   return (s || '')
     .replace(/\r/g, '')
     .replace(/\u00a0/g, ' ')
@@ -22,8 +12,8 @@ function normalizeText(s) {
     .trim();
 }
 
-function stripMarkdownNoise(s) {
-  return normalizeText(
+function stripImportMarkdownNoise(s) {
+  return normalizeImportText(
     (s || '')
       .replace(/!\[[^\]]*]\([^)]*\)/g, ' ')
       .replace(/\[([^\]]+)\]\([^)]*\)/g, '$1')
@@ -31,7 +21,7 @@ function stripMarkdownNoise(s) {
   );
 }
 
-function parseMinutesFromText(s) {
+function parseImportMinutes(s) {
   const text = String(s || '');
   const hour = text.match(/(\d+)\s*h/i);
   const min = text.match(/(\d+)\s*min/i);
@@ -40,7 +30,7 @@ function parseMinutesFromText(s) {
   return hours * 60 + minutes;
 }
 
-function inferCategoryFromText(text) {
+function inferImportCategory(text) {
   const t = (text || '').toLowerCase();
   if (t.includes('primo piatto') || t.includes('primi piatti')) return 'Primi';
   if (t.includes('secondo piatto') || t.includes('secondi piatti')) return 'Secondi';
@@ -51,7 +41,7 @@ function inferCategoryFromText(text) {
   return 'Primi';
 }
 
-function inferEmoji(category) {
+function inferImportEmoji(category) {
   switch (category) {
     case 'Primi': return '🍝';
     case 'Secondi': return '🍽️';
@@ -63,15 +53,14 @@ function inferEmoji(category) {
   }
 }
 
-async function fetchReadablePage(url) {
-  const proxyUrl = `https://r.jina.ai/http://${url}`;
-  const resp = await fetch(proxyUrl);
+async function fetchReadableImportPage(url) {
+  const resp = await fetch(`https://r.jina.ai/http://${url}`);
   if (!resp.ok) throw new Error(`WEB_FETCH_${resp.status}`);
   return resp.text();
 }
 
-function parseGialloZafferanoRecipe(markdown, url) {
-  const md = normalizeText(markdown);
+function parseGialloZafferanoImport(markdown, url) {
+  const md = normalizeImportText(markdown);
   const titleMatch = md.match(/^#\s+(.+)$/m);
   const difficultyMatch = md.match(/\*\s+Difficoltà:\s+\*\*(.*?)\*\*/i);
   const prepMatch = md.match(/\*\s+Preparazione:\s+\*\*(.*?)\*\*/i);
@@ -92,10 +81,10 @@ function parseGialloZafferanoRecipe(markdown, url) {
     `${name.trim()} ${((extra || '') + qty).replace(/\s*!+\s*$/, '').trim()}`
   );
 
-  const stepsBlock = md.slice(stepsStart, stepsEnd);
-  const steps = stepsBlock
+  const steps = md
+    .slice(stepsStart, stepsEnd)
     .split(/\n\s*\n/)
-    .map(stripMarkdownNoise)
+    .map(stripImportMarkdownNoise)
     .filter(p => p && !p.startsWith('## ') && !p.startsWith('Image '))
     .filter(p => !/^Preparazione$/i.test(p));
 
@@ -103,60 +92,50 @@ function parseGialloZafferanoRecipe(markdown, url) {
 
   const prep = prepMatch ? prepMatch[1].trim() : '';
   const cook = cookMatch ? cookMatch[1].trim() : '';
-  const totalTime = [prep, cook].filter(Boolean).join(' + ');
-  const category = inferCategoryFromText(md);
+  const category = inferImportCategory(md);
 
   return {
     id: 'imp_' + Date.now(),
-    name: stripMarkdownNoise(titleMatch[1]).replace(/:.*$/, '').trim(),
+    name: stripImportMarkdownNoise(titleMatch[1]).replace(/:.*$/, '').trim(),
     category,
-    emoji: inferEmoji(category),
-    time: totalTime || 'n.d.',
+    emoji: inferImportEmoji(category),
+    time: [prep, cook].filter(Boolean).join(' + ') || 'n.d.',
     servings: servingsMatch ? servingsMatch[1].replace(/\s*persone?/i, '').trim() : '4',
     difficolta: difficultyMatch ? difficultyMatch[1].trim() : '',
     ingredients,
     steps,
-    timerMinutes: parseMinutesFromText(cook),
+    timerMinutes: parseImportMinutes(cook),
     source: 'web',
     url,
   };
-}
-
-async function importGenericWebsiteRecipe(url) {
-  const markdown = await fetchReadablePage(url);
-  if (/giallozafferano\.it/i.test(url)) {
-    return parseGialloZafferanoRecipe(markdown, url);
-  }
-  throw new Error('UNSUPPORTED_WEB_IMPORT');
-}
-
-function detectSource(url) {
-  if (/youtube\.com|youtu\.be/i.test(url))  return 'youtube';
-  if (/tiktok\.com/i.test(url))              return 'tiktok';
-  if (/instagram\.com/i.test(url))           return 'instagram';
-  return 'web';
-}
-
-function setImportStatus(msg, type) {
-  const el      = document.getElementById('import-status');
-  el.textContent = msg;
-  el.className   = 'status-msg ' + type;
 }
 
 async function importRecipe() {
   const url = document.getElementById('url-input').value.trim();
   if (!url) { setImportStatus(t('import_invalid_url'), 'err'); return; }
 
-  const source    = detectSource(url);
+  const source = detectSource(url);
   const sourceMap = { youtube: 'YouTube', tiktok: 'TikTok', instagram: 'Instagram', web: 'sito web' };
-  const btn       = document.getElementById('btn-import-go');
+  const btn = document.getElementById('btn-import-go');
 
   btn.disabled = true;
   document.getElementById('preview-box').style.display = 'none';
   pendingRecipe = null;
-
   setImportStatus(t('import_loading'), 'loading');
-  const prompt = `Sei un assistente culinario esperto. Analizza questo URL: ${url}
+
+  try {
+    if (source === 'web') {
+      const markdown = await fetchReadableImportPage(url);
+      if (!/giallozafferano\.it/i.test(url)) throw new Error('UNSUPPORTED_WEB_IMPORT');
+      const recipe = parseGialloZafferanoImport(markdown, url);
+      pendingRecipe = recipe;
+      showImportPreview(recipe);
+      setImportStatus(t('import_success'), 'ok');
+      btn.disabled = false;
+      return;
+    }
+
+    const prompt = `Sei un assistente culinario esperto. Analizza questo URL: ${url}
 
 Il link proviene da: ${sourceMap[source]}.
 
@@ -176,47 +155,36 @@ Rispondi SOLO con un oggetto JSON valido, senza backtick, senza testo aggiuntivo
   "timerMinutes": numero_minuti_cottura_principale
 }`;
 
-  try {
-    if (source === 'web') {
-      const recipe = await importGenericWebsiteRecipe(url);
-      pendingRecipe = recipe;
-      showImportPreview(recipe);
-      setImportStatus(t('import_success'), 'ok');
-      btn.disabled = false;
-      return;
-    }
-
     const headers = { 'Content-Type': 'application/json' };
     if (ANTHROPIC_API_KEY) {
-      headers['x-api-key']         = ANTHROPIC_API_KEY;
+      headers['x-api-key'] = ANTHROPIC_API_KEY;
       headers['anthropic-version'] = '2023-06-01';
     }
 
     const resp = await fetch('https://api.anthropic.com/v1/messages', {
-      method:  'POST',
+      method: 'POST',
       headers,
-      body:    JSON.stringify({
-        model:      'claude-sonnet-4-20250514',
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
         max_tokens: 1000,
-        messages:   [{ role: 'user', content: prompt }],
+        messages: [{ role: 'user', content: prompt }],
       }),
     });
 
     if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
 
-    const data   = await resp.json();
-    const raw    = data.content.map(c => c.text || '').join('');
-    const clean  = raw.replace(/```json|```/g, '').trim();
+    const data = await resp.json();
+    const raw = data.content.map(c => c.text || '').join('');
+    const clean = raw.replace(/```json|```/g, '').trim();
     const recipe = JSON.parse(clean);
 
-    recipe.id     = 'imp_' + Date.now();
+    recipe.id = 'imp_' + Date.now();
     recipe.source = source;
-    recipe.url    = url;
+    recipe.url = url;
 
     pendingRecipe = recipe;
     showImportPreview(recipe);
     setImportStatus(t('import_success'), 'ok');
-
   } catch (e) {
     console.error(e);
     const isWebImportLimit = source === 'web' && (
@@ -230,36 +198,4 @@ Rispondi SOLO con un oggetto JSON valido, senza backtick, senza testo aggiuntivo
   btn.disabled = false;
 }
 
-function showImportPreview(r) {
-  document.getElementById('preview-title').textContent = `${r.emoji || '🍴'} ${r.name}`;
-  document.getElementById('preview-meta').textContent  =
-    `${r.category} · ${r.time} · ${r.servings} ${t('detail_servings').toLowerCase()}${r.difficolta ? ' · ' + r.difficolta : ''}`;
-
-  document.getElementById('preview-ing').innerHTML =
-    (r.ingredients || []).map(i => `<li>${i}</li>`).join('');
-
-  document.getElementById('preview-steps').innerHTML =
-    (r.steps || []).map((s, i) =>
-      `<div class="step-row"><span class="step-n">${i + 1}</span><p class="step-txt">${s}</p></div>`
-    ).join('');
-
-  document.getElementById('preview-box').style.display = 'block';
-}
-
-function savePreviewed() {
-  if (!pendingRecipe) return;
-  const ok = addRecipe(pendingRecipe);
-  if (ok) {
-    document.getElementById('preview-box').style.display = 'none';
-    document.getElementById('url-input').value = '';
-    setImportStatus(t('builtin_saved_ok'), 'ok');
-    pendingRecipe = null;
-    setTimeout(() => showTab('saved', document.querySelectorAll('.tab')[0]), 700);
-  }
-}
-
-function discardPreview() {
-  document.getElementById('preview-box').style.display = 'none';
-  document.getElementById('import-status').className   = 'status-msg';
-  pendingRecipe = null;
-}
+window.importRecipe = importRecipe;

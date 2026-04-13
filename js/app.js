@@ -36,6 +36,11 @@ function bootApp() {
   initTheme();
   migrateFromV2();   // one-time localStorage migration v2 → v3
   initI18n();        // detect/restore language, apply translations
+  const backupInput = document.getElementById('backup-file-input');
+  if (backupInput && !backupInput.dataset.bound) {
+    backupInput.addEventListener('change', handleImportBackup);
+    backupInput.dataset.bound = 'true';
+  }
   renderRecipeBook();
   renderSavedSourceFilter();
   renderBuiltinCategories();

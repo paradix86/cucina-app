@@ -532,7 +532,50 @@ function openSavedDetail(id) {
   dv.innerHTML = buildDetailHtml(r,
     `document.getElementById('saved-list-view').style.display='';
      document.getElementById('saved-detail-view').style.display='none';`
-  );
+  ) + `
+    <div class="notes-box card">
+      <div class="sec-label">${t('recipe_notes')}</div>
+      <textarea id="recipe-notes-input" class="notes-textarea"
+        placeholder="${t('recipe_notes_placeholder')}">${r.notes || ''}</textarea>
+      <div class="notes-actions">
+        <button class="btn-primary" onclick="saveRecipeNotes('${r.id}')">${t('recipe_notes_save')}</button>
+      </div>
+    </div>`;
+}
+
+function saveRecipeNotes(id) {
+  const textarea = document.getElementById('recipe-notes-input');
+  if (!textarea) return;
+  const ok = updateRecipeNotes(id, textarea.value);
+  if (ok) showToast(t('recipe_notes_saved'), 'success');
+}
+
+function handleExportBackup() {
+  const count = exportRecipeBook();
+  showToast(t('backup_export_ok'), 'success');
+  return count;
+}
+
+function triggerImportBackup() {
+  const input = document.getElementById('backup-file-input');
+  if (!input) return;
+  input.click();
+}
+
+async function handleImportBackup(event) {
+  const file = event.target.files && event.target.files[0];
+  if (!file) return;
+
+  try {
+    const total = await importRecipeBook(file);
+    showToast(t('backup_import_ok', { n: total }), 'success');
+    renderRecipeBook();
+    renderSavedSourceFilter();
+  } catch (err) {
+    showToast(t('backup_import_err'), 'error');
+  } finally {
+    event.target.value = '';
+  }
 }
 
 /* ================================================================

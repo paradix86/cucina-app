@@ -68,13 +68,25 @@ function deleteRecipe(id) {
   saveRecipeBook(loadRecipeBook().filter(r => r.id !== id));
 }
 
+function updateRecipeNotes(id, notes) {
+  const arr = loadRecipeBook();
+  const idx = arr.findIndex(recipe => recipe.id === id);
+  if (idx === -1) return false;
+  arr[idx] = { ...arr[idx], notes: notes || '' };
+  saveRecipeBook(arr);
+  return true;
+}
+
 function exportRecipeBook() {
   const arr  = loadRecipeBook();
   const blob = new Blob([JSON.stringify(arr, null, 2)], { type: 'application/json' });
   const a    = document.createElement('a');
-  a.href     = URL.createObjectURL(blob);
+  const url  = URL.createObjectURL(blob);
+  a.href     = url;
   a.download = 'ricettario_backup.json';
   a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  return arr.length;
 }
 
 function importRecipeBook(file) {

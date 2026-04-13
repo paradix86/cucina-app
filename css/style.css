@@ -365,6 +365,15 @@ input[type="number"] { text-align: center; }
   align-items: center;
 }
 .saved-header input { flex: 1; min-width: 160px; }
+.backup-actions {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+.backup-actions .btn-ghost {
+  min-height: 38px;
+}
 
 /* ---- DETAIL VIEW ---- */
 .detail-back {
@@ -437,6 +446,27 @@ input[type="number"] { text-align: center; }
 .orig-link:hover { text-decoration: underline; }
 
 .detail-actions { display: flex; gap: 8px; margin-top: 1rem; flex-wrap: wrap; }
+
+.notes-box {
+  margin-top: 1rem;
+}
+.notes-textarea {
+  width: 100%;
+  min-height: 120px;
+  resize: vertical;
+  font-size: 14px;
+  padding: 10px 12px;
+  border: 0.5px solid var(--border-md);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+}
+.notes-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: .75rem;
+}
 
 /* ---- SERVINGS CTRL ---- */
 .servings-ctrl {
