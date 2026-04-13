@@ -722,6 +722,73 @@ input[type="number"] { text-align: center; }
   margin-top: .75rem;
 }
 
+/* ---- SHOPPING LIST ---- */
+.shopping-card {
+  padding: 1rem 1rem 1.25rem;
+}
+.shopping-header {
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+.shopping-header .btn-ghost {
+  min-height: 42px;
+}
+.shopping-list-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.shopping-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  background: var(--bg);
+  border: 0.5px solid var(--border);
+  border-radius: var(--radius-md);
+}
+.shopping-item-main {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  cursor: pointer;
+}
+.shopping-item-main input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+  accent-color: var(--green);
+  flex-shrink: 0;
+}
+.shopping-item-text {
+  font-size: 14px;
+  line-height: 1.5;
+}
+.shopping-item.is-checked .shopping-item-text {
+  text-decoration: line-through;
+  color: var(--text-muted);
+}
+.shopping-remove {
+  min-width: 40px;
+  min-height: 40px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-hint);
+  cursor: pointer;
+  font-size: 16px;
+  font-family: var(--font);
+}
+.shopping-remove:hover {
+  background: var(--red-light);
+  color: var(--red);
+}
+
 /* ---- SERVINGS CTRL ---- */
 .servings-ctrl {
   display: flex;

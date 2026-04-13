@@ -4,6 +4,7 @@
 
 const STORAGE_KEY = 'cucina_recipebook_v3';
 const STORAGE_KEY_V2 = 'cucina_ricettario_v2';
+const SHOPPING_LIST_KEY = 'cucina_shopping_list_v1';
 
 function normalizePreparationTypeValue(value) {
   return ['classic', 'bimby', 'airfryer'].includes(value) ? value : '';
@@ -151,4 +152,62 @@ function importRecipeBook(file) {
     };
     reader.readAsText(file);
   });
+}
+
+function loadShoppingList() {
+  try {
+    const arr = JSON.parse(localStorage.getItem(SHOPPING_LIST_KEY) || '[]');
+    return Array.isArray(arr) ? arr : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveShoppingList(items) {
+  try {
+    localStorage.setItem(SHOPPING_LIST_KEY, JSON.stringify(items || []));
+  } catch (e) {
+    console.warn('localStorage not available:', e);
+  }
+}
+
+function addShoppingListItems(items, recipeMeta = {}) {
+  const existing = loadShoppingList();
+  const timestamp = Date.now();
+  const additions = (items || [])
+    .filter(Boolean)
+    .map((text, index) => ({
+      id: `shop-${timestamp}-${index}-${Math.random().toString(36).slice(2, 8)}`,
+      text: String(text).trim(),
+      checked: false,
+      sourceRecipeId: recipeMeta.id || undefined,
+      sourceRecipeName: recipeMeta.name || undefined,
+      createdAt: timestamp,
+    }))
+    .filter(item => item.text);
+
+  const next = [...existing, ...additions];
+  saveShoppingList(next);
+  return additions.length;
+}
+
+function toggleShoppingListItem(id) {
+  const items = loadShoppingList();
+  const idx = items.findIndex(item => item.id === id);
+  if (idx === -1) return false;
+  items[idx].checked = !items[idx].checked;
+  saveShoppingList(items);
+  return true;
+}
+
+function removeShoppingListItem(id) {
+  const items = loadShoppingList();
+  const next = items.filter(item => item.id !== id);
+  if (next.length === items.length) return false;
+  saveShoppingList(next);
+  return true;
+}
+
+function clearShoppingList() {
+  saveShoppingList([]);
 }

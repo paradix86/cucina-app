@@ -48,17 +48,24 @@ For UI features:
 
 1. Start a local static server if needed
 2. Open the app in Playwright
-3. Clear service workers/caches if JS looks stale
-4. Test the requested flow
-5. Check console errors
+3. Clear service workers and caches if JS/CSS may be stale
+4. Reload and confirm the current assets/scripts are actually loaded
+5. Test the requested flow
+6. Check console errors
 
 ## Common Pitfalls
 
-- The service worker may serve stale JS
+- The app uses a cache-first service worker, so stale JS/CSS can differ from the latest code and create false bugs
 - `innerHTML` can break state or references if not restored carefully
 - Recipes may exist in legacy Italian shape (`nome`, `cat`, `fonte`) or newer English `v3` shape
 - Functions using global `document.querySelector()` can hit the wrong node when hidden views still exist
 - Website import logic should remain isolated per domain whenever possible
+
+## Service Worker Hygiene
+
+- If a cached static asset changes, bump `CACHE_NAME` in `sw.js`
+- Do not trust a manual reproduction until service workers/caches were cleared and the fresh runtime was reloaded
+- Playwright checks should account for stale-runtime issues before validating behavior
 
 ## Preferred Implementation Style
 

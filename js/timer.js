@@ -24,7 +24,7 @@ function startRecipeTimer(name, min) {
     timer => timer.name === name && timer.remaining > 0
   );
   if (existing) {
-    showTab('timer', document.querySelectorAll('.tab')[3]);
+    showTab('timer', document.getElementById('tab-timer'));
     return;
   }
 
@@ -32,7 +32,7 @@ function startRecipeTimer(name, min) {
   timers[id] = { name, total: min * 60, remaining: min * 60, running: true };
   renderTimers();
   ensureTimerInterval();
-  showTab('timer', document.querySelectorAll('.tab')[3]);
+  showTab('timer', document.getElementById('tab-timer'));
 }
 
 function toggleTimer(id) {

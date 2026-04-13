@@ -71,14 +71,17 @@ All user-facing strings must go through `t('key')` in `js/i18n.js`.
 ### 5. Respect cached assets
 If you change a static asset that is cached by the service worker, update `CACHE_NAME` in `sw.js`.
 
-### 6. Preserve backward compatibility
+### 6. Watch for stale runtime
+This app uses a cache-first service worker. Stale JS/CSS is a common debugging trap and can make manual behavior differ from the latest code.
+
+### 7. Preserve backward compatibility
 Saved recipes may exist in:
 - legacy Italian field shape
 - newer English `v3` field shape
 
 Do not break existing `localStorage` data.
 
-### 7. Keep touch UX in mind
+### 8. Keep touch UX in mind
 The app is designed for tablets and touchscreens. Avoid tiny controls or cramped layouts.
 
 ## Recipe model guidelines
@@ -142,10 +145,18 @@ Supported domain-specific adapters currently include:
 At minimum, for relevant changes:
 
 1. run the app locally
-2. test the affected flow manually
-3. check browser console errors
-4. if the change is UI/flow related, run a targeted Playwright verification
-5. if caching behaves strangely, clear service workers and caches before re-testing
+2. clear service workers and caches if runtime behavior may be stale
+3. reload and confirm the current assets/scripts are actually loaded
+4. test the affected flow manually
+5. check browser console errors
+6. if the change is UI/flow related, run a targeted Playwright verification
+
+Practical stale-cache checklist:
+- clear service workers
+- clear caches
+- reload the app
+- confirm fresh assets are loaded
+- only then trust manual reproduction results
 
 ## Pull request checklist
 

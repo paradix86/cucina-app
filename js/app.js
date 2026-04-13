@@ -96,6 +96,7 @@ function bootApp() {
   renderSavedSourceFilter();
   renderBuiltinCategories();
   renderBuiltinRecipes();
+  renderShoppingList();
   renderTimers();
 }
 

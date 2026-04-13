@@ -236,6 +236,7 @@ function buildDetailHtml(r, onBack) {
     </div>`;
 
   const stepsLabel = prepInfo.type === 'bimby' ? t('detail_steps_bimby') : t('detail_steps');
+  const shoppingBtn = `<button class="btn-ghost" onclick="addCurrentRecipeIngredientsToShoppingList()">${t('shopping_add')}</button>`;
 
   return `
     <button class="detail-back" onclick="${onBack}">${t('detail_back')}</button>
@@ -256,7 +257,7 @@ function buildDetailHtml(r, onBack) {
       <button class="btn-cooking" onclick="startCookingMode('${r.id}')">${t('cooking_start')}</button>
 
       ${origLink}
-      <div class="detail-actions">${timerBtn}</div>
+      <div class="detail-actions">${shoppingBtn}${timerBtn}</div>
     </div>`;
 }
 
@@ -476,6 +477,7 @@ function showTab(id, el) {
 
   if (id === 'saved') { renderRecipeBook(); renderSavedSourceFilter(); }
   if (id === 'builtin') { renderBuiltinCategories(); renderBuiltinRecipes(); }
+  if (id === 'shopping') renderShoppingList();
   if (id === 'timer') renderTimers();
 }
 
@@ -498,6 +500,69 @@ function goHome() {
 
   const firstTab = document.querySelector('.tab');
   if (firstTab) showTab('saved', firstTab);
+}
+
+/* ================================================================
+   SHOPPING LIST
+   ================================================================ */
+
+function formatShoppingCount(count) {
+  return count === 1
+    ? t('shopping_count', { n: count })
+    : t('shopping_count_plural', { n: count });
+}
+
+function addCurrentRecipeIngredientsToShoppingList() {
+  const recipe = _currentDetailRecipe;
+  if (!recipe || !Array.isArray(recipe.ingredients) || !recipe.ingredients.length) return;
+  const added = addShoppingListItems(recipe.ingredients, { id: recipe.id, name: recipe.name });
+  if (!added) return;
+  showToast(t('shopping_added_toast', { n: added }), 'success');
+}
+
+function renderShoppingList() {
+  const listEl = document.getElementById('shopping-list');
+  const countEl = document.getElementById('shopping-count');
+  const clearBtn = document.getElementById('shopping-clear-btn');
+  if (!listEl || !countEl || !clearBtn) return;
+
+  const items = loadShoppingList();
+  countEl.textContent = formatShoppingCount(items.length);
+  clearBtn.style.display = items.length ? '' : 'none';
+
+  if (!items.length) {
+    listEl.innerHTML = `<p class="empty">${t('shopping_empty')}</p>`;
+    return;
+  }
+
+  listEl.innerHTML = `<div class="shopping-list-rows">` + items.map(item => `
+      <div class="shopping-item${item.checked ? ' is-checked' : ''}">
+        <label class="shopping-item-main">
+          <input type="checkbox" ${item.checked ? 'checked' : ''} onchange="toggleShoppingListItemUI('${item.id}')">
+          <span class="shopping-item-text">${item.text}</span>
+        </label>
+        <button class="shopping-remove" onclick="removeShoppingListItemUI('${item.id}')" aria-label="${t('shopping_remove')}">✕</button>
+      </div>
+    `).join('') + `</div>`;
+}
+
+function toggleShoppingListItemUI(id) {
+  if (!toggleShoppingListItem(id)) return;
+  renderShoppingList();
+}
+
+function removeShoppingListItemUI(id) {
+  if (!removeShoppingListItem(id)) return;
+  renderShoppingList();
+}
+
+function clearShoppingListUI() {
+  const items = loadShoppingList();
+  if (!items.length) return;
+  if (!confirm(t('shopping_clear_confirm'))) return;
+  clearShoppingList();
+  renderShoppingList();
+  showToast(t('shopping_cleared_toast'), 'info');
 }
 
 /* ================================================================

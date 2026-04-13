@@ -9,6 +9,7 @@ const TRANSLATIONS = {
     nav_recipebook: 'Ricettario',
     nav_import: '+ Importa',
     nav_recipes: 'Ricette',
+    nav_shopping: 'Lista spesa',
     nav_timer: 'Timer',
 
     // Recipe book
@@ -27,6 +28,16 @@ const TRANSLATIONS = {
     backup_export_ok: 'Backup JSON esportato!',
     backup_import_ok: 'Backup importato: {n} ricette disponibili.',
     backup_import_err: 'Importazione backup non riuscita.',
+    shopping_title: 'Lista della spesa',
+    shopping_empty: 'La tua lista della spesa è vuota.',
+    shopping_add: 'Aggiungi ingredienti alla lista spesa',
+    shopping_count: '{n} elemento',
+    shopping_count_plural: '{n} elementi',
+    shopping_clear: 'Svuota lista',
+    shopping_clear_confirm: 'Svuotare tutta la lista della spesa?',
+    shopping_remove: 'Rimuovi elemento',
+    shopping_added_toast: '{n} ingredienti aggiunti alla lista spesa.',
+    shopping_cleared_toast: 'Lista della spesa svuotata.',
 
     // Import
     import_title: 'Importa una ricetta da link',
@@ -138,6 +149,7 @@ const TRANSLATIONS = {
     nav_recipebook: 'Recipe Book',
     nav_import: '+ Import',
     nav_recipes: 'Recipes',
+    nav_shopping: 'Shopping List',
     nav_timer: 'Timer',
 
     recipebook_empty: 'Your recipe book is empty.',
@@ -155,6 +167,16 @@ const TRANSLATIONS = {
     backup_export_ok: 'JSON backup exported!',
     backup_import_ok: 'Backup imported: {n} recipes available.',
     backup_import_err: 'Backup import failed.',
+    shopping_title: 'Shopping List',
+    shopping_empty: 'Your shopping list is empty.',
+    shopping_add: 'Add ingredients to shopping list',
+    shopping_count: '{n} item',
+    shopping_count_plural: '{n} items',
+    shopping_clear: 'Clear list',
+    shopping_clear_confirm: 'Clear the entire shopping list?',
+    shopping_remove: 'Remove item',
+    shopping_added_toast: '{n} ingredients added to the shopping list.',
+    shopping_cleared_toast: 'Shopping list cleared.',
 
     import_title: 'Import a recipe from a link',
     import_desc: 'Paste a YouTube, TikTok, Instagram or any recipe website link.',
@@ -260,6 +282,7 @@ const TRANSLATIONS = {
     nav_recipebook: 'Rezeptbuch',
     nav_import: '+ Importieren',
     nav_recipes: 'Rezepte',
+    nav_shopping: 'Einkaufsliste',
     nav_timer: 'Timer',
 
     recipebook_empty: 'Dein Rezeptbuch ist leer.',
@@ -277,6 +300,16 @@ const TRANSLATIONS = {
     backup_export_ok: 'JSON-Backup exportiert!',
     backup_import_ok: 'Backup importiert: {n} Rezepte verfügbar.',
     backup_import_err: 'Backup-Import fehlgeschlagen.',
+    shopping_title: 'Einkaufsliste',
+    shopping_empty: 'Deine Einkaufsliste ist leer.',
+    shopping_add: 'Zutaten zur Einkaufsliste hinzufügen',
+    shopping_count: '{n} Eintrag',
+    shopping_count_plural: '{n} Einträge',
+    shopping_clear: 'Liste leeren',
+    shopping_clear_confirm: 'Die gesamte Einkaufsliste leeren?',
+    shopping_remove: 'Eintrag entfernen',
+    shopping_added_toast: '{n} Zutaten zur Einkaufsliste hinzugefügt.',
+    shopping_cleared_toast: 'Einkaufsliste geleert.',
 
     import_title: 'Rezept von Link importieren',
     import_desc: 'Füge einen YouTube-, TikTok-, Instagram- oder Rezeptwebsite-Link ein.',
@@ -381,6 +414,7 @@ const TRANSLATIONS = {
     nav_recipebook: 'Livre de recettes',
     nav_import: '+ Importer',
     nav_recipes: 'Recettes',
+    nav_shopping: 'Liste de courses',
     nav_timer: 'Minuteur',
 
     recipebook_empty: 'Votre livre de recettes est vide.',
@@ -398,6 +432,16 @@ const TRANSLATIONS = {
     backup_export_ok: 'Sauvegarde JSON exportée !',
     backup_import_ok: 'Sauvegarde importée : {n} recettes disponibles.',
     backup_import_err: 'Échec de l’import de la sauvegarde.',
+    shopping_title: 'Liste de courses',
+    shopping_empty: 'Votre liste de courses est vide.',
+    shopping_add: 'Ajouter les ingrédients à la liste de courses',
+    shopping_count: '{n} élément',
+    shopping_count_plural: '{n} éléments',
+    shopping_clear: 'Vider la liste',
+    shopping_clear_confirm: 'Vider toute la liste de courses ?',
+    shopping_remove: 'Supprimer l’élément',
+    shopping_added_toast: '{n} ingrédients ajoutés à la liste de courses.',
+    shopping_cleared_toast: 'Liste de courses vidée.',
 
     import_title: 'Importer une recette depuis un lien',
     import_desc: 'Collez un lien YouTube, TikTok, Instagram ou tout site de recettes.',
@@ -502,6 +546,7 @@ const TRANSLATIONS = {
     nav_recipebook: 'Recetario',
     nav_import: '+ Importar',
     nav_recipes: 'Recetas',
+    nav_shopping: 'Lista de compra',
     nav_timer: 'Temporizador',
 
     recipebook_empty: 'Tu recetario está vacío.',
@@ -519,6 +564,16 @@ const TRANSLATIONS = {
     backup_export_ok: '¡Copia JSON exportada!',
     backup_import_ok: 'Copia importada: {n} recetas disponibles.',
     backup_import_err: 'La importación del respaldo falló.',
+    shopping_title: 'Lista de compra',
+    shopping_empty: 'Tu lista de compra está vacía.',
+    shopping_add: 'Añadir ingredientes a la lista de compra',
+    shopping_count: '{n} elemento',
+    shopping_count_plural: '{n} elementos',
+    shopping_clear: 'Vaciar lista',
+    shopping_clear_confirm: '¿Vaciar toda la lista de compra?',
+    shopping_remove: 'Eliminar elemento',
+    shopping_added_toast: '{n} ingredientes añadidos a la lista de compra.',
+    shopping_cleared_toast: 'Lista de compra vaciada.',
 
     import_title: 'Importar una receta desde un enlace',
     import_desc: 'Pega un enlace de YouTube, TikTok, Instagram o cualquier sitio de recetas.',
@@ -644,6 +699,7 @@ function setLanguage(lang) {
   renderRecipeBook();
   renderBuiltinCategories();
   renderBuiltinRecipes();
+  renderShoppingList();
   renderTimers();
 }
 
