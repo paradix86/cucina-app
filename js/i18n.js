@@ -67,6 +67,8 @@ const TRANSLATIONS = {
     timer_label_min:  'Min',
     timer_label_sec:  'Sec',
     timer_invalid:    'Inserisci un tempo valido!',
+    toast_timer_done: '{name} pronto!',
+    toast_cooking_timer_done: 'Timer del passo completato!',
 
     // Source badges
     source_youtube:   'YouTube',
@@ -90,6 +92,10 @@ const TRANSLATIONS = {
     // Misc
     delete_confirm: 'Eliminare questa ricetta dal ricettario?',
     app_subtitle:   'Ricette · Bimby TM5 · Timer',
+    theme_label:    'Tema',
+    theme_system:   'Sistema',
+    theme_light:    'Chiaro',
+    theme_dark:     'Scuro',
     hours_short:    'h',
     minutes_short:  'min',
   },
@@ -151,6 +157,8 @@ const TRANSLATIONS = {
     timer_label_min:  'Min',
     timer_label_sec:  'Sec',
     timer_invalid:    'Please enter a valid time!',
+    toast_timer_done: '{name} is ready!',
+    toast_cooking_timer_done: 'Step timer complete!',
 
     source_youtube:   'YouTube',
     source_tiktok:    'TikTok',
@@ -171,6 +179,10 @@ const TRANSLATIONS = {
 
     delete_confirm: 'Remove this recipe from your book?',
     app_subtitle:   'Recipes · Bimby TM5 · Timer',
+    theme_label:    'Theme',
+    theme_system:   'System',
+    theme_light:    'Light',
+    theme_dark:     'Dark',
     hours_short:    'h',
     minutes_short:  'min',
   },
@@ -232,6 +244,8 @@ const TRANSLATIONS = {
     timer_label_min:  'Min',
     timer_label_sec:  'Sek',
     timer_invalid:    'Bitte gültige Zeit eingeben!',
+    toast_timer_done: '{name} ist fertig!',
+    toast_cooking_timer_done: 'Schritt-Timer beendet!',
 
     source_youtube:   'YouTube',
     source_tiktok:    'TikTok',
@@ -252,6 +266,10 @@ const TRANSLATIONS = {
 
     delete_confirm: 'Dieses Rezept aus dem Buch entfernen?',
     app_subtitle:   'Rezepte · Bimby TM5 · Timer',
+    theme_label:    'Design',
+    theme_system:   'System',
+    theme_light:    'Hell',
+    theme_dark:     'Dunkel',
     hours_short:    'Std',
     minutes_short:  'Min',
   },
@@ -313,6 +331,8 @@ const TRANSLATIONS = {
     timer_label_min:  'Min',
     timer_label_sec:  'Sec',
     timer_invalid:    'Veuillez entrer une durée valide!',
+    toast_timer_done: '{name} est prêt !',
+    toast_cooking_timer_done: 'Minuteur de l’étape terminé !',
 
     source_youtube:   'YouTube',
     source_tiktok:    'TikTok',
@@ -333,6 +353,10 @@ const TRANSLATIONS = {
 
     delete_confirm: 'Supprimer cette recette du livre?',
     app_subtitle:   'Recettes · Bimby TM5 · Minuteur',
+    theme_label:    'Thème',
+    theme_system:   'Système',
+    theme_light:    'Clair',
+    theme_dark:     'Sombre',
     hours_short:    'h',
     minutes_short:  'min',
   },
@@ -394,6 +418,8 @@ const TRANSLATIONS = {
     timer_label_min:  'Min',
     timer_label_sec:  'Seg',
     timer_invalid:    '¡Ingresa un tiempo válido!',
+    toast_timer_done: '¡{name} está listo!',
+    toast_cooking_timer_done: '¡Temporizador del paso completado!',
 
     source_youtube:   'YouTube',
     source_tiktok:    'TikTok',
@@ -414,6 +440,10 @@ const TRANSLATIONS = {
 
     delete_confirm: '¿Eliminar esta receta del recetario?',
     app_subtitle:   'Recetas · Bimby TM5 · Temporizador',
+    theme_label:    'Tema',
+    theme_system:   'Sistema',
+    theme_light:    'Claro',
+    theme_dark:     'Oscuro',
     hours_short:    'h',
     minutes_short:  'min',
   },

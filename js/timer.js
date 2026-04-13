@@ -10,7 +10,7 @@ function addTimer() {
   const min   = parseInt(document.getElementById('t-min').value) || 0;
   const sec   = parseInt(document.getElementById('t-sec').value) || 0;
   const total = min * 60 + sec;
-  if (total <= 0) { alert(t('timer_invalid')); return; }
+  if (total <= 0) { showToast(t('timer_invalid'), 'error'); return; }
 
   const id = 't' + Date.now();
   timers[id] = { name, total, remaining: total, running: true };
@@ -98,7 +98,11 @@ function ensureTimerInterval() {
     Object.keys(timers).forEach(id => {
       const timer = timers[id];
       if (timer.running && timer.remaining > 0) { timer.remaining--; changed = true; }
-      if (timer.remaining === 0 && timer.running) { timer.running = false; changed = true; }
+      if (timer.remaining === 0 && timer.running) {
+        timer.running = false;
+        changed = true;
+        showToast(t('toast_timer_done', { name: timer.name }), 'success');
+      }
     });
     if (changed) renderTimers();
   }, 1000);

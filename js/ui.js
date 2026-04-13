@@ -273,6 +273,7 @@ function startCookingTimerInterval() {
       cookingTimerRunning = false;
       clearInterval(cookingTimerInterval);
       cookingTimerInterval = null;
+      showToast(t('toast_cooking_timer_done'), 'success');
     }
     updateCookingTimerUI();
   }, 1000);
@@ -674,8 +675,8 @@ function saveBuiltinRecipe(id) {
   if (!r) return;
   const ok = addRecipe({ ...r });
   if (ok) {
-    alert(t('builtin_saved_ok'));
+    showToast(t('builtin_saved_ok'), 'success');
   } else {
-    alert(t('builtin_already_saved'));
+    showToast(t('builtin_already_saved'), 'info');
   }
 }
