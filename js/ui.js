@@ -240,7 +240,7 @@ function buildDetailHtml(r, onBack) {
     </div>`;
 
   const stepsLabel = prepInfo.type === 'bimby' ? t('detail_steps_bimby') : t('detail_steps');
-  const shoppingBtn = `<button class="btn-ghost" onclick="addCurrentRecipeIngredientsToShoppingList()">${t('shopping_add')}</button>`;
+  const shoppingBtn = `<button class="btn-shopping" onclick="addCurrentRecipeIngredientsToShoppingList()">🛒 ${t('shopping_add')}</button>`;
 
   return `
     <button class="detail-back" onclick="${onBack}">${t('detail_back')}</button>

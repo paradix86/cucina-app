@@ -171,15 +171,15 @@ const BUILTIN_RECIPES = [
   },
   {
     id: 'b10', name: 'Pollo speziato marinato in friggitrice ad aria', category: 'Secondi', bimby: false,
-    emoji: '🍗', time: '15 min + marinatura', servings: '4', source: 'classica',
+    emoji: '🍗', time: '22 min + marinatura', servings: '4', source: 'classica',
     ingredients: [
       '800g cosce o sovracosce di pollo',
       '2 cucchiai olio evo',
       '1 cucchiaino paprika',
       '1 cucchiaino aglio in polvere',
       '1 cucchiaino cumino',
-      'sale',
-      'pepe nero'
+      '1 cucchiaino sale',
+      '1/2 cucchiaino pepe nero'
     ],
     steps: [
       'Tampona bene il pollo con carta cucina.',
@@ -197,29 +197,8 @@ const BUILTIN_RECIPES = [
       baseWeightGrams: 800,
       basePieces: 4,
       supportedCuts: ['cosce', 'sovracosce'],
-      marinadePer800g: {
-        oilTbsp: 2,
-        paprikaTsp: 1,
-        garlicPowderTsp: 1,
-        cuminTsp: 1,
-        saltTsp: 1,
-        pepperTsp: 0.5,
-      },
-      cookProfile: {
-        stage1: { tempC: 170, minutes: 12 },
-        stage2: { tempC: 190, minutes: 8 },
-        extraMinutesIfLargePieces: 2,
-        extraMinutesIfBasketCrowded: 2,
-        maxSuggestedStage2Minutes: 12,
-      },
-      notes: [
-        'Per 700g mantieni la stessa tecnica ma usa circa il 90% della marinatura.',
-        'Per 1.2-1.4kg aumenta proporzionalmente la marinatura e cuoci in più giri se il cestello è affollato.',
-        'Le cosce con osso richiedono spesso un po’ più tempo delle sovracosce piccole.',
-      ],
     },
   },
-
   /* ==================== BIMBY TM5 ==================== */
 
   {
