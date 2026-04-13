@@ -64,6 +64,13 @@ function showImportDiagnostics(diagnostic) {
     { label: t('import_diag_reason'), value: diagnostic.reason || '' },
   ].filter(item => item.value);
 
+  const hintHtml = diagnostic.hint
+    ? `<details class="import-diagnostics-hint">
+        <summary>${t('import_diag_hint')}</summary>
+        <div class="import-diagnostics-hint-body">${diagnostic.hint}</div>
+      </details>`
+    : '';
+
   diagnostics.innerHTML = `
     <div class="import-diagnostics-title">${t('import_diag_title')}</div>
     ${items.map(item => `
@@ -72,6 +79,7 @@ function showImportDiagnostics(diagnostic) {
         <span class="import-diagnostics-value">${item.value}</span>
       </div>
     `).join('')}
+    ${hintHtml}
   `;
   diagnostics.style.display = 'block';
 }

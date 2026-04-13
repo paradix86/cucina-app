@@ -95,6 +95,9 @@ body {
   margin-top: auto;
   width: 100%;
   padding: 14px 1.5rem 22px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
   text-align: center;
   font-size: 12px;
   color: var(--text-muted);
@@ -314,6 +317,19 @@ input[type="number"] { text-align: center; }
 .src-pill.active,
 .src-pill.cat-active { background: var(--green); color: #fff; border-color: var(--green); }
 
+.type-pill {
+  padding: 4px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  border: 0.5px solid var(--border-md);
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+  color: var(--text-muted);
+  background: var(--bg-secondary);
+  transition: all .15s;
+}
+.type-pill.active { background: var(--orange); color: #fff; border-color: var(--orange); }
+
 /* ---- STATUS MESSAGES ---- */
 .status-msg {
   margin-top: 10px;
@@ -357,6 +373,21 @@ input[type="number"] { text-align: center; }
 }
 .import-diagnostics-value {
   color: var(--text);
+  word-break: break-word;
+}
+.import-diagnostics-hint {
+  margin-top: 8px;
+  padding-top: 6px;
+  border-top: 1px solid var(--border);
+}
+.import-diagnostics-hint summary {
+  color: var(--text-muted);
+  cursor: pointer;
+  user-select: none;
+}
+.import-diagnostics-hint-body {
+  margin-top: 4px;
+  color: var(--text-muted);
   word-break: break-word;
 }
 
@@ -421,6 +452,17 @@ input[type="number"] { text-align: center; }
 }
 .card-del:hover { background: var(--red-light); color: var(--red); }
 
+.card-fav {
+  position: absolute; top: 10px; right: 35px;
+  background: none; border: none;
+  font-size: 16px; cursor: pointer;
+  color: var(--text-hint);
+  padding: 3px 7px;
+  border-radius: var(--radius-sm);
+  font-family: var(--font);
+}
+.card-fav:hover { background: var(--bg-secondary); color: var(--orange); }
+
 /* ---- SAVED HEADER ---- */
 .saved-header {
   display: flex;
@@ -454,6 +496,12 @@ input[type="number"] { text-align: center; }
   font-family: var(--font);
 }
 .detail-back:hover { background: var(--bg-secondary); }
+
+.detail-actions {
+  margin: 1rem 0;
+  display: flex;
+  gap: 8px;
+}
 
 .detail-wrap {
   background: var(--bg);

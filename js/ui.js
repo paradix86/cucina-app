@@ -38,11 +38,11 @@ function scaleIngredients(ingredients, base, target) {
     for (const [f, v] of Object.entries(FRAC)) s = s.split(f).join(v);
 
     s = s.replace(/\d+(?:[.,]\d+)?/g, m => {
-      const n      = parseFloat(m.replace(',', '.'));
+      const n = parseFloat(m.replace(',', '.'));
       const scaled = n * factor;
-      const r      = Math.round(scaled * 10) / 10;
+      const r = Math.round(scaled * 10) / 10;
       if (FRAC_INV[r] !== undefined) return FRAC_INV[r];
-      if (r === Math.floor(r))        return String(Math.floor(r));
+      if (r === Math.floor(r)) return String(Math.floor(r));
       return r.toFixed(1);
     });
 
@@ -56,9 +56,9 @@ function changeServings(delta) {
   const valEl = document.getElementById('servings-val');
   if (!valEl) return;
 
-  const base    = parseInt(_detailRecipe.servings) || 4;
+  const base = parseInt(_detailRecipe.servings) || 4;
   const current = parseInt(valEl.textContent);
-  const target  = Math.max(1, Math.min(20, current + delta));
+  const target = Math.max(1, Math.min(20, current + delta));
   if (target === current) return;
 
   valEl.textContent = target;
@@ -105,7 +105,7 @@ function highlight(text, query) {
  */
 function parseRecipeTime(timeStr) {
   if (!timeStr) return 0;
-  const hours   = (timeStr.match(/(\d+)\s*h/)   || [])[1] || 0;
+  const hours = (timeStr.match(/(\d+)\s*h/) || [])[1] || 0;
   const minutes = (timeStr.match(/(\d+)\s*min/) || [])[1] || 0;
   return parseInt(hours) * 60 + parseInt(minutes);
 }
@@ -116,25 +116,25 @@ function parseRecipeTime(timeStr) {
 
 // Maps stored source value → i18n key for display label
 const SOURCE_LABEL_KEYS = {
-  youtube:   'source_youtube',
-  tiktok:    'source_tiktok',
+  youtube: 'source_youtube',
+  tiktok: 'source_tiktok',
   instagram: 'source_instagram',
-  bimby:     'source_bimby',
-  classica:  'source_classic',
-  manual:    'source_manual',
+  bimby: 'source_bimby',
+  classica: 'source_classic',
+  manual: 'source_manual',
 };
 
 function getSourceInfo(source) {
   const key = SOURCE_LABEL_KEYS[source];
   const txt = key ? t(key) : t('source_web');
   switch (source) {
-    case 'youtube':   return { cls: 'badge-yt',       txt };
-    case 'tiktok':    return { cls: 'badge-tt',       txt };
-    case 'instagram': return { cls: 'badge-ig',       txt };
-    case 'bimby':     return { cls: 'badge-bimby',    txt };
-    case 'classica':  return { cls: 'badge-classica', txt };
-    case 'manual':    return { cls: 'badge-web',      txt };
-    default:          return { cls: 'badge-web',      txt: t('source_web') };
+    case 'youtube': return { cls: 'badge-yt', txt };
+    case 'tiktok': return { cls: 'badge-tt', txt };
+    case 'instagram': return { cls: 'badge-ig', txt };
+    case 'bimby': return { cls: 'badge-bimby', txt };
+    case 'classica': return { cls: 'badge-classica', txt };
+    case 'manual': return { cls: 'badge-web', txt };
+    default: return { cls: 'badge-web', txt: t('source_web') };
   }
 }
 
@@ -174,7 +174,7 @@ function buildStepsHtml(steps, preparationType) {
     if (preparationType === 'bimby') {
       const sep = s.indexOf(' — ');
       if (sep !== -1) {
-        const tags  = s.slice(0, sep).split('·').map(tag => tag.trim()).filter(Boolean);
+        const tags = s.slice(0, sep).split('·').map(tag => tag.trim()).filter(Boolean);
         const testo = s.slice(sep + 3);
         return `<div class="bimby-step">
           <div class="bimby-step-tags">${tags.map(tag => `<span class="bimby-tag">${tag}</span>`).join('')}</div>
@@ -207,7 +207,7 @@ function buildDetailHtml(r, onBack) {
 
   const prepInfo = getPreparationInfo(r);
   const basePort = parseInt(r.servings) || 4;
-  const ingHtml  = (r.ingredients || []).map(i => `<li>${i}</li>`).join('');
+  const ingHtml = (r.ingredients || []).map(i => `<li>${i}</li>`).join('');
   const stepHtml = buildStepsHtml(r.steps || [], prepInfo.type);
   const sourceDomainHtml = r.sourceDomain
     ? `<p class="detail-origin"><span class="sec-label-inline">${t('detail_source_site')}:</span> ${getSourceDomainLabel(r.sourceDomain)}</p>`
@@ -325,10 +325,9 @@ function setupCookingStepTimer(stepText) {
 
   cookingTimerTotal = seconds;
   cookingTimerRemaining = seconds;
-  cookingTimerRunning = true;
+  cookingTimerRunning = false;
   timerWrap.style.display = 'block';
   updateCookingTimerUI();
-  startCookingTimerInterval();
 }
 
 function toggleCookingTimer() {
@@ -474,9 +473,9 @@ function showTab(id, el) {
   document.getElementById('panel-' + id).classList.add('active');
   if (el) { el.classList.add('active'); el.setAttribute('aria-selected', 'true'); }
 
-  if (id === 'saved')   { renderRecipeBook(); renderSavedSourceFilter(); }
+  if (id === 'saved') { renderRecipeBook(); renderSavedSourceFilter(); }
   if (id === 'builtin') { renderBuiltinCategories(); renderBuiltinRecipes(); }
-  if (id === 'timer')   renderTimers();
+  if (id === 'timer') renderTimers();
 }
 
 function goHome() {
@@ -505,33 +504,58 @@ function goHome() {
    ================================================================ */
 
 let activeSavedSourceFilter = 'all';
+let activeSavedFilterType = 'all'; // 'all', 'favorites', 'recent'
 
 function renderSavedSourceFilter() {
   const container = document.getElementById('saved-source-filter');
   if (!container) return;
 
   const sources = ['all', 'youtube', 'tiktok', 'instagram', 'classica', 'bimby', 'web', 'manual'];
+  const types = ['all', 'favorites', 'recent'];
+  const sourceLabels = {
+    all: window.t('filter_all'),
+    youtube: window.t('source_youtube'),
+    tiktok: window.t('source_tiktok'),
+    instagram: window.t('source_instagram'),
+    classica: window.t('source_classic'),
+    bimby: window.t('source_bimby'),
+    web: window.t('source_web'),
+    manual: window.t('source_manual')
+  };
   container.innerHTML = '<div class="filter-row">' +
     sources.map(s => {
-      const label = s === 'all'
-        ? t('filter_all')
-        : t(SOURCE_LABEL_KEYS[s] || 'source_web');
+      const label = sourceLabels[s];
       const active = activeSavedSourceFilter === s ? ' active' : '';
       return `<button class="src-pill${active}"
         onclick="activeSavedSourceFilter='${s}'; renderSavedSourceFilter(); renderRecipeBook();">${label}</button>`;
+    }).join('') +
+    '</div><div class="filter-row">' +
+    types.map(t => {
+      const label = t === 'all' ? window.t('filter_all') : window.t(`filter_${t}`);
+      const active = activeSavedFilterType === t ? ' active' : '';
+      return `<button class="type-pill${active}"
+        onclick="activeSavedFilterType='${t}'; renderSavedSourceFilter(); renderRecipeBook();">${label}</button>`;
     }).join('') +
     '</div>';
 }
 
 function renderRecipeBook() {
   const all = loadRecipeBook();
-  const q   = (document.getElementById('saved-search')?.value || '').toLowerCase().trim();
+  const q = (document.getElementById('saved-search')?.value || '').toLowerCase().trim();
 
   const fil = all.filter(r => {
     const matchQ = recipeMatchesQuery(r, q);
     const matchS = activeSavedSourceFilter === 'all' || (r.source || 'web') === activeSavedSourceFilter;
-    return matchQ && matchS;
+    const matchT = activeSavedFilterType === 'all' ||
+      (activeSavedFilterType === 'favorites' && r.favorite) ||
+      (activeSavedFilterType === 'recent' && r.lastViewedAt);
+    return matchQ && matchS && matchT;
   });
+
+  // Sort for recent
+  if (activeSavedFilterType === 'recent') {
+    fil.sort((a, b) => (b.lastViewedAt || 0) - (a.lastViewedAt || 0));
+  }
 
   // Result count
   const countEl = document.getElementById('saved-results-count');
@@ -565,6 +589,9 @@ function renderRecipeBook() {
       <button class="card-del btn-danger"
         onclick="event.stopPropagation(); confirmDeleteRecipe('${r.id}')"
         title="✕">✕</button>
+      <button class="card-fav"
+        onclick="event.stopPropagation(); toggleRecipeFavorite('${r.id}'); renderRecipeBook();"
+        title="${r.favorite ? t('favorite_remove') : t('favorite_add')}">${r.favorite ? '★' : '☆'}</button>
       <div class="card-name">${highlight(r.name || '', q)}</div>
       <div class="card-meta">${r.category || ''} · ${r.time || ''}</div>
       ${domainLabel ? `<div class="card-origin">${domainLabel}</div>` : ''}
@@ -581,6 +608,7 @@ function confirmDeleteRecipe(id) {
 function openSavedDetail(id) {
   const r = loadRecipeBook().find(x => x.id === id);
   if (!r) return;
+  markRecipeViewed(id); // Mark as viewed
   document.getElementById('saved-list-view').style.display = 'none';
   const dv = document.getElementById('saved-detail-view');
   dv.style.display = 'block';
@@ -588,6 +616,11 @@ function openSavedDetail(id) {
     `document.getElementById('saved-list-view').style.display='';
      document.getElementById('saved-detail-view').style.display='none';`
   ) + `
+    <div class="detail-actions">
+      <button class="btn-secondary" onclick="toggleRecipeFavorite('${r.id}'); openSavedDetail('${r.id}');">
+        ${r.favorite ? t('favorite_remove') : t('favorite_add')}
+      </button>
+    </div>
     <div class="notes-box card">
       <div class="sec-label">${t('recipe_notes')}</div>
       <textarea id="recipe-notes-input" class="notes-textarea"
@@ -637,9 +670,9 @@ async function handleImportBackup(event) {
    BUILT-IN RECIPES
    ================================================================ */
 
-let activeBuiltinCategory  = '__all__';
+let activeBuiltinCategory = '__all__';
 let activePreparationFilter = 'all';      // 'all' | 'classic' | 'bimby' | 'airfryer'
-let maxTimeFilter          = 120;
+let maxTimeFilter = 120;
 
 function getBuiltinCategories() {
   return ['__all__', ...new Set(BUILTIN_RECIPES.map(r => r.category))];
@@ -648,7 +681,7 @@ function getBuiltinCategories() {
 function renderBuiltinCategories() {
   const cont = document.getElementById('builtin-cats');
   cont.innerHTML = getBuiltinCategories().map(c => {
-    const label  = c === '__all__' ? t('builtin_filter_all') : c;
+    const label = c === '__all__' ? t('builtin_filter_all') : c;
     const active = c === activeBuiltinCategory ? ' active' : '';
     return `<button class="src-pill${active}"
       onclick="activeBuiltinCategory='${c}'; renderBuiltinCategories(); renderBuiltinRecipes();">${label}</button>`;
@@ -662,9 +695,9 @@ function renderBuiltinFilters() {
   if (!container) return;
 
   const isDefaultPreparation = activePreparationFilter === 'all';
-  const isDefaultTime   = maxTimeFilter >= 120;
-  const q               = document.getElementById('builtin-search')?.value || '';
-  const showReset       = activeBuiltinCategory !== '__all__' || !isDefaultPreparation || !isDefaultTime || q;
+  const isDefaultTime = maxTimeFilter >= 120;
+  const q = document.getElementById('builtin-search')?.value || '';
+  const showReset = activeBuiltinCategory !== '__all__' || !isDefaultPreparation || !isDefaultTime || q;
 
   const timeLabel = isDefaultTime
     ? t('filter_any_time')
@@ -673,13 +706,13 @@ function renderBuiltinFilters() {
   container.innerHTML = `
     <div class="filter-row">
       <span class="filter-label">${t('filter_method')}:</span>
-      <button class="src-pill${activePreparationFilter === 'all'       ? ' active' : ''}"
+      <button class="src-pill${activePreparationFilter === 'all' ? ' active' : ''}"
         onclick="activePreparationFilter='all';       renderBuiltinFilters(); renderBuiltinRecipes();">${t('filter_all')}</button>
-      <button class="src-pill${activePreparationFilter === 'classic'   ? ' active' : ''}"
+      <button class="src-pill${activePreparationFilter === 'classic' ? ' active' : ''}"
         onclick="activePreparationFilter='classic';   renderBuiltinFilters(); renderBuiltinRecipes();">${t('filter_classic')}</button>
-      <button class="src-pill${activePreparationFilter === 'bimby'     ? ' active' : ''}"
+      <button class="src-pill${activePreparationFilter === 'bimby' ? ' active' : ''}"
         onclick="activePreparationFilter='bimby';     renderBuiltinFilters(); renderBuiltinRecipes();">${t('filter_bimby')}</button>
-      <button class="src-pill${activePreparationFilter === 'airfryer'  ? ' active' : ''}"
+      <button class="src-pill${activePreparationFilter === 'airfryer' ? ' active' : ''}"
         onclick="activePreparationFilter='airfryer';  renderBuiltinFilters(); renderBuiltinRecipes();">${t('filter_airfryer')}</button>
     </div>
     <div class="filter-row time-slider-row">
@@ -699,7 +732,7 @@ function renderBuiltinFilters() {
 function resetBuiltinFilters() {
   activeBuiltinCategory = '__all__';
   activePreparationFilter = 'all';
-  maxTimeFilter         = 120;
+  maxTimeFilter = 120;
   const searchEl = document.getElementById('builtin-search');
   if (searchEl) searchEl.value = '';
   renderBuiltinCategories();
@@ -712,7 +745,7 @@ function renderBuiltinRecipes() {
 
   renderBuiltinFilters();
 
-  const q   = (document.getElementById('builtin-search')?.value || '').trim();
+  const q = (document.getElementById('builtin-search')?.value || '').trim();
   const fil = BUILTIN_RECIPES
     .filter(r => recipeMatchesQuery(r, q))
     .filter(r => activeBuiltinCategory === '__all__' || r.category === activeBuiltinCategory)
@@ -748,13 +781,13 @@ function openBuiltinDetail(id) {
   const r = BUILTIN_RECIPES.find(x => x.id === id);
   if (!r) return;
 
-  const grid    = document.getElementById('builtin-grid');
+  const grid = document.getElementById('builtin-grid');
   const toolbar = document.getElementById('builtin-toolbar');
-  const detail  = document.getElementById('builtin-detail');
+  const detail = document.getElementById('builtin-detail');
 
-  grid.style.display    = 'none';
+  grid.style.display = 'none';
   toolbar.style.display = 'none';
-  detail.style.display  = 'block';
+  detail.style.display = 'block';
 
   const saveBtn = `<button class="btn-primary" onclick="saveBuiltinRecipe('${r.id}')">${t('builtin_save')}</button>`;
 
@@ -767,7 +800,7 @@ function openBuiltinDetail(id) {
 }
 
 function saveBuiltinRecipe(id) {
-  const r  = BUILTIN_RECIPES.find(x => x.id === id);
+  const r = BUILTIN_RECIPES.find(x => x.id === id);
   if (!r) return;
   const ok = addRecipe({ ...r });
   if (ok) {

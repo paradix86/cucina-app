@@ -45,6 +45,7 @@ const TRANSLATIONS = {
     import_diag_adapter: 'Adapter',
     import_diag_stage: 'Fase fallita',
     import_diag_reason: 'Motivo',
+    import_diag_hint: 'Sezioni trovate nella pagina',
 
     // Built-in recipes
     builtin_search: 'Cerca…',
@@ -111,6 +112,11 @@ const TRANSLATIONS = {
     filter_reset: 'Reimposta filtri',
     results_showing: 'Mostra {n} di {total}',
 
+    filter_favorites: 'Preferiti',
+    filter_recent: 'Recenti',
+    favorite_add: 'Aggiungi ai preferiti',
+    favorite_remove: 'Rimuovi dai preferiti',
+
     // Misc
     delete_confirm: 'Eliminare questa ricetta dal ricettario?',
     app_subtitle: 'Ricette · Bimby TM5 · Timer',
@@ -160,6 +166,7 @@ const TRANSLATIONS = {
     import_diag_adapter: 'Adapter',
     import_diag_stage: 'Failed stage',
     import_diag_reason: 'Reason',
+    import_diag_hint: 'Page sections found',
 
     builtin_search: 'Search…',
 
@@ -222,6 +229,11 @@ const TRANSLATIONS = {
     filter_reset: 'Reset filters',
     results_showing: 'Showing {n} of {total}',
 
+    filter_favorites: 'Favorites',
+    filter_recent: 'Recent',
+    favorite_add: 'Add to favorites',
+    favorite_remove: 'Remove from favorites',
+
     delete_confirm: 'Remove this recipe from your book?',
     app_subtitle: 'Recipes · Bimby TM5 · Timer',
     theme_label: 'Theme',
@@ -265,6 +277,12 @@ const TRANSLATIONS = {
     import_invalid_url: 'Bitte einen gültigen Link eingeben.',
     import_save: 'Im Rezeptbuch speichern',
     import_discard: 'Verwerfen',
+    import_diag_title: 'Diagnose',
+    import_diag_domain: 'Erkannte Domain',
+    import_diag_adapter: 'Adapter',
+    import_diag_stage: 'Fehlgeschlagene Phase',
+    import_diag_reason: 'Grund',
+    import_diag_hint: 'Gefundene Seitenabschnitte',
 
     builtin_search: 'Suchen…',
     builtin_filter_all: 'Alle',
@@ -326,6 +344,11 @@ const TRANSLATIONS = {
     filter_reset: 'Filter zurücksetzen',
     results_showing: '{n} von {total}',
 
+    filter_favorites: 'Favoriten',
+    filter_recent: 'Kürzlich',
+    favorite_add: 'Zu Favoriten hinzufügen',
+    favorite_remove: 'Aus Favoriten entfernen',
+
     delete_confirm: 'Dieses Rezept aus dem Buch entfernen?',
     app_subtitle: 'Rezepte · Bimby TM5 · Timer',
     theme_label: 'Design',
@@ -369,6 +392,12 @@ const TRANSLATIONS = {
     import_invalid_url: 'Veuillez entrer un lien valide.',
     import_save: 'Sauvegarder dans le livre',
     import_discard: 'Abandonner',
+    import_diag_title: 'Diagnostics',
+    import_diag_domain: 'Domaine détecté',
+    import_diag_adapter: 'Adaptateur',
+    import_diag_stage: 'Étape échouée',
+    import_diag_reason: 'Raison',
+    import_diag_hint: 'Sections trouvées sur la page',
 
     builtin_search: 'Rechercher…',
     builtin_filter_all: 'Tout',
@@ -430,6 +459,11 @@ const TRANSLATIONS = {
     filter_reset: 'Réinitialiser les filtres',
     results_showing: '{n} sur {total}',
 
+    filter_favorites: 'Favoris',
+    filter_recent: 'Récents',
+    favorite_add: 'Ajouter aux favoris',
+    favorite_remove: 'Retirer des favoris',
+
     delete_confirm: 'Supprimer cette recette du livre?',
     app_subtitle: 'Recettes · Bimby TM5 · Minuteur',
     theme_label: 'Thème',
@@ -473,6 +507,12 @@ const TRANSLATIONS = {
     import_invalid_url: 'Por favor introduce un enlace válido.',
     import_save: 'Guardar en el recetario',
     import_discard: 'Descartar',
+    import_diag_title: 'Diagnóstico',
+    import_diag_domain: 'Dominio detectado',
+    import_diag_adapter: 'Adaptador',
+    import_diag_stage: 'Fase fallida',
+    import_diag_reason: 'Motivo',
+    import_diag_hint: 'Secciones encontradas en la página',
 
     builtin_search: 'Buscar…',
     builtin_filter_all: 'Todo',
@@ -534,6 +574,11 @@ const TRANSLATIONS = {
     filter_reset: 'Restablecer filtros',
     results_showing: '{n} de {total}',
 
+    filter_favorites: 'Favoritos',
+    filter_recent: 'Recientes',
+    favorite_add: 'Añadir a favoritos',
+    favorite_remove: 'Quitar de favoritos',
+
     delete_confirm: '¿Eliminar esta receta del recetario?',
     app_subtitle: 'Recetas · Bimby TM5 · Temporizador',
     theme_label: 'Tema',
@@ -587,6 +632,8 @@ function t(key, vars) {
   }
   return str;
 }
+
+window.t = t;
 
 /**
  * Update all elements with data-i18n / data-i18n-placeholder attributes.

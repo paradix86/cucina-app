@@ -4,9 +4,17 @@
  */
 
 async function fetchReadableImportPage(url) {
-  const resp = await fetch(`https://r.jina.ai/http://${url}`);
+  const resp = await fetch(`https://r.jina.ai/${url}`);
   if (!resp.ok) throw new Error(`WEB_FETCH_${resp.status}`);
   return resp.text();
+}
+
+function extractPageHeadingsHint(markdown) {
+  const headings = (markdown || '').split('\n')
+    .map(l => l.trim())
+    .filter(l => /^#{1,3} /.test(l))
+    .slice(0, 8);
+  return headings.length ? headings.join(' · ') : null;
 }
 
 function inferImportFailureStage(message) {
@@ -34,10 +42,11 @@ async function importRecipe() {
   setImportStatus(t('import_loading'), 'loading');
   clearImportDiagnostics();
 
+  let _fetchedMarkdown = null;
   try {
     if (source === 'web') {
-      const markdown = await fetchReadableImportPage(url);
-      const recipe = importWebsiteRecipeWithAdapters(markdown, url);
+      _fetchedMarkdown = await fetchReadableImportPage(url);
+      const recipe = importWebsiteRecipeWithAdapters(_fetchedMarkdown, url);
       pendingRecipe = recipe;
       showImportPreview(recipe);
       setImportStatus(t('import_success'), 'ok');
@@ -110,11 +119,15 @@ Rispondi SOLO con un oggetto JSON valido, senza backtick, senza testo aggiuntivo
 
     if (source === 'web') {
       const stage = inferImportFailureStage(rawError);
+      const hint = _fetchedMarkdown && stage === 'parse-content'
+        ? extractPageHeadingsHint(_fetchedMarkdown)
+        : null;
       showImportDiagnostics({
         domain: domain || url,
         adapter: adapterLabel,
         stage,
         reason: rawError || t('import_error'),
+        hint,
       });
     } else {
       clearImportDiagnostics();

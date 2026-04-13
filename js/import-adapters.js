@@ -181,7 +181,10 @@ function parseRicettePerBimbyAdapter(markdown, url) {
   const servingsMatch = md.match(/Quantità\s*\n+\s*([^\n]+)/i);
 
   const ingredientsStart = md.indexOf('## Ingredienti');
-  const stepsStart = md.indexOf('## Come fare il', ingredientsStart);
+  // Matches "## Come fare il/i/la/le/l'/lo …" and "## Come preparare …" and "## Come cucinare …"
+  const stepsSearchIdx = ingredientsStart >= 0 ? ingredientsStart : 0;
+  const stepsRelIdx = md.slice(stepsSearchIdx).search(/^## Come (?:fare|preparare|cucinare)\b/m);
+  const stepsStart = stepsRelIdx >= 0 ? stepsSearchIdx + stepsRelIdx : -1;
   if (ingredientsStart === -1 || stepsStart === -1) throw new Error('RPB_SECTIONS_NOT_FOUND');
 
   const ingredients = md

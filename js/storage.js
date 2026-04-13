@@ -2,7 +2,7 @@
  * storage.js — Personal recipe book management via localStorage
  */
 
-const STORAGE_KEY    = 'cucina_recipebook_v3';
+const STORAGE_KEY = 'cucina_recipebook_v3';
 const STORAGE_KEY_V2 = 'cucina_ricettario_v2';
 
 function normalizePreparationTypeValue(value) {
@@ -22,6 +22,8 @@ function normalizeStoredRecipe(recipe) {
     ...recipe,
     preparationType,
     bimby: recipe?.bimby != null ? recipe.bimby : preparationType === 'bimby',
+    favorite: recipe?.favorite || false,
+    lastViewedAt: recipe?.lastViewedAt || undefined,
   };
 }
 
@@ -31,28 +33,28 @@ function normalizeStoredRecipe(recipe) {
  */
 function migrateFromV2() {
   if (!localStorage.getItem(STORAGE_KEY_V2)) return;   // nothing to migrate
-  if (localStorage.getItem(STORAGE_KEY))     return;   // v3 already exists
+  if (localStorage.getItem(STORAGE_KEY)) return;   // v3 already exists
 
   try {
     const arr = JSON.parse(localStorage.getItem(STORAGE_KEY_V2) || '[]');
     if (!Array.isArray(arr)) return;
 
     const migrated = arr.map(r => ({
-      id:           r.id,
-      name:         r.nome         || r.name         || '',
-      category:     r.cat          || r.category      || '',
-      bimby:        r.bimby        != null ? r.bimby  : false,
-      emoji:        r.emoji        || '🍴',
-      time:         r.tempo        || r.time          || '',
-      servings:     r.porzioni     || r.servings       || '',
-      source:       r.fonte        || r.source         || 'web',
+      id: r.id,
+      name: r.nome || r.name || '',
+      category: r.cat || r.category || '',
+      bimby: r.bimby != null ? r.bimby : false,
+      emoji: r.emoji || '🍴',
+      time: r.tempo || r.time || '',
+      servings: r.porzioni || r.servings || '',
+      source: r.fonte || r.source || 'web',
       preparationType: normalizePreparationTypeValue(r.preparationType) || (r.bimby ? 'bimby' : 'classic'),
       sourceDomain: r.sourceDomain || undefined,
-      ingredients:  r.ingredienti  || r.ingredients    || [],
-      steps:        r.steps        || [],
-      timerMinutes: r.timerMin     !== undefined ? r.timerMin : (r.timerMinutes || 0),
-      url:          r.url          || undefined,
-      difficolta:   r.difficolta   || undefined,
+      ingredients: r.ingredienti || r.ingredients || [],
+      steps: r.steps || [],
+      timerMinutes: r.timerMin !== undefined ? r.timerMin : (r.timerMinutes || 0),
+      url: r.url || undefined,
+      difficolta: r.difficolta || undefined,
     }));
 
     saveRecipeBook(migrated);
@@ -100,12 +102,30 @@ function updateRecipeNotes(id, notes) {
   return true;
 }
 
+function toggleRecipeFavorite(id) {
+  const arr = loadRecipeBook();
+  const idx = arr.findIndex(recipe => recipe.id === id);
+  if (idx === -1) return false;
+  arr[idx].favorite = !arr[idx].favorite;
+  saveRecipeBook(arr);
+  return true;
+}
+
+function markRecipeViewed(id) {
+  const arr = loadRecipeBook();
+  const idx = arr.findIndex(recipe => recipe.id === id);
+  if (idx === -1) return false;
+  arr[idx].lastViewedAt = Date.now();
+  saveRecipeBook(arr);
+  return true;
+}
+
 function exportRecipeBook() {
-  const arr  = loadRecipeBook();
+  const arr = loadRecipeBook();
   const blob = new Blob([JSON.stringify(arr, null, 2)], { type: 'application/json' });
-  const a    = document.createElement('a');
-  const url  = URL.createObjectURL(blob);
-  a.href     = url;
+  const a = document.createElement('a');
+  const url = URL.createObjectURL(blob);
+  a.href = url;
   a.download = 'ricettario_backup.json';
   a.click();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
@@ -121,7 +141,7 @@ function importRecipeBook(file) {
         if (!Array.isArray(arr)) throw new Error('Invalid format');
         const incoming = arr.map(normalizeStoredRecipe);
         const existing = loadRecipeBook();
-        const merged   = [...incoming, ...existing.filter(r => !incoming.find(a => a.id === r.id))];
+        const merged = [...incoming, ...existing.filter(r => !incoming.find(a => a.id === r.id))];
         saveRecipeBook(merged);
         resolve(merged.length);
       } catch (err) {
