@@ -26,6 +26,7 @@ function migrateFromV2() {
       time:         r.tempo        || r.time          || '',
       servings:     r.porzioni     || r.servings       || '',
       source:       r.fonte        || r.source         || 'web',
+      sourceDomain: r.sourceDomain || undefined,
       ingredients:  r.ingredienti  || r.ingredients    || [],
       steps:        r.steps        || [],
       timerMinutes: r.timerMin     !== undefined ? r.timerMin : (r.timerMinutes || 0),

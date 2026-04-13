@@ -59,6 +59,39 @@ async function fetchReadableImportPage(url) {
   return resp.text();
 }
 
+function cleanGialloZafferanoTitle(title) {
+  return stripImportMarkdownNoise(title)
+    .replace(/^Ricetta\s+/i, '')
+    .replace(/\s*-\s*La Ricetta di GialloZafferano\s*$/i, '')
+    .trim();
+}
+
+function parseGialloZafferanoIngredients(block) {
+  const cleanedBlock = normalizeImportText(
+    (block || '').replace(/!\[[^\]]*]\([^)]*\)/g, ' ')
+  );
+  const firstIngredientIdx = cleanedBlock.search(/\[[^\]]+\]\([^)]*\)/);
+  if (firstIngredientIdx === -1) return [];
+
+  return cleanedBlock
+    .slice(firstIngredientIdx)
+    .split(/(?=\[[^\]]+\]\([^)]*\))/g)
+    .map(chunk => {
+      const match = chunk.match(/^\[([^\]]+)\]\([^)]*\)\s*(.*)$/s);
+      if (!match) return null;
+
+      const name = match[1].trim();
+      const rest = normalizeImportText(match[2])
+        .replace(/\s*!+\s*/g, ' ')
+        .replace(/\s{2,}/g, ' ')
+        .trim();
+
+      if (!rest) return name;
+      return `${name} ${rest}`.trim();
+    })
+    .filter(Boolean);
+}
+
 function parseGialloZafferanoImport(markdown, url) {
   const md = normalizeImportText(markdown);
   const titleMatch = md.match(/^#\s+(.+)$/m);
@@ -76,10 +109,7 @@ function parseGialloZafferanoImport(markdown, url) {
   if (ingredientsStart === -1 || ingredientsEnd === -1) throw new Error('GZ_INGREDIENTS_NOT_FOUND');
 
   const ingredientsBlock = md.slice(ingredientsStart, ingredientsEnd);
-  const ingredientMatches = [...ingredientsBlock.matchAll(/\[([^\]]+)\]\([^)]*\)\s*(?:!\[[^\]]*]\([^)]*\)\s*)?(\([^\n)]*\)\s*)?((?:\d+[^\[\n]*|q\.b\.))/g)];
-  const ingredients = ingredientMatches.map(([, name, extra, qty]) =>
-    `${name.trim()} ${((extra || '') + qty).replace(/\s*!+\s*$/, '').trim()}`
-  );
+  const ingredients = parseGialloZafferanoIngredients(ingredientsBlock);
 
   const steps = md
     .slice(stepsStart, stepsEnd)
@@ -96,7 +126,7 @@ function parseGialloZafferanoImport(markdown, url) {
 
   return {
     id: 'imp_' + Date.now(),
-    name: stripImportMarkdownNoise(titleMatch[1]).replace(/:.*$/, '').trim(),
+    name: cleanGialloZafferanoTitle(titleMatch[1]).replace(/:.*$/, '').trim(),
     category,
     emoji: inferImportEmoji(category),
     time: [prep, cook].filter(Boolean).join(' + ') || 'n.d.',
@@ -106,6 +136,7 @@ function parseGialloZafferanoImport(markdown, url) {
     steps,
     timerMinutes: parseImportMinutes(cook),
     source: 'web',
+    sourceDomain: normalizeSourceDomain(url),
     url,
   };
 }
@@ -180,6 +211,7 @@ Rispondi SOLO con un oggetto JSON valido, senza backtick, senza testo aggiuntivo
 
     recipe.id = 'imp_' + Date.now();
     recipe.source = source;
+    recipe.sourceDomain = normalizeSourceDomain(url);
     recipe.url = url;
 
     pendingRecipe = recipe;

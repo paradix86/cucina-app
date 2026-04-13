@@ -13,6 +13,26 @@ const ANTHROPIC_API_KEY = ''; // leave empty when using the claude.ai proxy
 
 let pendingRecipe = null;
 
+function normalizeSourceDomain(url) {
+  try {
+    let hostname = new URL(url).hostname.toLowerCase().replace(/^www\./, '');
+    if (hostname === 'youtu.be' || hostname.endsWith('.youtube.com')) hostname = 'youtube.com';
+    if (hostname.endsWith('.instagram.com')) hostname = 'instagram.com';
+    if (hostname.endsWith('.tiktok.com')) hostname = 'tiktok.com';
+    const parts = hostname.split('.').filter(Boolean);
+    if (parts.length >= 3) {
+      const tail = parts.slice(-2).join('.');
+      if (tail === 'co.uk' || tail === 'com.br' || tail === 'com.au') {
+        return parts.slice(-3).join('.');
+      }
+      return tail;
+    }
+    return hostname;
+  } catch {
+    return '';
+  }
+}
+
 function normalizeText(s) {
   return (s || '')
     .replace(/\r/g, '')
@@ -70,6 +90,39 @@ async function fetchReadablePage(url) {
   return resp.text();
 }
 
+function cleanGialloZafferanoTitle(title) {
+  return stripMarkdownNoise(title)
+    .replace(/^Ricetta\s+/i, '')
+    .replace(/\s*-\s*La Ricetta di GialloZafferano\s*$/i, '')
+    .trim();
+}
+
+function parseGialloZafferanoIngredients(block) {
+  const cleanedBlock = normalizeText(
+    (block || '').replace(/!\[[^\]]*]\([^)]*\)/g, ' ')
+  );
+  const firstIngredientIdx = cleanedBlock.search(/\[[^\]]+\]\([^)]*\)/);
+  if (firstIngredientIdx === -1) return [];
+
+  return cleanedBlock
+    .slice(firstIngredientIdx)
+    .split(/(?=\[[^\]]+\]\([^)]*\))/g)
+    .map(chunk => {
+      const match = chunk.match(/^\[([^\]]+)\]\([^)]*\)\s*(.*)$/s);
+      if (!match) return null;
+
+      const name = match[1].trim();
+      const rest = normalizeText(match[2])
+        .replace(/\s*!+\s*/g, ' ')
+        .replace(/\s{2,}/g, ' ')
+        .trim();
+
+      if (!rest) return name;
+      return `${name} ${rest}`.trim();
+    })
+    .filter(Boolean);
+}
+
 function parseGialloZafferanoRecipe(markdown, url) {
   const md = normalizeText(markdown);
   const titleMatch = md.match(/^#\s+(.+)$/m);
@@ -87,10 +140,7 @@ function parseGialloZafferanoRecipe(markdown, url) {
   if (ingredientsStart === -1 || ingredientsEnd === -1) throw new Error('GZ_INGREDIENTS_NOT_FOUND');
 
   const ingredientsBlock = md.slice(ingredientsStart, ingredientsEnd);
-  const ingredientMatches = [...ingredientsBlock.matchAll(/\[([^\]]+)\]\([^)]*\)\s*(?:!\[[^\]]*]\([^)]*\)\s*)?(\([^\n)]*\)\s*)?((?:\d+[^\[\n]*|q\.b\.))/g)];
-  const ingredients = ingredientMatches.map(([, name, extra, qty]) =>
-    `${name.trim()} ${((extra || '') + qty).replace(/\s*!+\s*$/, '').trim()}`
-  );
+  const ingredients = parseGialloZafferanoIngredients(ingredientsBlock);
 
   const stepsBlock = md.slice(stepsStart, stepsEnd);
   const steps = stepsBlock
@@ -108,7 +158,7 @@ function parseGialloZafferanoRecipe(markdown, url) {
 
   return {
     id: 'imp_' + Date.now(),
-    name: stripMarkdownNoise(titleMatch[1]).replace(/:.*$/, '').trim(),
+    name: cleanGialloZafferanoTitle(titleMatch[1]).replace(/:.*$/, '').trim(),
     category,
     emoji: inferEmoji(category),
     time: totalTime || 'n.d.',
@@ -118,6 +168,7 @@ function parseGialloZafferanoRecipe(markdown, url) {
     steps,
     timerMinutes: parseMinutesFromText(cook),
     source: 'web',
+    sourceDomain: normalizeSourceDomain(url),
     url,
   };
 }
@@ -211,6 +262,7 @@ Rispondi SOLO con un oggetto JSON valido, senza backtick, senza testo aggiuntivo
 
     recipe.id     = 'imp_' + Date.now();
     recipe.source = source;
+    recipe.sourceDomain = normalizeSourceDomain(url);
     recipe.url    = url;
 
     pendingRecipe = recipe;

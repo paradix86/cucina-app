@@ -138,6 +138,21 @@ function getSourceInfo(source) {
   }
 }
 
+function getSourceDomainLabel(domain) {
+  const normalized = String(domain || '').trim().toLowerCase();
+  if (!normalized) return '';
+  const pretty = {
+    'giallozafferano.it': 'GialloZafferano',
+    'youtube.com': 'YouTube',
+    'youtu.be': 'YouTube',
+    'instagram.com': 'Instagram',
+    'tiktok.com': 'TikTok',
+    'cookidoo.it': 'Cookidoo',
+    'allrecipes.com': 'Allrecipes',
+  };
+  return pretty[normalized] || normalized;
+}
+
 /* ================================================================
    RECIPE DETAIL BUILDERS
    ================================================================ */
@@ -182,6 +197,9 @@ function buildDetailHtml(r, onBack) {
   const basePort = parseInt(r.servings) || 4;
   const ingHtml  = (r.ingredients || []).map(i => `<li>${i}</li>`).join('');
   const stepHtml = buildStepsHtml(r.steps || [], r.bimby);
+  const sourceDomainHtml = r.sourceDomain
+    ? `<p class="detail-origin"><span class="sec-label-inline">${t('detail_source_site')}:</span> ${getSourceDomainLabel(r.sourceDomain)}</p>`
+    : '';
 
   const timerBtn = r.timerMinutes > 0
     ? `<button class="btn-primary" onclick="startRecipeTimer('${r.name.replace(/'/g, "\\'")}', ${r.timerMinutes})">
@@ -211,6 +229,7 @@ function buildDetailHtml(r, onBack) {
       <span class="card-src ${s.cls}">${s.txt}</span>
       <h2 class="detail-title">${r.emoji || '🍴'} ${r.name}</h2>
       <p class="detail-meta">${r.category || ''} · ${r.time || ''}${r.difficolta ? ' · ' + r.difficolta : ''}</p>
+      ${sourceDomainHtml}
 
       ${servingsCtrl}
 
@@ -506,6 +525,7 @@ function renderRecipeBook() {
 
   grid.innerHTML = fil.map(r => {
     const s = getSourceInfo(r.source || 'web');
+    const domainLabel = r.sourceDomain ? getSourceDomainLabel(r.sourceDomain) : '';
     return `<div class="ricetta-card" onclick="openSavedDetail('${r.id}')">
       <span class="card-src ${s.cls}">${s.txt}</span>
       <button class="card-del btn-danger"
@@ -513,6 +533,7 @@ function renderRecipeBook() {
         title="✕">✕</button>
       <div class="card-name">${highlight(r.name || '', q)}</div>
       <div class="card-meta">${r.category || ''} · ${r.time || ''}</div>
+      ${domainLabel ? `<div class="card-origin">${domainLabel}</div>` : ''}
     </div>`;
   }).join('');
 }
