@@ -9,11 +9,17 @@ const APP_META = {
   authorLine: 'Made with <3 by Alan in Switzerland',
 };
 
+function formatEuropeanDate(isoDate) {
+  const match = String(isoDate || '').match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!match) return String(isoDate || '');
+  return `${match[3]}-${match[2]}-${match[1]}`;
+}
+
 function renderFooter() {
   const footer = document.getElementById('app-footer');
   if (!footer) return;
   const year = new Date().getFullYear();
-  footer.textContent = `${APP_META.authorLine} · ${year} · ${APP_META.version} · build ${APP_META.buildDate}`;
+  footer.textContent = `${APP_META.authorLine} · ${year} · ${APP_META.version} · build ${formatEuropeanDate(APP_META.buildDate)}`;
 }
 
 function applyThemePreference(theme) {

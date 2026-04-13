@@ -479,6 +479,27 @@ function showTab(id, el) {
   if (id === 'timer')   renderTimers();
 }
 
+function goHome() {
+  if (document.querySelector('.cooking-mode')) {
+    exitCookingMode();
+  }
+
+  const savedList = document.getElementById('saved-list-view');
+  const savedDetail = document.getElementById('saved-detail-view');
+  if (savedList) savedList.style.display = '';
+  if (savedDetail) savedDetail.style.display = 'none';
+
+  const builtinGrid = document.getElementById('builtin-grid');
+  const builtinToolbar = document.getElementById('builtin-toolbar');
+  const builtinDetail = document.getElementById('builtin-detail');
+  if (builtinGrid) builtinGrid.style.display = '';
+  if (builtinToolbar) builtinToolbar.style.display = '';
+  if (builtinDetail) builtinDetail.style.display = 'none';
+
+  const firstTab = document.querySelector('.tab');
+  if (firstTab) showTab('saved', firstTab);
+}
+
 /* ================================================================
    RECIPE BOOK (saved)
    ================================================================ */

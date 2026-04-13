@@ -2,7 +2,7 @@
  * sw.js — Service Worker: cache-first per tutti gli asset statici
  */
 
-const CACHE_NAME = 'cucina-v13';
+const CACHE_NAME = 'cucina-v15';
 
 const STATIC_ASSETS = [
   './',
@@ -15,6 +15,7 @@ const STATIC_ASSETS = [
   './js/toast.js',
   './js/timer.js',
   './js/import.js',
+  './js/import-adapters.js',
   './js/import-web.js',
   './js/ui.js',
   './js/app.js',

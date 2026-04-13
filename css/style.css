@@ -81,6 +81,8 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 body {
+  display: flex;
+  flex-direction: column;
   font-family: var(--font);
   font-size: 16px;
   line-height: 1.6;
@@ -90,6 +92,8 @@ body {
 }
 
 .app-footer {
+  margin-top: auto;
+  width: 100%;
   padding: 14px 1.5rem 22px;
   text-align: center;
   font-size: 12px;
@@ -107,6 +111,23 @@ body {
   position: sticky;
   top: 0;
   z-index: 10;
+}
+.app-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: inherit;
+  font: inherit;
+  padding: 0;
+}
+.app-brand:hover { opacity: .9; }
+.app-brand:focus-visible {
+  outline: 2px solid var(--green);
+  outline-offset: 4px;
+  border-radius: var(--radius-sm);
 }
 .app-logo { font-size: 22px; }
 .app-header h1 { font-size: 18px; font-weight: 600; }
@@ -146,7 +167,8 @@ body {
 
 /* ---- LAYOUT ---- */
 .app {
-  max-width: 960px;
+  flex: 1 0 auto;
+  width: min(100%, 1100px);
   margin: 0 auto;
   padding: 1.25rem 1rem 4rem;
 }
@@ -538,6 +560,8 @@ input[type="number"] { text-align: center; }
   gap: 6px;
   flex-wrap: wrap;
   align-items: center;
+  justify-content: center;
+  width: 100%;
   margin-bottom: 8px;
 }
 .filter-label {
@@ -550,7 +574,7 @@ input[type="number"] { text-align: center; }
 .time-slider-row input[type="range"] {
   flex: 1;
   min-width: 80px;
-  max-width: 160px;
+  max-width: 420px;
   accent-color: var(--green);
   cursor: pointer;
 }
@@ -578,6 +602,31 @@ input[type="number"] { text-align: center; }
   color: var(--text-muted);
   margin-bottom: 8px;
   min-height: 1em;
+}
+
+#builtin-toolbar {
+  max-width: 980px;
+  margin: 0 auto 1rem;
+}
+#builtin-cats,
+#builtin-filters {
+  width: 100%;
+}
+#builtin-cats.filter-row,
+#builtin-filters .filter-row {
+  justify-content: center;
+}
+#builtin-filters {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+#builtin-filters .time-slider-row {
+  max-width: 780px;
+  padding-inline: .5rem;
+}
+#builtin-results-count {
+  text-align: center;
 }
 
 /* ---- Toasts ---- */
