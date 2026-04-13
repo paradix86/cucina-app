@@ -11,6 +11,7 @@ test-screenshots/
 playwright-report/
 test-results/
 .playwright/
+.playwright-mcp/
 
 # OS
 .DS_Store
