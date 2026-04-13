@@ -1,290 +1,280 @@
 # Cucina App Project Plan
 
-Questo file serve come backlog operativo e riferimento rapido per sviluppo umano o con Codex.
+This file serves as an operational backlog and quick reference for both human development and agent-assisted work.
 
 ## Goals
 
-- Rendere l'app piu utile durante la cucina reale su tablet/touchscreen.
-- Migliorare UX, persistenza locale e affidabilita offline.
-- Aggiungere funzioni organizzative senza introdurre dipendenze o build step.
+- Make the app more useful during real cooking sessions on tablets and touchscreens
+- Improve UX, local persistence, and offline reliability
+- Add organizational features without introducing dependencies or a build step
 
 ## Constraints
 
-- Vanilla JS, HTML, CSS.
-- Nessuna dipendenza esterna.
-- Nessun build step.
-- Tutte le stringhe UI devono passare da `t('key')` in [js/i18n.js](/mnt/c/Sources/cucina-app/js/i18n.js).
-- Se cambia un asset cached dal service worker, aggiornare `CACHE_NAME` in [sw.js](/mnt/c/Sources/cucina-app/sw.js).
-- Persistenza solo via `localStorage` salvo decisione esplicita diversa.
+- Vanilla JS, HTML, CSS
+- No external dependencies
+- No build step
+- All user-facing strings must go through `t('key')` in `js/i18n.js`
+- If a cached static asset changes, update `CACHE_NAME` in `sw.js`
+- Persistence should remain `localStorage`-only unless there is an explicit decision to change it
 
 ## Release Order
 
-### Milestone 1 - Cooking Core
+### Milestone 1 — Cooking Core
+- [x] `Step-by-step cooking mode` — `M`
+- [x] `Toast notifications` — `S`
+- [x] `Manual dark mode toggle` — `S`
 
-- [ ] `Step-by-step cooking mode` - `M`
-- [ ] `Toast notifications` - `S`
-- [ ] `Dark mode toggle manuale` - `S`
+### Milestone 2 — Personal Recipe Book
+- [x] `Personal notes on recipes` — `S`
+- [x] `Export / Import backup JSON (UI)` — `S`
+- [ ] `Manual import (form)` — `M`
 
-### Milestone 2 - Personal Recipe Book
+### Milestone 3 — Planning
+- [ ] `Shopping list` — `M`
+- [ ] `Weekly planner` — `L`
 
-- [ ] `Note personali sulle ricette` - `S`
-- [ ] `Export / Import backup JSON (UI)` - `S`
-- [ ] `Import manuale (form)` - `M`
+### Milestone 4 — Project Hygiene
+- [x] `AGENTS.md` — `S`
+- [ ] `CONTRIBUTING.md` — `S`
 
-### Milestone 3 - Planning
-
-- [ ] `Lista della spesa` - `M`
-- [ ] `Pianificatore settimanale` - `L`
-
-### Milestone 4 - Project Hygiene
-
-- [ ] `AGENTS.md` - `S`
-- [ ] `CONTRIBUTING.md` - `S`
-
-### Milestone 5 - Smart Features
-
-- [ ] `Preferiti` - `S`
-- [ ] `Tag personalizzati` - `M`
-- [ ] `Ricette recenti` - `S`
-- [ ] `Filtri avanzati` - `M`
-- [ ] `Meal prep / batch cooking` - `M`
-- [ ] `Suggerimenti da dispensa` - `L`
+### Milestone 5 — Smart Features
+- [ ] `Favorites` — `S`
+- [ ] `Custom tags` — `M`
+- [ ] `Recent recipes` — `S`
+- [ ] `Advanced filters` — `M`
+- [ ] `Meal prep / batch cooking` — `M`
+- [ ] `Pantry suggestions` — `L`
 
 ## Prioritized Backlog
 
 ### P0
-
-1. Step-by-step cooking mode
-2. Toast notifications
-3. Dark mode toggle manuale
-4. Note personali sulle ricette
-5. Export / Import backup JSON (UI)
+1. Manual import (form)
+2. Shopping list
+3. Weekly planner
+4. Favorites
+5. Recent recipes
 
 ### P1
-
-1. Import manuale (form)
-2. Lista della spesa
-3. Pianificatore settimanale
-4. AGENTS.md + CONTRIBUTING.md
+1. Custom tags
+2. Advanced filters
+3. Pantry
+4. Meal prep
+5. CONTRIBUTING.md
 
 ### P2
+1. Site filter in Recipe Book
+2. Recipe collections
+3. Ingredient checklist in cooking mode
+4. Recipe duplication
+5. JSON recipe sharing
 
-1. Preferiti
-2. Tag personalizzati
-3. Filtri avanzati
-4. Recenti
-5. Dispensa
-6. Meal prep
+## Current Product Directions
+
+### 1. Import architecture
+The app now uses a lightweight adapter-based import structure for supported recipe websites.
+
+Current supported website adapters:
+- `giallozafferano.it`
+- `ricetteperbimby.it`
+
+The architecture should continue evolving as:
+- core import flow
+- domain normalization
+- adapter selection
+- site-specific parsing
+- generic fallback parser
+
+### 2. Recipe metadata richness
+The recipe model has evolved beyond the original MVP and now supports richer metadata, including:
+- `source`
+- `sourceDomain`
+- `preparationType`
+- `notes`
+
+This metadata should continue to power:
+- filtering
+- saved recipe detail views
+- future organizational features
+
+### 3. Preparation type as a first-class concept
+Recipes should continue being distinguished by cooking/preparation method:
+
+- `classic`
+- `bimby`
+- `airfryer`
+
+This should remain consistent across:
+- cards
+- filters
+- detail views
+- imports
+- saved recipes
 
 ## Feature Specs
 
-### 1. Step-by-step Cooking Mode
-
+### 1. Manual Import
 Outcome:
-- Modalita full-screen o quasi full-screen per cucinare.
-- Un passo alla volta.
-- Timer del passo separato dal timer globale.
-- Pulsanti touch-friendly.
-
-Files likely involved:
-- [js/ui.js](/mnt/c/Sources/cucina-app/js/ui.js)
-- [js/i18n.js](/mnt/c/Sources/cucina-app/js/i18n.js)
-- [css/style.css](/mnt/c/Sources/cucina-app/css/style.css)
-- [sw.js](/mnt/c/Sources/cucina-app/sw.js)
-
-Acceptance criteria:
-- Bottone `Start cooking` in ogni detail view.
-- `Prev`/`Next` funzionano.
-- Ultimo step mostra stato completato.
-- Exit ripristina la detail view integra.
-- Nessun errore console.
-
-### 2. Note Personali Sulle Ricette
-
-Outcome:
-- Ogni ricetta salvata puo avere note private editabili.
-
-Suggested model:
-- `recipe.notes = string`
-
-Files likely involved:
-- [js/storage.js](/mnt/c/Sources/cucina-app/js/storage.js)
-- [js/ui.js](/mnt/c/Sources/cucina-app/js/ui.js)
-- [js/i18n.js](/mnt/c/Sources/cucina-app/js/i18n.js)
-
-Acceptance criteria:
-- L'utente puo scrivere, salvare e rileggere note.
-- Le note persistono dopo reload.
-
-### 3. Import Manuale
-
-Outcome:
-- Creazione ricetta senza URL.
+- Create a recipe without using a URL
 
 Suggested MVP fields:
-- nome
-- categoria
-- porzioni
-- emoji facoltativa
-- tempo
-- ingredienti dinamici
-- steps dinamici
-- timer principale facoltativo
+- name
+- category
+- servings
+- optional emoji
+- time
+- dynamic ingredients
+- dynamic steps
+- optional main timer
+- preparation type
 
 Files likely involved:
-- [index.html](/mnt/c/Sources/cucina-app/index.html)
-- [js/ui.js](/mnt/c/Sources/cucina-app/js/ui.js)
-- [js/storage.js](/mnt/c/Sources/cucina-app/js/storage.js)
-- [js/i18n.js](/mnt/c/Sources/cucina-app/js/i18n.js)
+- `index.html`
+- `js/ui.js`
+- `js/storage.js`
+- `js/i18n.js`
 
 Acceptance criteria:
-- Form validato.
-- Ricetta salvata in `Ricettario`.
-- Nessun backend richiesto.
+- validated form
+- saved into Recipe Book
+- no backend required
 
-### 4. Export / Import Backup JSON
-
+### 2. Shopping List
 Outcome:
-- Backup e restore accessibili da UI.
-
-Files likely involved:
-- [js/storage.js](/mnt/c/Sources/cucina-app/js/storage.js)
-- [js/ui.js](/mnt/c/Sources/cucina-app/js/ui.js)
-- [js/i18n.js](/mnt/c/Sources/cucina-app/js/i18n.js)
-
-Acceptance criteria:
-- Export scarica JSON valido.
-- Import gestisce JSON non valido con errore UX pulito.
-- Restore non rompe ricette esistenti.
-
-### 5. Toast Notifications
-
-Outcome:
-- Feedback non bloccante al posto di `alert()`.
-
-Use cases:
-- ricetta salvata
-- import riuscito/fallito
-- backup importato
-- timer finito
-
-Files likely involved:
-- [js/ui.js](/mnt/c/Sources/cucina-app/js/ui.js) o nuovo `js/toast.js`
-- [css/style.css](/mnt/c/Sources/cucina-app/css/style.css)
-- [index.html](/mnt/c/Sources/cucina-app/index.html) se serve container fisso
-
-Acceptance criteria:
-- Toast visibili, accessibili, auto-dismiss.
-- Nessun `alert()` nei flussi principali.
-
-### 6. Dark Mode Toggle Manuale
-
-Outcome:
-- Override persistente su tema.
-
-Suggested storage:
-- `localStorage['cucina_theme'] = 'system' | 'light' | 'dark'`
-
-Files likely involved:
-- [index.html](/mnt/c/Sources/cucina-app/index.html)
-- [css/style.css](/mnt/c/Sources/cucina-app/css/style.css)
-- [js/app.js](/mnt/c/Sources/cucina-app/js/app.js) o [js/ui.js](/mnt/c/Sources/cucina-app/js/ui.js)
-- [js/i18n.js](/mnt/c/Sources/cucina-app/js/i18n.js)
-
-Acceptance criteria:
-- Toggle chiaro/scuro/sistema.
-- Persistenza dopo reload.
-
-### 7. Lista Della Spesa
-
-Outcome:
-- Estrarre ingredienti da una o piu ricette in una lista unica.
+- Extract ingredients from one or more recipes into a persistent list
 
 Suggested MVP:
-- aggiungi ingredienti da detail recipe
-- check item completato
+- add ingredients from recipe detail
+- mark items as completed
 - remove item
 - clear list
 
 Suggested v2:
-- deduplica ingredienti simili
-- grouping per categoria
+- deduplicate similar ingredients
+- grouping by category
 
 Files likely involved:
-- [js/storage.js](/mnt/c/Sources/cucina-app/js/storage.js)
-- [js/ui.js](/mnt/c/Sources/cucina-app/js/ui.js)
-- [index.html](/mnt/c/Sources/cucina-app/index.html)
-- [css/style.css](/mnt/c/Sources/cucina-app/css/style.css)
-- [js/i18n.js](/mnt/c/Sources/cucina-app/js/i18n.js)
+- `js/storage.js`
+- `js/ui.js`
+- `index.html`
+- `css/style.css`
+- `js/i18n.js`
 
 Acceptance criteria:
-- Lista persistente.
-- Aggiunta ingredienti da ricetta.
+- persistent list
+- easy ingredient addition from recipe detail
 
-### 8. Pianificatore Settimanale
-
+### 3. Weekly Planner
 Outcome:
-- Assegnare ricette a giorni/settimana.
+- Assign recipes to week/day slots
 
 Suggested MVP:
-- vista lun-dom
-- slot pranzo/cena
-- selezione ricetta da planner
+- Monday–Sunday view
+- lunch/dinner slots
+- recipe selection from planner
 
 Suggested v2:
-- genera lista spesa dalla settimana
+- generate shopping list from the week
 - drag and drop
 
 Files likely involved:
-- [js/storage.js](/mnt/c/Sources/cucina-app/js/storage.js)
-- [js/ui.js](/mnt/c/Sources/cucina-app/js/ui.js)
-- [index.html](/mnt/c/Sources/cucina-app/index.html)
-- [css/style.css](/mnt/c/Sources/cucina-app/css/style.css)
-- [js/i18n.js](/mnt/c/Sources/cucina-app/js/i18n.js)
+- `js/storage.js`
+- `js/ui.js`
+- `index.html`
+- `css/style.css`
+- `js/i18n.js`
 
 Acceptance criteria:
-- Piano persistente.
-- Inserimento e rimozione ricette semplice.
+- persistent plan
+- simple add/remove workflow
+
+### 4. Favorites
+Outcome:
+- Allow users to quickly mark and revisit preferred recipes
+
+Suggested model:
+- `recipe.favorite = boolean`
+
+Acceptance criteria:
+- can toggle favorite
+- visible in Recipe Book and/or filters
+- persists after reload
+
+### 5. Custom Tags
+Outcome:
+- Allow users to organize recipes with personal labels
+
+Suggested model:
+- `recipe.tags = string[]`
+
+Acceptance criteria:
+- add/remove tags
+- persist after reload
+- usable in future filtering
+
+### 6. Recent Recipes
+Outcome:
+- Surface recently viewed or used recipes
+
+Suggested model:
+- `recipe.updatedAt`
+- `recipe.lastViewedAt`
+
+Acceptance criteria:
+- recent ordering works
+- remains backward-compatible with older saved data
+
+### 7. Site Filter
+Outcome:
+- Filter saved imported recipes by source website/domain
+
+Suggested basis:
+- `recipe.sourceDomain`
+
+Acceptance criteria:
+- imported recipes can be grouped or filtered by site
+- missing domains do not break old recipes
 
 ## Useful Additional Features
 
-- Preferiti
-- Tag personalizzati
-- Ricette recenti
-- Ricerca per ingrediente escluso/incluso
-- Filtri dieta o allergeni
-- Checklist ingredienti durante cooking mode
-- Dispensa ingredienti
+- Favorites
+- Custom tags
+- Recent recipes
+- Include/exclude ingredient search
+- Diet or allergen filters
+- Ingredient checklist during cooking mode
+- Pantry ingredient tracking
 - Meal prep / batch cooking
-- Condivisione ricette via JSON
-- Duplicazione ricette
+- Recipe sharing via JSON
+- Recipe duplication
 
 ## Competitive Features Seen In Apps Like Mr. Cook
 
-- Cooking mode guidata
+- Guided cooking mode
 - Meal planner
-- Shopping list automatica
-- Ricerca per ingrediente
-- Preferiti/collezioni
-- Import da web/social
-- Timer contestuali
-- Suggerimenti da dispensa
+- Automatic shopping list
+- Search by ingredient
+- Favorites / collections
+- Import from web/social
+- Contextual timers
+- Pantry suggestions
 - Meal prep
 
 ## Suggested Data Model Extensions
 
-Keep additions backward-compatible with current local storage objects.
+Keep all additions backward-compatible with current local storage objects.
 
 ```js
 {
   id: '...',
   name: '...',
   category: '...',
+  preparationType: 'classic',
   bimby: false,
   emoji: '...',
   time: '20 min',
   servings: '4',
   source: 'classica',
+  sourceDomain: '',
   ingredients: ['...'],
   steps: ['...'],
   timerMinutes: 10,
@@ -298,20 +288,20 @@ Keep additions backward-compatible with current local storage objects.
 
 ## Technical Notes For Codex
 
-- Preferire cambi piccoli e verificabili.
-- Verificare sempre se il service worker sta servendo JS cached.
-- Quando si modifica UI testabile, rieseguire una verifica Playwright.
-- Evitare refactor larghi insieme a nuove feature.
-- Riutilizzare naming inglese gia presente in `v3` storage dove possibile.
-- Se una nuova feature richiede una nuova tab, mantenere il design coerente con le 4 tab esistenti.
+- Prefer small, verifiable changes
+- Always consider whether the service worker may be serving stale JS
+- When changing testable UI flows, rerun a targeted Playwright verification
+- Avoid large refactors mixed with new feature work
+- Reuse the existing English naming already present in `v3` storage where possible
+- If a new feature requires a new tab, keep the design coherent with the existing tab structure
 
 ## Definition Of Done
 
-Una feature e considerata completa quando:
+A feature is considered complete when:
 
-- ha UI funzionante,
-- ha stringhe i18n complete,
-- persiste correttamente se previsto,
-- non introduce errori console,
-- passa una verifica manuale o Playwright mirata,
-- non rompe offline/cache behavior.
+- it has working UI
+- it has complete i18n strings
+- it persists correctly when applicable
+- it introduces no console errors
+- it passes a targeted manual or Playwright verification
+- it does not break offline/cache behavior

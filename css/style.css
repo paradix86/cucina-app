@@ -326,6 +326,40 @@ input[type="number"] { text-align: center; }
 .status-msg.ok      { display:block; background: rgba(29,158,117,.12); color: var(--green-dark); }
 .status-msg.err     { display:block; background: var(--red-light);     color: var(--red); }
 
+.import-diagnostics {
+  margin-top: 12px;
+  padding: 12px;
+  border: 1px solid var(--border-md);
+  border-radius: var(--radius-sm);
+  background: rgba(255,255,255,.08);
+  color: var(--text);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace;
+  font-size: 12px;
+  line-height: 1.4;
+}
+.import-diagnostics-title {
+  margin-bottom: 8px;
+  font-weight: 700;
+  color: var(--text);
+}
+.import-diagnostics-item {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 5px;
+}
+.import-diagnostics-item:last-child {
+  margin-bottom: 0;
+}
+.import-diagnostics-label {
+  color: var(--text-muted);
+  min-width: 110px;
+  flex-shrink: 0;
+}
+.import-diagnostics-value {
+  color: var(--text);
+  word-break: break-word;
+}
+
 /* ---- IMPORT ---- */
 .import-box { margin-bottom: 1rem; }
 .url-row { display: flex; gap: 8px; align-items: stretch; }

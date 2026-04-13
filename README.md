@@ -1,110 +1,164 @@
 # 🍳 Cucina App
 
-App web per la cucina pensata per tablet e touchscreen (Lenovo Yoga C930 e simili).  
-Nessun backend, nessuna installazione: apri `index.html` e sei pronto.
+A cooking web app designed for tablets and touchscreens (Lenovo Yoga C930 and similar devices).
 
-## Funzionalità
+No backend, no installation, and no build step: open `index.html` and you are ready to go.
 
-| Sezione | Cosa fa |
+## Features
+
+| Section | What it does |
 |---|---|
-| 📚 **Ricettario** | Le tue ricette salvate, ricercabili e persistenti (localStorage) |
-| ＋ **Importa** | Incolla un link YouTube / TikTok / Instagram / qualsiasi sito → l'AI estrae la ricetta |
-| 🍝 **Ricette** | 17 ricette integrate: classiche italiane + Bimby TM5 |
-| ⏱ **Timer** | Timer multipli in parallelo, avviabili anche dalle ricette |
+| 📚 **Recipe Book** | Your saved recipes, searchable and persistent through `localStorage` |
+| ＋ **Import** | Paste a YouTube / TikTok / Instagram / recipe website link and extract a structured recipe |
+| 🍝 **Recipes** | Built-in recipes, including classic and Bimby TM5 recipes |
+| ⏱ **Timer** | Multiple parallel timers, also launchable from recipes |
 
-## Come usarla
+## How to use it
 
-### Opzione 1 — direttamente nel browser
-```
-git clone https://github.com/tuo-username/cucina-app.git
+### Option 1 — Run locally in the browser
+
+```bash
+git clone https://github.com/your-username/cucina-app.git
 cd cucina-app
-# Apri index.html nel browser (doppio click oppure via Live Server)
+# Open index.html in your browser
+# or serve it with a small static server / Live Server
 ```
 
-### Opzione 2 — GitHub Pages
-1. Vai su **Settings → Pages** del tuo repository
-2. Seleziona **Branch: main / root**
-3. L'app sarà disponibile su `https://tuo-username.github.io/cucina-app/`
+### Option 2 — GitHub Pages
 
-## Struttura del progetto
+1. Go to **Settings → Pages** in your repository
+2. Select **Branch: main / root**
+3. The app will be available at:
 
+```text
+https://your-username.github.io/cucina-app/
 ```
+
+## Project structure
+
+```text
 cucina-app/
-├── index.html          # Struttura HTML dell'app
+├── index.html
+├── README.md
+├── PROJECT_PLAN.md
+├── AGENTS.md
+├── CONTRIBUTING.md
 ├── css/
-│   └── style.css       # Stili (dark mode inclusa)
+│   └── style.css
 ├── js/
-│   ├── data.js         # Ricette built-in (classiche + Bimby TM5)
-│   ├── storage.js      # localStorage: salva / carica / esporta ricette
-│   ├── timer.js        # Timer multipli in parallelo
-│   ├── import.js       # Importazione ricette da URL via Claude AI
-│   ├── ui.js           # Rendering e navigazione UI
-│   └── app.js          # Inizializzazione
-└── README.md
+│   ├── app.js
+│   ├── data.js
+│   ├── i18n.js
+│   ├── import.js
+│   ├── import-web.js
+│   ├── import-adapters.js
+│   ├── storage.js
+│   ├── timer.js
+│   ├── toast.js
+│   └── ui.js
+└── sw.js
 ```
 
-## Importazione ricette con AI
+## Recipe import
 
-La funzione **+ Importa** usa l'API Claude (Anthropic) per analizzare qualsiasi URL e generare la ricetta strutturata.
+The `+ Import` feature supports multiple import paths depending on the URL type.
 
-### Dentro claude.ai (widget)
-Funziona automaticamente senza configurazione.
+### Social / AI-assisted import
 
-### Standalone (GitHub Pages o locale)
-Hai due opzioni:
+YouTube, TikTok, Instagram, and other supported flows may use the existing import pipeline for structured extraction.
 
-**A) API key diretta** (solo per uso personale, non pubblicare la chiave):
-```js
-// js/import.js, prima riga
-const ANTHROPIC_API_KEY = 'sk-ant-...';
-```
+### Website import
 
-**B) Backend proxy** (consigliato per uso pubblico):
-Crea un piccolo server che aggiunge l'header `x-api-key` e fai puntare le chiamate al tuo proxy invece che a `api.anthropic.com`.
+Recipe websites are handled through a lightweight adapter-based architecture:
+- dedicated adapters for supported domains
+- generic fallback parsing for unsupported websites when possible
 
-## Ricette Bimby TM5 incluse
+Currently supported website adapters include:
+- `giallozafferano.it`
+- `ricetteperbimby.it`
 
-- Risotto alla milanese
-- Vellutata di zucca
-- Ragù alla bolognese
-- Besciamella
-- Crema pasticcera
-- Hummus di ceci
-- Zuppa di legumi
-- Polpette al sugo (con Varoma)
+Imported recipes can persist metadata such as:
+- `source`
+- `sourceDomain`
+- `preparationType`
 
-## Aggiungere ricette built-in
+### Browser-only architecture note
 
-Modifica `js/data.js` e aggiungi un oggetto all'array `BUILTIN_RICETTE`:
+Because the app is static and browser-based, some websites may still be limited by:
+- CORS restrictions
+- remote anti-bot protections
+- unreadable or inconsistent page structure
+
+The app should fail honestly when a site cannot be imported reliably.
+
+## Built-in recipes
+
+The app includes built-in recipes across multiple preparation methods:
+- Classic
+- Bimby TM5
+- Air Fryer support is implemented at model/UI/filter level, even if the built-in dataset may currently contain no air fryer recipes
+
+## Preparation types
+
+Recipes are classified with a first-class `preparationType` field:
+
+- `classic`
+- `bimby`
+- `airfryer`
+
+Backward compatibility is preserved with the older `bimby: true/false` flag.
+
+## Adding built-in recipes
+
+Edit `js/data.js` and add an object to the built-in recipes array.
+
+Example:
 
 ```js
 {
-  id: 'mia1',           // ID univoco
-  nome: 'La mia ricetta',
-  cat: 'Primi',         // Primi / Secondi / Dolci / Antipasti / Zuppe / Sughi
-  bimby: false,         // true per ricette Bimby TM5
-  emoji: '🍜',
-  tempo: '30 min',
-  porzioni: '4',
-  fonte: 'classica',    // 'classica' | 'bimby'
-  ingredienti: ['200g pasta', '...'],
-  steps: ['Passo 1...', 'Passo 2...'],
-  timerMin: 10,         // 0 se nessun timer principale
+  id: 'my-recipe-1',
+  name: 'My Recipe',
+  category: 'First Courses',
+  preparationType: 'classic', // 'classic' | 'bimby' | 'airfryer'
+  bimby: false,               // legacy compatibility if still needed
+  emoji: '🍝',
+  time: '30 min',
+  servings: '4',
+  source: 'classica',
+  ingredients: ['200 g pasta', '...'],
+  steps: ['Step 1...', 'Step 2...'],
+  timerMinutes: 10,
 }
 ```
 
-Per ricette Bimby, i passi con impostazioni del robot usano il formato:
+For Bimby recipes, robot settings can still use the structured step format:
+
+```text
+"Vel. 5 · 3 sec — Step description"
+"Temp. 100° · Vel. 1 · 10 min — Step description"
 ```
-"Vel. 5 · 3 sec — Descrizione del passo"
-"Temp. 100° · Vel. 1 · 10 min — Descrizione del passo"
-```
 
-## Compatibilità
+## Offline / PWA behavior
 
-Testata su Chrome, Firefox, Safari, Edge.  
-Ottimizzata per touchscreen e modalità tenda/tablet.  
-Dark mode automatica tramite `prefers-color-scheme`.
+The app is served as a static PWA with a cache-first service worker.
 
-## Licenza
+Important development note:
+- if a cached static asset changes, update `CACHE_NAME` in `sw.js`
 
-MIT — libero uso personale e commerciale.
+## Compatibility
+
+Tested in modern browsers such as:
+- Chrome
+- Firefox
+- Safari
+- Edge
+
+Optimized for:
+- tablets
+- touchscreens
+- tent/tablet usage
+- light and dark themes
+
+## License
+
+MIT — free for personal and commercial use.

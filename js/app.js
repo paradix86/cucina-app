@@ -6,7 +6,7 @@ const THEME_STORAGE_KEY = 'cucina_theme';
 const APP_META = {
   version: 'v0.10.0',
   buildDate: '2026-04-13',
-  authorLine: 'Made with <3 by Alan in Switzerland',
+  authorLine: 'Made with ❤️ by Alan in Switzerland',
 };
 
 function formatEuropeanDate(isoDate) {

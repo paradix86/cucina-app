@@ -9,18 +9,30 @@ async function fetchReadableImportPage(url) {
   return resp.text();
 }
 
+function inferImportFailureStage(message) {
+  if (!message) return 'parse-content';
+  if (message.startsWith('WEB_FETCH_') || message.startsWith('HTTP ')) return 'fetch-readable-page';
+  if (message === 'UNSUPPORTED_WEB_IMPORT') return 'select-adapter';
+  if (/(?:_NOT_FOUND|_PARSE|_INCOMPLETE|_UNSUPPORTED)/.test(message)) return 'parse-content';
+  return 'parse-content';
+}
+
 async function importRecipe() {
   const url = document.getElementById('url-input').value.trim();
-  if (!url) { setImportStatus(t('import_invalid_url'), 'err'); return; }
+  if (!url) { setImportStatus(t('import_invalid_url'), 'err'); clearImportDiagnostics(); return; }
 
   const source = detectSource(url);
   const sourceMap = { youtube: 'YouTube', tiktok: 'TikTok', instagram: 'Instagram', web: 'sito web' };
   const btn = document.getElementById('btn-import-go');
+  const domain = normalizeSourceDomain(url);
+  const adapterObj = getImportAdapterForDomain(domain);
+  const adapterLabel = adapterObj ? adapterObj.domain : 'generic fallback';
 
   btn.disabled = true;
   document.getElementById('preview-box').style.display = 'none';
   pendingRecipe = null;
   setImportStatus(t('import_loading'), 'loading');
+  clearImportDiagnostics();
 
   try {
     if (source === 'web') {
@@ -29,6 +41,7 @@ async function importRecipe() {
       pendingRecipe = recipe;
       showImportPreview(recipe);
       setImportStatus(t('import_success'), 'ok');
+      clearImportDiagnostics();
       btn.disabled = false;
       return;
     }
@@ -87,12 +100,26 @@ Rispondi SOLO con un oggetto JSON valido, senza backtick, senza testo aggiuntivo
     setImportStatus(t('import_success'), 'ok');
   } catch (e) {
     console.error(e);
+    const rawError = String(e.message || e).trim();
     const isWebImportLimit = source === 'web' && (
-      String(e).includes('UNSUPPORTED_WEB_IMPORT') ||
-      String(e).includes('WEB_FETCH') ||
-      String(e).includes('GZ_') ||
-      String(e).includes('RPB_')
+      rawError.includes('UNSUPPORTED_WEB_IMPORT') ||
+      rawError.includes('WEB_FETCH') ||
+      rawError.includes('GZ_') ||
+      rawError.includes('RPB_')
     );
+
+    if (source === 'web') {
+      const stage = inferImportFailureStage(rawError);
+      showImportDiagnostics({
+        domain: domain || url,
+        adapter: adapterLabel,
+        stage,
+        reason: rawError || t('import_error'),
+      });
+    } else {
+      clearImportDiagnostics();
+    }
+
     setImportStatus(isWebImportLimit ? t('import_error_web_blocked') : t('import_error'), 'err');
   }
 

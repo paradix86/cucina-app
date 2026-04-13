@@ -34,25 +34,55 @@ function normalizeSourceDomain(url) {
 }
 
 function detectSource(url) {
-  if (/youtube\.com|youtu\.be/i.test(url))  return 'youtube';
-  if (/tiktok\.com/i.test(url))              return 'tiktok';
-  if (/instagram\.com/i.test(url))           return 'instagram';
+  if (/youtube\.com|youtu\.be/i.test(url)) return 'youtube';
+  if (/tiktok\.com/i.test(url)) return 'tiktok';
+  if (/instagram\.com/i.test(url)) return 'instagram';
   return 'web';
 }
 
 function setImportStatus(msg, type) {
-  const el      = document.getElementById('import-status');
+  const el = document.getElementById('import-status');
   el.textContent = msg;
-  el.className   = 'status-msg ' + type;
+  el.className = 'status-msg ' + type;
+}
+
+function clearImportDiagnostics() {
+  const diagnostics = document.getElementById('import-diagnostics');
+  if (!diagnostics) return;
+  diagnostics.style.display = 'none';
+  diagnostics.innerHTML = '';
+}
+
+function showImportDiagnostics(diagnostic) {
+  const diagnostics = document.getElementById('import-diagnostics');
+  if (!diagnostics || !diagnostic) return clearImportDiagnostics();
+
+  const items = [
+    { label: t('import_diag_domain'), value: diagnostic.domain || '' },
+    { label: t('import_diag_adapter'), value: diagnostic.adapter || '' },
+    { label: t('import_diag_stage'), value: diagnostic.stage || '' },
+    { label: t('import_diag_reason'), value: diagnostic.reason || '' },
+  ].filter(item => item.value);
+
+  diagnostics.innerHTML = `
+    <div class="import-diagnostics-title">${t('import_diag_title')}</div>
+    ${items.map(item => `
+      <div class="import-diagnostics-item">
+        <span class="import-diagnostics-label">${item.label}:</span>
+        <span class="import-diagnostics-value">${item.value}</span>
+      </div>
+    `).join('')}
+  `;
+  diagnostics.style.display = 'block';
 }
 
 async function importRecipe() {
   const url = document.getElementById('url-input').value.trim();
   if (!url) { setImportStatus(t('import_invalid_url'), 'err'); return; }
 
-  const source    = detectSource(url);
+  const source = detectSource(url);
   const sourceMap = { youtube: 'YouTube', tiktok: 'TikTok', instagram: 'Instagram', web: 'sito web' };
-  const btn       = document.getElementById('btn-import-go');
+  const btn = document.getElementById('btn-import-go');
 
   btn.disabled = true;
   document.getElementById('preview-box').style.display = 'none';
@@ -92,32 +122,32 @@ Rispondi SOLO con un oggetto JSON valido, senza backtick, senza testo aggiuntivo
 
     const headers = { 'Content-Type': 'application/json' };
     if (ANTHROPIC_API_KEY) {
-      headers['x-api-key']         = ANTHROPIC_API_KEY;
+      headers['x-api-key'] = ANTHROPIC_API_KEY;
       headers['anthropic-version'] = '2023-06-01';
     }
 
     const resp = await fetch('https://api.anthropic.com/v1/messages', {
-      method:  'POST',
+      method: 'POST',
       headers,
-      body:    JSON.stringify({
-        model:      'claude-sonnet-4-20250514',
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
         max_tokens: 1000,
-        messages:   [{ role: 'user', content: prompt }],
+        messages: [{ role: 'user', content: prompt }],
       }),
     });
 
     if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
 
-    const data   = await resp.json();
-    const raw    = data.content.map(c => c.text || '').join('');
-    const clean  = raw.replace(/```json|```/g, '').trim();
+    const data = await resp.json();
+    const raw = data.content.map(c => c.text || '').join('');
+    const clean = raw.replace(/```json|```/g, '').trim();
     const recipe = JSON.parse(clean);
 
-    recipe.id     = 'imp_' + Date.now();
+    recipe.id = 'imp_' + Date.now();
     recipe.source = source;
     recipe.preparationType = normalizePreparationTypeValue(recipe.preparationType) || 'classic';
     recipe.sourceDomain = normalizeSourceDomain(url);
-    recipe.url    = url;
+    recipe.url = url;
 
     pendingRecipe = recipe;
     showImportPreview(recipe);
@@ -138,7 +168,7 @@ Rispondi SOLO con un oggetto JSON valido, senza backtick, senza testo aggiuntivo
 
 function showImportPreview(r) {
   document.getElementById('preview-title').textContent = `${r.emoji || '🍴'} ${r.name}`;
-  document.getElementById('preview-meta').textContent  =
+  document.getElementById('preview-meta').textContent =
     `${r.category} · ${r.time} · ${r.servings} ${t('detail_servings').toLowerCase()}${r.difficolta ? ' · ' + r.difficolta : ''}`;
 
   document.getElementById('preview-ing').innerHTML =
@@ -166,6 +196,6 @@ function savePreviewed() {
 
 function discardPreview() {
   document.getElementById('preview-box').style.display = 'none';
-  document.getElementById('import-status').className   = 'status-msg';
+  document.getElementById('import-status').className = 'status-msg';
   pendingRecipe = null;
 }

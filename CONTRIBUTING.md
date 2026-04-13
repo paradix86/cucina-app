@@ -1,70 +1,174 @@
-# Contributing
+# CONTRIBUTING.md
 
-## Setup
+Thanks for contributing to Cucina App.
 
-Il progetto non richiede build.
+This project is intentionally simple:
+- static HTML / CSS / Vanilla JS
+- no dependencies
+- no bundler
+- no build step
 
-### Avvio locale
+The goal is to keep the app lightweight, readable, and easy to run locally.
 
-Opzione semplice:
+## Local setup
+
+You can run the app in any of these ways:
+
+### Option 1 — Open directly
+Open `index.html` in your browser.
+
+### Option 2 — Use a local static server
+Any small static server is fine. Examples:
 
 ```bash
-python3 -m http.server 5500
+python -m http.server 3000
 ```
 
-Poi apri:
+Then open:
 
 ```text
-http://localhost:5500
+http://127.0.0.1:3000
 ```
 
-## Project Rules
+Using a local server is preferred when testing:
+- service worker behavior
+- caching
+- import flows
+- Playwright checks
 
-- Non aggiungere dipendenze senza una decisione esplicita.
-- Mantieni il progetto statico.
-- Tutte le stringhe utente devono stare in `js/i18n.js`.
-- Se tocchi file serviti dal service worker, aggiorna `CACHE_NAME` in `sw.js`.
-- Se fai modifiche mirate, evita refactor non richiesti.
+## Project structure
 
-## Coding Conventions
+```text
+index.html
+css/style.css
+js/app.js
+js/data.js
+js/i18n.js
+js/import.js
+js/import-web.js
+js/import-adapters.js
+js/storage.js
+js/timer.js
+js/toast.js
+js/ui.js
+sw.js
+```
 
-- JS semplice, leggibile, senza framework.
-- Naming preferito: inglese per nuovi campi e funzioni strutturali.
-- Compatibilita con dati legacy quando possibile.
-- CSS organizzato in blocchi commentati.
+## Development rules
 
-## Pull Request Checklist
+### 1. Keep it dependency-free
+Do not add external libraries unless there is a very strong reason.
 
-- [ ] La feature/fix funziona davvero nel browser
-- [ ] Nessun errore console
-- [ ] Le stringhe sono internazionalizzate
-- [ ] La UI resta usabile su touch
-- [ ] Il service worker cache e stato gestito correttamente
-- [ ] Non sono stati introdotti refactor non necessari
+### 2. Keep it build-free
+Do not introduce bundlers, transpilers, or framework tooling.
 
-## Recommended Manual Test Areas
+### 3. Keep changes small
+Prefer focused, verifiable changes over broad refactors.
 
-- Navigazione tab
-- Ricette built-in
-- Detail view
-- Servings scaling
-- Timer
-- Import
-- Ricettario/localStorage
-- Offline/PWA base behavior
+### 4. Respect i18n
+All user-facing strings must go through `t('key')` in `js/i18n.js`.
 
-## Playwright Notes
+### 5. Respect cached assets
+If you change a static asset that is cached by the service worker, update `CACHE_NAME` in `sw.js`.
 
-Quando testi modifiche UI:
+### 6. Preserve backward compatibility
+Saved recipes may exist in:
+- legacy Italian field shape
+- newer English `v3` field shape
 
-- pulisci cache e service worker se necessario
-- verifica sempre anche `console`
-- se la feature tocca detail view o timers, testa il flusso completo e non solo il rendering iniziale
+Do not break existing `localStorage` data.
+
+### 7. Keep touch UX in mind
+The app is designed for tablets and touchscreens. Avoid tiny controls or cramped layouts.
+
+## Recipe model guidelines
+
+Prefer the current English field shape for new work.
+
+Example:
+
+```js
+{
+  id: '...',
+  name: '...',
+  category: '...',
+  preparationType: 'classic',
+  bimby: false,
+  emoji: '🍳',
+  time: '20 min',
+  servings: '4',
+  source: 'web',
+  sourceDomain: 'giallozafferano.it',
+  ingredients: ['...'],
+  steps: ['...'],
+  timerMinutes: 0,
+  notes: '',
+  favorite: false,
+  tags: []
+}
+```
+
+## Website import guidelines
+
+Website import uses a lightweight adapter-based architecture.
+
+Current principles:
+- normalize the domain first
+- use a dedicated adapter for supported domains
+- keep the generic fallback honest
+- preserve `source`, `sourceDomain`, and `preparationType`
+- do not break already working site adapters when adding a new one
+
+Supported domain-specific adapters currently include:
+- `giallozafferano.it`
+- `ricetteperbimby.it`
+
+## UI guidelines
+
+- Reuse existing visual patterns and classes where possible
+- Keep the design clean and touch-friendly
+- Do not add visual noise
+- When adding new UI sections, keep them consistent with the existing tab/card style
+
+## CSS guidelines
+
+- Keep CSS in `css/style.css`
+- Use clearly commented sections
+- Prefer extending the existing token/style system over adding disconnected styles
+- Check both light and dark theme behavior
+
+## Testing expectations
+
+At minimum, for relevant changes:
+
+1. run the app locally
+2. test the affected flow manually
+3. check browser console errors
+4. if the change is UI/flow related, run a targeted Playwright verification
+5. if caching behaves strangely, clear service workers and caches before re-testing
+
+## Pull request checklist
+
+Before opening a PR, verify that:
+
+- [ ] the feature or fix works locally
+- [ ] no obvious console errors were introduced
+- [ ] all new UI strings are in `js/i18n.js`
+- [ ] `CACHE_NAME` was updated in `sw.js` if needed
+- [ ] backward compatibility with saved data was considered
+- [ ] the change is scoped and does not include unnecessary refactors
+- [ ] Playwright or a targeted manual verification was performed
 
 ## Documentation
 
-Se aggiungi una macro-feature:
+If your change introduces:
+- a new functional area
+- a new workflow
+- a new persistence model
+- a new import adapter
 
-- aggiorna `PROJECT_PLAN.md`
-- aggiorna `README.md` se cambia il comportamento utente
-- aggiorna questo file se cambia il workflow di sviluppo
+update the relevant documentation:
+- `README.md`
+- `PROJECT_PLAN.md`
+- `AGENTS.md`
+- `CONTRIBUTING.md`
