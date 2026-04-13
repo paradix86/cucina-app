@@ -2,7 +2,7 @@
  * sw.js — Service Worker: cache-first per tutti gli asset statici
  */
 
-const CACHE_NAME = 'cucina-v10';
+const CACHE_NAME = 'cucina-v11';
 
 const STATIC_ASSETS = [
   './',

@@ -135,6 +135,7 @@ function parseGialloZafferanoImport(markdown, url) {
     ingredients,
     steps,
     timerMinutes: parseImportMinutes(cook),
+    preparationType: 'classic',
     source: 'web',
     sourceDomain: normalizeSourceDomain(url),
     url,
@@ -211,6 +212,7 @@ Rispondi SOLO con un oggetto JSON valido, senza backtick, senza testo aggiuntivo
 
     recipe.id = 'imp_' + Date.now();
     recipe.source = source;
+    recipe.preparationType = normalizePreparationTypeValue(recipe.preparationType) || 'classic';
     recipe.sourceDomain = normalizeSourceDomain(url);
     recipe.url = url;
 

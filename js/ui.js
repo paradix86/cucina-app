@@ -153,13 +153,25 @@ function getSourceDomainLabel(domain) {
   return pretty[normalized] || normalized;
 }
 
+function getPreparationInfo(recipe) {
+  const preparationType = getPreparationType(recipe);
+  switch (preparationType) {
+    case 'bimby':
+      return { type: preparationType, cls: 'badge-bimby', txt: t('prep_bimby'), cardCls: ' is-bimby' };
+    case 'airfryer':
+      return { type: preparationType, cls: 'badge-airfryer', txt: t('prep_airfryer'), cardCls: ' is-airfryer' };
+    default:
+      return { type: 'classic', cls: 'badge-classica', txt: t('prep_classic'), cardCls: '' };
+  }
+}
+
 /* ================================================================
    RECIPE DETAIL BUILDERS
    ================================================================ */
 
-function buildStepsHtml(steps, bimby) {
+function buildStepsHtml(steps, preparationType) {
   return steps.map((s, i) => {
-    if (bimby) {
+    if (preparationType === 'bimby') {
       const sep = s.indexOf(' — ');
       if (sep !== -1) {
         const tags  = s.slice(0, sep).split('·').map(tag => tag.trim()).filter(Boolean);
@@ -193,13 +205,14 @@ function buildDetailHtml(r, onBack) {
   _detailRecipe = r;
   _currentDetailRecipe = r;
 
-  const s        = getSourceInfo(r.source || 'web');
+  const prepInfo = getPreparationInfo(r);
   const basePort = parseInt(r.servings) || 4;
   const ingHtml  = (r.ingredients || []).map(i => `<li>${i}</li>`).join('');
-  const stepHtml = buildStepsHtml(r.steps || [], r.bimby);
+  const stepHtml = buildStepsHtml(r.steps || [], prepInfo.type);
   const sourceDomainHtml = r.sourceDomain
     ? `<p class="detail-origin"><span class="sec-label-inline">${t('detail_source_site')}:</span> ${getSourceDomainLabel(r.sourceDomain)}</p>`
     : '';
+  const methodHtml = `<p class="detail-method"><span class="sec-label-inline">${t('detail_method')}:</span> ${prepInfo.txt}</p>`;
 
   const timerBtn = r.timerMinutes > 0
     ? `<button class="btn-primary" onclick="startRecipeTimer('${r.name.replace(/'/g, "\\'")}', ${r.timerMinutes})">
@@ -221,14 +234,14 @@ function buildDetailHtml(r, onBack) {
       </div>
     </div>`;
 
-  const stepsLabel = r.bimby ? t('detail_steps_bimby') : t('detail_steps');
+  const stepsLabel = prepInfo.type === 'bimby' ? t('detail_steps_bimby') : t('detail_steps');
 
   return `
     <button class="detail-back" onclick="${onBack}">${t('detail_back')}</button>
     <div class="detail-wrap">
-      <span class="card-src ${s.cls}">${s.txt}</span>
       <h2 class="detail-title">${r.emoji || '🍴'} ${r.name}</h2>
       <p class="detail-meta">${r.category || ''} · ${r.time || ''}${r.difficolta ? ' · ' + r.difficolta : ''}</p>
+      ${methodHtml}
       ${sourceDomainHtml}
 
       ${servingsCtrl}
@@ -524,10 +537,10 @@ function renderRecipeBook() {
   }
 
   grid.innerHTML = fil.map(r => {
-    const s = getSourceInfo(r.source || 'web');
+    const prep = getPreparationInfo(r);
     const domainLabel = r.sourceDomain ? getSourceDomainLabel(r.sourceDomain) : '';
     return `<div class="ricetta-card" onclick="openSavedDetail('${r.id}')">
-      <span class="card-src ${s.cls}">${s.txt}</span>
+      <span class="card-src ${prep.cls}">${prep.txt}</span>
       <button class="card-del btn-danger"
         onclick="event.stopPropagation(); confirmDeleteRecipe('${r.id}')"
         title="✕">✕</button>
@@ -604,7 +617,7 @@ async function handleImportBackup(event) {
    ================================================================ */
 
 let activeBuiltinCategory  = '__all__';
-let activeSourceFilter     = 'all';      // 'all' | 'classic' | 'bimby'
+let activePreparationFilter = 'all';      // 'all' | 'classic' | 'bimby' | 'airfryer'
 let maxTimeFilter          = 120;
 
 function getBuiltinCategories() {
@@ -627,10 +640,10 @@ function renderBuiltinFilters() {
   const container = document.getElementById('builtin-filters');
   if (!container) return;
 
-  const isDefaultSource = activeSourceFilter === 'all';
+  const isDefaultPreparation = activePreparationFilter === 'all';
   const isDefaultTime   = maxTimeFilter >= 120;
   const q               = document.getElementById('builtin-search')?.value || '';
-  const showReset       = activeBuiltinCategory !== '__all__' || !isDefaultSource || !isDefaultTime || q;
+  const showReset       = activeBuiltinCategory !== '__all__' || !isDefaultPreparation || !isDefaultTime || q;
 
   const timeLabel = isDefaultTime
     ? t('filter_any_time')
@@ -638,13 +651,15 @@ function renderBuiltinFilters() {
 
   container.innerHTML = `
     <div class="filter-row">
-      <span class="filter-label">${t('filter_source')}:</span>
-      <button class="src-pill${activeSourceFilter === 'all'     ? ' active' : ''}"
-        onclick="activeSourceFilter='all';     renderBuiltinFilters(); renderBuiltinRecipes();">${t('filter_all')}</button>
-      <button class="src-pill${activeSourceFilter === 'classic' ? ' active' : ''}"
-        onclick="activeSourceFilter='classic'; renderBuiltinFilters(); renderBuiltinRecipes();">${t('filter_classic')}</button>
-      <button class="src-pill${activeSourceFilter === 'bimby'   ? ' active' : ''}"
-        onclick="activeSourceFilter='bimby';   renderBuiltinFilters(); renderBuiltinRecipes();">${t('filter_bimby')}</button>
+      <span class="filter-label">${t('filter_method')}:</span>
+      <button class="src-pill${activePreparationFilter === 'all'       ? ' active' : ''}"
+        onclick="activePreparationFilter='all';       renderBuiltinFilters(); renderBuiltinRecipes();">${t('filter_all')}</button>
+      <button class="src-pill${activePreparationFilter === 'classic'   ? ' active' : ''}"
+        onclick="activePreparationFilter='classic';   renderBuiltinFilters(); renderBuiltinRecipes();">${t('filter_classic')}</button>
+      <button class="src-pill${activePreparationFilter === 'bimby'     ? ' active' : ''}"
+        onclick="activePreparationFilter='bimby';     renderBuiltinFilters(); renderBuiltinRecipes();">${t('filter_bimby')}</button>
+      <button class="src-pill${activePreparationFilter === 'airfryer'  ? ' active' : ''}"
+        onclick="activePreparationFilter='airfryer';  renderBuiltinFilters(); renderBuiltinRecipes();">${t('filter_airfryer')}</button>
     </div>
     <div class="filter-row time-slider-row">
       <span class="filter-label">${t('filter_max_time')}:</span>
@@ -662,7 +677,7 @@ function renderBuiltinFilters() {
 
 function resetBuiltinFilters() {
   activeBuiltinCategory = '__all__';
-  activeSourceFilter    = 'all';
+  activePreparationFilter = 'all';
   maxTimeFilter         = 120;
   const searchEl = document.getElementById('builtin-search');
   if (searchEl) searchEl.value = '';
@@ -680,11 +695,7 @@ function renderBuiltinRecipes() {
   const fil = BUILTIN_RECIPES
     .filter(r => recipeMatchesQuery(r, q))
     .filter(r => activeBuiltinCategory === '__all__' || r.category === activeBuiltinCategory)
-    .filter(r =>
-      activeSourceFilter === 'all' ||
-      (activeSourceFilter === 'bimby'   && r.bimby) ||
-      (activeSourceFilter === 'classic' && !r.bimby)
-    )
+    .filter(r => activePreparationFilter === 'all' || getPreparationType(r) === activePreparationFilter)
     .filter(r => parseRecipeTime(r.time) <= maxTimeFilter);
 
   // Result count
@@ -702,10 +713,10 @@ function renderBuiltinRecipes() {
   }
 
   grid.innerHTML = fil.map(r => {
-    const s = getSourceInfo(r.source || 'classica');
+    const prep = getPreparationInfo(r);
     const name = r.name || r.nome || '';
-    return `<div class="ricetta-card${r.bimby ? ' is-bimby' : ''}" onclick="openBuiltinDetail('${r.id}')">
-      <span class="card-src ${s.cls}">${s.txt}</span>
+    return `<div class="ricetta-card${prep.cardCls}" onclick="openBuiltinDetail('${r.id}')">
+      <span class="card-src ${prep.cls}">${prep.txt}</span>
       <div class="card-name">${highlight(name, q)}</div>
       <div class="card-meta">${r.category} · ${r.time} · ${r.servings} ${t('detail_servings').toLowerCase()}</div>
     </div>`;

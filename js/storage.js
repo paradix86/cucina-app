@@ -5,6 +5,26 @@
 const STORAGE_KEY    = 'cucina_recipebook_v3';
 const STORAGE_KEY_V2 = 'cucina_ricettario_v2';
 
+function normalizePreparationTypeValue(value) {
+  return ['classic', 'bimby', 'airfryer'].includes(value) ? value : '';
+}
+
+function getPreparationType(recipe) {
+  const explicit = normalizePreparationTypeValue(recipe?.preparationType);
+  if (explicit) return explicit;
+  if (recipe?.bimby === true) return 'bimby';
+  return 'classic';
+}
+
+function normalizeStoredRecipe(recipe) {
+  const preparationType = getPreparationType(recipe);
+  return {
+    ...recipe,
+    preparationType,
+    bimby: recipe?.bimby != null ? recipe.bimby : preparationType === 'bimby',
+  };
+}
+
 /**
  * One-time migration: v2 (Italian field names) → v3 (English field names).
  * Called once from app.js before any render.
@@ -26,6 +46,7 @@ function migrateFromV2() {
       time:         r.tempo        || r.time          || '',
       servings:     r.porzioni     || r.servings       || '',
       source:       r.fonte        || r.source         || 'web',
+      preparationType: normalizePreparationTypeValue(r.preparationType) || (r.bimby ? 'bimby' : 'classic'),
       sourceDomain: r.sourceDomain || undefined,
       ingredients:  r.ingredienti  || r.ingredients    || [],
       steps:        r.steps        || [],
@@ -43,7 +64,8 @@ function migrateFromV2() {
 
 function loadRecipeBook() {
   try {
-    return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+    const arr = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+    return Array.isArray(arr) ? arr.map(normalizeStoredRecipe) : [];
   } catch {
     return [];
   }
@@ -51,7 +73,7 @@ function loadRecipeBook() {
 
 function saveRecipeBook(arr) {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(arr));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify((arr || []).map(normalizeStoredRecipe)));
   } catch (e) {
     console.warn('localStorage not available:', e);
   }
@@ -60,7 +82,7 @@ function saveRecipeBook(arr) {
 function addRecipe(recipe) {
   const arr = loadRecipeBook();
   if (arr.find(r => r.id === recipe.id)) return false;
-  arr.unshift(recipe);
+  arr.unshift(normalizeStoredRecipe(recipe));
   saveRecipeBook(arr);
   return true;
 }
@@ -97,8 +119,9 @@ function importRecipeBook(file) {
       try {
         const arr = JSON.parse(e.target.result);
         if (!Array.isArray(arr)) throw new Error('Invalid format');
+        const incoming = arr.map(normalizeStoredRecipe);
         const existing = loadRecipeBook();
-        const merged   = [...arr, ...existing.filter(r => !arr.find(a => a.id === r.id))];
+        const merged   = [...incoming, ...existing.filter(r => !incoming.find(a => a.id === r.id))];
         saveRecipeBook(merged);
         resolve(merged.length);
       } catch (err) {

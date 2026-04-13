@@ -235,3 +235,7 @@ const BUILTIN_RECIPES = [
   },
 
 ];
+
+BUILTIN_RECIPES.forEach(recipe => {
+  if (!recipe.preparationType) recipe.preparationType = recipe.bimby ? 'bimby' : 'classic';
+});
