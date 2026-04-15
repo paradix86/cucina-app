@@ -1,13 +1,5 @@
-/**
- * Shared TypeScript type definitions for cucina-app.
- * Gradual migration foundation — add types here as the codebase evolves.
- * JS files can reference these via JSDoc: @type {import('./types').Recipe}
- */
-
-/** Preparation method for a recipe. */
 export type PreparationType = 'classic' | 'bimby' | 'airfryer';
 
-/** A single saved recipe. */
 export interface Recipe {
   id: string;
   name: string;
@@ -20,7 +12,6 @@ export interface Recipe {
   sourceDomain?: string;
   url?: string;
   preparationType?: PreparationType;
-  /** Legacy field — derived from preparationType. */
   bimby?: boolean;
   ingredients: string[];
   steps: string[];
@@ -31,7 +22,6 @@ export interface Recipe {
   tags?: string[];
 }
 
-/** A single item in the shopping list. */
 export interface ShoppingItem {
   id: string;
   text: string;
@@ -41,7 +31,6 @@ export interface ShoppingItem {
   createdAt: number;
 }
 
-/** A grouped set of shopping items (same ingredient, summable quantities). */
 export interface ShoppingGroup {
   groupType: 'numeric' | 'exact';
   groupKey: string;
@@ -53,7 +42,6 @@ export interface ShoppingGroup {
   items: ShoppingItem[];
 }
 
-/** A shopping list section (proteins, carbs, …). */
 export interface ShoppingSection {
   id: string;
   labelKey: string;
@@ -61,10 +49,47 @@ export interface ShoppingSection {
   ungrouped: ShoppingItem[];
 }
 
-/** Import preview before saving to the recipe book. */
+export type ParsedIngredientConfidence = 'high' | 'low';
+export type ParsedIngredientUnit = 'g' | 'kg' | 'ml' | 'l' | 'eggs' | 'pieces';
+export type ShoppingSectionId =
+  | 'proteins'
+  | 'carbs'
+  | 'vegetables_fruit'
+  | 'dairy_eggs'
+  | 'fats_oils_spices'
+  | 'other';
+
+export interface ParsedIngredient {
+  raw: string;
+  parsedQty: number | null;
+  parsedUnit: ParsedIngredientUnit | null;
+  parsedName: string | null;
+  confidence: ParsedIngredientConfidence;
+}
+
+export interface GroupedShoppingItemsResult {
+  grouped: ShoppingGroup[];
+  ungrouped: ShoppingItem[];
+}
+
+export interface ImportDiagnostic {
+  domain: string;
+  adapter: string;
+  stage: string;
+  reason: string;
+  hint: string | null;
+}
+
+export interface StatusState {
+  message: string;
+  type: '' | 'loading' | 'ok' | 'err';
+}
+
 export interface ImportPreviewRecipe extends Partial<Recipe> {
   id: string;
   name: string;
   ingredients: string[];
   steps: string[];
+  source: string;
+  preparationType: PreparationType;
 }

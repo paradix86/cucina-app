@@ -9,55 +9,56 @@ import {
   markRecipeViewed,
   toggleRecipeFavorite,
   updateRecipeNotes,
-} from '../lib/storage.js';
+} from '../lib/storage';
+import type { Recipe } from '../types';
 
 export const useRecipeBookStore = defineStore('recipeBook', () => {
-  const recipes = ref(loadRecipeBook());
+  const recipes = ref<Recipe[]>(loadRecipeBook());
 
-  function refresh() {
+  function refresh(): void {
     recipes.value = loadRecipeBook();
   }
 
-  function add(recipe) {
+  function add(recipe: Recipe): boolean {
     const ok = addRecipe(recipe);
     refresh();
     return ok;
   }
 
-  function remove(id) {
+  function remove(id: string): void {
     deleteRecipe(id);
     refresh();
   }
 
-  function toggleFavorite(id) {
+  function toggleFavorite(id: string): boolean {
     const ok = toggleRecipeFavorite(id);
     refresh();
     return ok;
   }
 
-  function saveNotes(id, notes) {
+  function saveNotes(id: string, notes: string): boolean {
     const ok = updateRecipeNotes(id, notes);
     refresh();
     return ok;
   }
 
-  function viewed(id) {
+  function viewed(id: string): void {
     markRecipeViewed(id);
     refresh();
   }
 
-  async function importBackup(file) {
+  async function importBackup(file: File): Promise<number> {
     const total = await importRecipeBook(file);
     refresh();
     return total;
   }
 
-  function exportBackup() {
+  function exportBackup(): number {
     return exportRecipeBook();
   }
 
-  const sourceDomains = computed(() =>
-    [...new Set(recipes.value.map(recipe => recipe.sourceDomain).filter(Boolean))],
+  const sourceDomains = computed<string[]>(() =>
+    [...new Set(recipes.value.map(recipe => recipe.sourceDomain).filter((value): value is string => Boolean(value)))],
   );
 
   return {

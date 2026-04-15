@@ -6,12 +6,12 @@ import AppFooter from './components/AppFooter.vue';
 import ToastStack from './components/ToastStack.vue';
 import CookingModeView from './components/CookingModeView.vue';
 import { t, initLanguage } from './lib/i18n.js';
-import { migrateFromV2 } from './lib/storage.js';
+import { migrateFromV2 } from './lib/storage';
 import { useToasts } from './composables/useToasts.js';
 import { useTimers } from './composables/useTimers.js';
 import { initServiceWorkerUpdates } from './composables/useServiceWorker.js';
-import { useRecipeBookStore } from './stores/recipeBook.js';
-import { useShoppingListStore } from './stores/shoppingList.js';
+import { useRecipeBookStore } from './stores/recipeBook';
+import { useShoppingListStore } from './stores/shoppingList';
 
 const router = useRouter();
 const cookingRecipe = ref(null);

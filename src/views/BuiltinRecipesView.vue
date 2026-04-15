@@ -4,8 +4,8 @@ import { useRouter } from 'vue-router';
 import { useDebounce } from '@vueuse/core';
 import RecipeDetailView from '../components/RecipeDetailView.vue';
 import { BUILTIN_RECIPES } from '../lib/builtinData.js';
-import { useRecipeBookStore } from '../stores/recipeBook.js';
-import { getPreparationType } from '../lib/storage.js';
+import { useRecipeBookStore } from '../stores/recipeBook';
+import { getPreparationType } from '../lib/storage';
 import { getPreparationInfo, highlight, parseRecipeTime, recipeMatchesQuery, joinMetaParts } from '../lib/recipes.js';
 import { t } from '../lib/i18n.js';
 

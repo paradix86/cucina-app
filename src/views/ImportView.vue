@@ -1,9 +1,9 @@
 <script setup>
 import { computed, ref } from 'vue';
-import { useImportFlow } from '../composables/useImportFlow.js';
+import { useImportFlow } from '../composables/useImportFlow';
 import { getSourceDomainLabel, joinMetaParts } from '../lib/recipes.js';
 import { t } from '../lib/i18n.js';
-import { useRecipeBookStore } from '../stores/recipeBook.js';
+import { useRecipeBookStore } from '../stores/recipeBook';
 
 const emit = defineEmits(['toast', 'go-home']);
 const { url, loading, status, diagnostic, previewRecipe, importRecipeFromUrl, updatePreparationType, savePreviewedRecipe, discardPreview, removeTag, addTag } = useImportFlow();

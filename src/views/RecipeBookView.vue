@@ -4,7 +4,7 @@ import { storeToRefs } from 'pinia';
 import { useRouter } from 'vue-router';
 import { useDebounce } from '@vueuse/core';
 import RecipeDetailView from '../components/RecipeDetailView.vue';
-import { useRecipeBookStore } from '../stores/recipeBook.js';
+import { useRecipeBookStore } from '../stores/recipeBook';
 import { getPreparationInfo, getSourceDomainLabel, highlight, joinMetaParts, recipeMatchesQuery } from '../lib/recipes.js';
 import { t } from '../lib/i18n.js';
 

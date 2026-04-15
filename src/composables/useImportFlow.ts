@@ -1,5 +1,5 @@
 import { computed, ref } from 'vue';
-import { useRecipeBookStore } from '../stores/recipeBook.js';
+import { useRecipeBookStore } from '../stores/recipeBook';
 import {
   ANTHROPIC_API_KEY,
   detectSource,
@@ -15,35 +15,43 @@ import {
   importWebsiteRecipeWithAdapters,
   suggestImportTags,
 } from '../lib/import/adapters.js';
-import { normalizePreparationTypeValue } from '../lib/storage.js';
+import { normalizePreparationTypeValue } from '../lib/storage';
 import { t } from '../lib/i18n.js';
+import type { ImportDiagnostic, ImportPreviewRecipe, PreparationType, StatusState } from '../types';
 
-const sourceMap = { youtube: 'YouTube', tiktok: 'TikTok', instagram: 'Instagram', web: 'sito web' };
+type ImportSource = 'youtube' | 'tiktok' | 'instagram' | 'web';
+
+const sourceMap: Record<ImportSource, string> = {
+  youtube: 'YouTube',
+  tiktok: 'TikTok',
+  instagram: 'Instagram',
+  web: 'sito web',
+};
 
 export function useImportFlow() {
   const recipeBook = useRecipeBookStore();
   const url = ref('');
   const loading = ref(false);
-  const status = ref({ message: '', type: '' });
-  const diagnostic = ref(null);
-  const previewRecipe = ref(null);
+  const status = ref<StatusState>({ message: '', type: '' });
+  const diagnostic = ref<ImportDiagnostic | null>(null);
+  const previewRecipe = ref<ImportPreviewRecipe | null>(null);
 
   const canSave = computed(() => !!previewRecipe.value);
 
-  function setStatus(message, type = '') {
+  function setStatus(message: string, type: StatusState['type'] = ''): void {
     status.value = { message, type };
   }
 
-  function clearPreview() {
+  function clearPreview(): void {
     previewRecipe.value = null;
   }
 
-  function clearDiagnostics() {
+  function clearDiagnostics(): void {
     diagnostic.value = null;
   }
 
-  function addTag() {
-    const input = document.getElementById('preview-tag-input-vue');
+  function addTag(): void {
+    const input = document.getElementById('preview-tag-input-vue') as HTMLInputElement | null;
     if (!input || !previewRecipe.value) return;
     const value = input.value.trim();
     if (!value) return;
@@ -53,7 +61,7 @@ export function useImportFlow() {
     input.value = '';
   }
 
-  function removeTag(tag) {
+  function removeTag(tag: string): void {
     if (!previewRecipe.value) return;
     previewRecipe.value = {
       ...previewRecipe.value,
@@ -61,7 +69,7 @@ export function useImportFlow() {
     };
   }
 
-  async function importRecipeFromUrl() {
+  async function importRecipeFromUrl(): Promise<boolean> {
     const nextUrl = url.value.trim();
     if (!nextUrl) {
       setStatus(t('import_invalid_url'), 'err');
@@ -69,7 +77,7 @@ export function useImportFlow() {
       return false;
     }
 
-    const source = detectSource(nextUrl);
+    const source = detectSource(nextUrl) as ImportSource;
     const domain = normalizeSourceDomain(nextUrl);
     const adapterObj = getImportAdapterForDomain(domain);
     const adapterLabel = adapterObj ? adapterObj.domain : 'generic fallback';
@@ -79,13 +87,18 @@ export function useImportFlow() {
     clearDiagnostics();
     setStatus(t('import_loading'), 'loading');
 
-    let fetchedMarkdown = null;
+    let fetchedMarkdown: string | null = null;
     try {
       if (source === 'web') {
         fetchedMarkdown = await fetchReadableImportPage(nextUrl);
-        const recipe = importWebsiteRecipeWithAdapters(fetchedMarkdown, nextUrl);
+        const recipe = importWebsiteRecipeWithAdapters(fetchedMarkdown, nextUrl) as ImportPreviewRecipe;
         if (!recipe.tags || !recipe.tags.length) {
-          recipe.tags = suggestImportTags(recipe.sourceDomain, recipe.preparationType, recipe.category, recipe.name);
+          recipe.tags = suggestImportTags(
+            recipe.sourceDomain,
+            recipe.preparationType,
+            recipe.category,
+            recipe.name,
+          );
         }
         previewRecipe.value = recipe;
         setStatus(t('import_success'), 'ok');
@@ -112,7 +125,7 @@ Rispondi SOLO con un oggetto JSON valido, senza backtick, senza testo aggiuntivo
   "timerMinutes": numero_minuti_cottura_principale
 }`;
 
-      const headers = { 'Content-Type': 'application/json' };
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
       if (ANTHROPIC_API_KEY) {
         headers['x-api-key'] = ANTHROPIC_API_KEY;
         headers['anthropic-version'] = '2023-06-01';
@@ -128,23 +141,32 @@ Rispondi SOLO con un oggetto JSON valido, senza backtick, senza testo aggiuntivo
         }),
       });
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      const data = await response.json();
-      const raw = data.content.map(chunk => chunk.text || '').join('');
+
+      const data = await response.json() as {
+        content?: Array<{ text?: string }>;
+      };
+      const raw = (data.content || []).map(chunk => chunk.text || '').join('');
       const clean = raw.replace(/```json|```/g, '').trim();
-      const recipe = JSON.parse(clean);
+      const recipe = JSON.parse(clean) as Partial<ImportPreviewRecipe>;
+      const prepType = normalizePreparationTypeValue(recipe.preparationType) || 'classic';
+
       previewRecipe.value = {
         ...recipe,
         id: `imp_${Date.now()}`,
         source,
         url: nextUrl,
         sourceDomain: normalizeSourceDomain(nextUrl),
-        preparationType: normalizePreparationTypeValue(recipe.preparationType) || 'classic',
-      };
+        preparationType: prepType as PreparationType,
+        name: recipe.name || '',
+        ingredients: Array.isArray(recipe.ingredients) ? recipe.ingredients : [],
+        steps: Array.isArray(recipe.steps) ? recipe.steps : [],
+      } as ImportPreviewRecipe;
       setStatus(t('import_success'), 'ok');
       return true;
-    } catch (error) {
-      const rawError = String(error?.message || error).trim();
-      const isWebImportLimit = source === 'web' && (rawError.includes('UNSUPPORTED_WEB_IMPORT') || rawError.includes('WEB_FETCH'));
+    } catch (error: unknown) {
+      const rawError = String((error as Error)?.message || error).trim();
+      const isWebImportLimit = source === 'web'
+        && (rawError.includes('UNSUPPORTED_WEB_IMPORT') || rawError.includes('WEB_FETCH'));
       if (source === 'web') {
         const stage = inferImportFailureStage(rawError);
         diagnostic.value = {
@@ -164,7 +186,7 @@ Rispondi SOLO con un oggetto JSON valido, senza backtick, senza testo aggiuntivo
     }
   }
 
-  function updatePreparationType(value) {
+  function updatePreparationType(value: PreparationType): void {
     if (!previewRecipe.value) return;
     previewRecipe.value = {
       ...previewRecipe.value,
@@ -173,7 +195,7 @@ Rispondi SOLO con un oggetto JSON valido, senza backtick, senza testo aggiuntivo
     };
   }
 
-  function savePreviewedRecipe() {
+  function savePreviewedRecipe(): boolean {
     if (!previewRecipe.value) return false;
     const ok = recipeBook.add(previewRecipe.value);
     if (ok) {

@@ -4,7 +4,6 @@ import {
   addShoppingListItems,
   assignSection,
   clearShoppingList,
-  formatQuantity,
   getSectionI18nKey,
   groupShoppingItems,
   loadShoppingList,
@@ -13,34 +12,40 @@ import {
   saveShoppingList,
   SHOPPING_SECTIONS,
   toggleShoppingListItem,
-} from '../lib/storage.js';
+} from '../lib/storage';
+import type { Recipe, ShoppingGroup, ShoppingItem, ShoppingSection } from '../types';
+
+type SectionBucket = {
+  grouped: ShoppingGroup[];
+  ungrouped: ShoppingItem[];
+};
 
 export const useShoppingListStore = defineStore('shoppingList', () => {
-  const items = ref(loadShoppingList());
+  const items = ref<ShoppingItem[]>(loadShoppingList());
 
-  function refresh() {
+  function refresh(): void {
     items.value = loadShoppingList();
   }
 
-  function addRecipeIngredients(recipe) {
+  function addRecipeIngredients(recipe: Pick<Recipe, 'id' | 'name' | 'ingredients'>): number {
     const added = addShoppingListItems(recipe.ingredients || [], { id: recipe.id, name: recipe.name });
     refresh();
     return added;
   }
 
-  function toggleItem(id) {
+  function toggleItem(id: string): boolean {
     const ok = toggleShoppingListItem(id);
     refresh();
     return ok;
   }
 
-  function removeItem(id) {
+  function removeItem(id: string): boolean {
     const ok = removeShoppingListItem(id);
     refresh();
     return ok;
   }
 
-  function toggleGroup(ids, checked) {
+  function toggleGroup(ids: string[], checked: boolean): boolean {
     const idSet = new Set(ids);
     const current = loadShoppingList();
     let changed = false;
@@ -55,7 +60,7 @@ export const useShoppingListStore = defineStore('shoppingList', () => {
     return true;
   }
 
-  function removeMany(ids) {
+  function removeMany(ids: string[]): boolean {
     const idSet = new Set(ids);
     const current = loadShoppingList();
     const filtered = current.filter(item => !idSet.has(item.id));
@@ -65,23 +70,23 @@ export const useShoppingListStore = defineStore('shoppingList', () => {
     return true;
   }
 
-  function clearAll() {
+  function clearAll(): void {
     clearShoppingList();
     refresh();
   }
 
-  const groupedSections = computed(() => {
-    const grouped = groupShoppingItems(items.value);
-    const sectionMap = {};
+  const groupedSections = computed<ShoppingSection[]>(() => {
+    const groupedResult = groupShoppingItems(items.value);
+    const sectionMap: Record<string, SectionBucket> = {};
     SHOPPING_SECTIONS.forEach(section => {
       sectionMap[section] = { grouped: [], ungrouped: [] };
     });
 
-    grouped.grouped.forEach(group => {
+    groupedResult.grouped.forEach(group => {
       sectionMap[assignSection(group.baseName)].grouped.push(group);
     });
 
-    grouped.ungrouped.forEach(item => {
+    groupedResult.ungrouped.forEach(item => {
       const parsed = parseIngredient(item.text);
       sectionMap[assignSection(parsed.parsedName || item.text)].ungrouped.push(item);
     });

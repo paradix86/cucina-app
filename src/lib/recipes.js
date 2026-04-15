@@ -1,4 +1,4 @@
-import { getPreparationType } from './storage.js';
+import { getPreparationType } from './storage';
 import { t } from './i18n.js';
 
 export function recipeMatchesQuery(recipe, query) {

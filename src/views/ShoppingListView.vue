@@ -1,8 +1,8 @@
 <script setup>
 import { computed } from 'vue';
 import { storeToRefs } from 'pinia';
-import { parseIngredient, formatQuantity } from '../lib/storage.js';
-import { useShoppingListStore } from '../stores/shoppingList.js';
+import { parseIngredient, formatQuantity } from '../lib/storage';
+import { useShoppingListStore } from '../stores/shoppingList';
 import { t } from '../lib/i18n.js';
 
 const emit = defineEmits(['toast']);
