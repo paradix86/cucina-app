@@ -1,20 +1,24 @@
 <script setup>
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
+import { useRouter } from 'vue-router';
 import RecipeDetailView from '../components/RecipeDetailView.vue';
 import { BUILTIN_RECIPES } from '../lib/builtinData.js';
-import { useRecipeBook } from '../composables/useRecipeBook.js';
+import { useRecipeBookStore } from '../stores/recipeBook.js';
 import { getPreparationType } from '../lib/storage.js';
 import { getPreparationInfo, highlight, parseRecipeTime, recipeMatchesQuery, joinMetaParts } from '../lib/recipes.js';
 import { t } from '../lib/i18n.js';
 
 const emit = defineEmits(['start-recipe-timer', 'start-cooking', 'add-to-shopping', 'toast', 'go-home']);
+const props = defineProps({
+  id: { type: String, default: '' },
+});
+const router = useRouter();
 
 const search = ref('');
 const selectedCategory = ref('__all__');
 const selectedPrep = ref('all');
 const maxTime = ref(120);
-const selectedRecipe = ref(null);
-const recipeBook = useRecipeBook();
+const recipeBook = useRecipeBookStore();
 
 const categories = computed(() => ['__all__', ...new Set(BUILTIN_RECIPES.map(recipe => recipe.category))]);
 const filteredRecipes = computed(() => BUILTIN_RECIPES
@@ -23,6 +27,24 @@ const filteredRecipes = computed(() => BUILTIN_RECIPES
   .filter(recipe => selectedPrep.value === 'all' || getPreparationType(recipe) === selectedPrep.value)
   .filter(recipe => parseRecipeTime(recipe.time) <= maxTime.value));
 const resultsLabel = computed(() => filteredRecipes.value.length < BUILTIN_RECIPES.length ? t('results_showing', { n: filteredRecipes.value.length, total: BUILTIN_RECIPES.length }) : '');
+
+const selectedRecipeId = computed(() => {
+  const id = props.id;
+  if (Array.isArray(id)) return id[0] ? String(id[0]) : '';
+  if (id == null) return '';
+  return String(id);
+});
+
+const selectedRecipe = computed(() => {
+  if (!selectedRecipeId.value) return null;
+  return BUILTIN_RECIPES.find(recipe => recipe.id === selectedRecipeId.value) || null;
+});
+
+watch([selectedRecipeId, selectedRecipe], ([id, selected]) => {
+  if (id && !selected) {
+    router.replace('/recipes').catch(() => {});
+  }
+}, { immediate: true });
 
 function resetFilters() {
   search.value = '';
@@ -39,9 +61,13 @@ function saveBuiltin(recipe) {
   }
 }
 
+function openBuiltinDetail(recipe) {
+  router.push({ name: 'recipes-detail', params: { id: recipe.id } }).catch(() => {});
+}
+
 defineExpose({
   goHome() {
-    selectedRecipe.value = null;
+    router.replace('/recipes').catch(() => {});
   },
 });
 </script>
@@ -79,7 +105,7 @@ defineExpose({
         <p class="empty">{{ t('recipebook_notfound') }}</p>
       </div>
       <div v-else class="ricette-grid" id="builtin-grid">
-        <div v-for="recipe in filteredRecipes" :key="recipe.id" class="ricetta-card" :class="getPreparationInfo(recipe).cardCls" @click="selectedRecipe = recipe">
+        <div v-for="recipe in filteredRecipes" :key="recipe.id" class="ricetta-card" :class="getPreparationInfo(recipe).cardCls" @click="openBuiltinDetail(recipe)">
           <span class="card-src" :class="getPreparationInfo(recipe).cls">{{ getPreparationInfo(recipe).txt }}</span>
           <div class="card-name" v-html="highlight(recipe.name || '', search.trim())"></div>
           <div class="card-meta">{{ joinMetaParts([recipe.category, recipe.time, `${recipe.servings} ${t('detail_servings').toLowerCase()}`]) }}</div>
@@ -90,7 +116,7 @@ defineExpose({
       <RecipeDetailView
         :recipe="selectedRecipe"
         :can-save-builtin="true"
-        @back="selectedRecipe = null"
+        @back="router.push('/recipes')"
         @save-builtin="saveBuiltin"
         @start-recipe-timer="emit('start-recipe-timer', $event)"
         @start-cooking="emit('start-cooking', $event)"

@@ -8,18 +8,18 @@ import CookingModeView from './components/CookingModeView.vue';
 import { t, initLanguage } from './lib/i18n.js';
 import { migrateFromV2 } from './lib/storage.js';
 import { useToasts } from './composables/useToasts.js';
-import { useShoppingList } from './composables/useShoppingList.js';
 import { useTimers } from './composables/useTimers.js';
 import { initServiceWorkerUpdates } from './composables/useServiceWorker.js';
-import { useRecipeBook } from './composables/useRecipeBook.js';
+import { useRecipeBookStore } from './stores/recipeBook.js';
+import { useShoppingListStore } from './stores/shoppingList.js';
 
 const router = useRouter();
 const cookingRecipe = ref(null);
 const currentView = ref(null);
 
 const { showToast } = useToasts();
-const recipeBook = useRecipeBook();
-const shoppingList = useShoppingList();
+const recipeBook = useRecipeBookStore();
+const shoppingList = useShoppingListStore();
 const timers = useTimers();
 
 const tabs = computed(() => [
@@ -72,15 +72,15 @@ onMounted(() => {
           v-for="tab in tabs"
           :key="tab.path"
           :to="tab.path"
-          v-slot="{ isExactActive, navigate }"
+          v-slot="{ isActive, navigate }"
           custom
         >
           <button
             :id="`tab-${tab.path.slice(1)}`"
             class="tab"
-            :class="{ active: isExactActive }"
+            :class="{ active: isActive }"
             role="tab"
-            :aria-selected="isExactActive"
+            :aria-selected="isActive"
             @click="navigate"
           >
             {{ tab.label }}
@@ -88,9 +88,10 @@ onMounted(() => {
         </RouterLink>
       </nav>
 
-      <RouterView v-slot="{ Component }">
+      <RouterView v-slot="{ Component, route }">
         <component
           :is="Component"
+          :id="Array.isArray(route.params.id) ? route.params.id[0] : route.params.id"
           ref="currentView"
           @start-recipe-timer="handleRecipeTimer"
           @start-cooking="cookingRecipe = $event"

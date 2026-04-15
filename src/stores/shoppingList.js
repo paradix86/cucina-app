@@ -104,7 +104,5 @@ export const useShoppingListStore = defineStore('shoppingList', () => {
     removeMany,
     clearAll,
     groupedSections,
-    parseIngredient,
-    formatQuantity,
   };
 });

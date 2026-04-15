@@ -1,11 +1,15 @@
 <script setup>
 import { computed } from 'vue';
-import { useShoppingList } from '../composables/useShoppingList.js';
+import { storeToRefs } from 'pinia';
+import { parseIngredient, formatQuantity } from '../lib/storage.js';
+import { useShoppingListStore } from '../stores/shoppingList.js';
 import { t } from '../lib/i18n.js';
 
 const emit = defineEmits(['toast']);
 
-const { items, groupedSections, toggleItem, removeItem, toggleGroup, removeMany, clearAll, parseIngredient, formatQuantity } = useShoppingList();
+const store = useShoppingListStore();
+const { items, groupedSections } = storeToRefs(store);
+const { toggleItem, removeItem, toggleGroup, removeMany, clearAll } = store;
 
 const countLabel = computed(() => items.value.length === 1 ? t('shopping_count', { n: items.value.length }) : t('shopping_count_plural', { n: items.value.length }));
 

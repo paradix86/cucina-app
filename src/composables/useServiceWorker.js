@@ -24,6 +24,7 @@ export async function refreshAppRuntime() {
 
 export function initServiceWorkerUpdates() {
   if (!('serviceWorker' in navigator)) return;
+  const swUrl = `${import.meta.env.BASE_URL}sw.js`;
 
   let hasReloadedForUpdate = sessionStorage.getItem(SW_RELOAD_FLAG) === '1';
 
@@ -34,7 +35,7 @@ export function initServiceWorkerUpdates() {
     window.location.reload();
   });
 
-  navigator.serviceWorker.register('/sw.js').then(reg => {
+  navigator.serviceWorker.register(swUrl).then(reg => {
     reg.update().catch(() => {});
 
     if (reg.waiting) reg.waiting.postMessage({ type: 'SKIP_WAITING' });

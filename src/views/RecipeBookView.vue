@@ -1,23 +1,24 @@
 <script setup>
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
+import { storeToRefs } from 'pinia';
+import { useRouter } from 'vue-router';
 import RecipeDetailView from '../components/RecipeDetailView.vue';
-import {
-  deleteRecipe,
-  exportRecipeBook,
-  importRecipeBook,
-} from '../lib/storage.js';
-import { useRecipeBook } from '../composables/useRecipeBook.js';
+import { useRecipeBookStore } from '../stores/recipeBook.js';
 import { getPreparationInfo, getSourceDomainLabel, highlight, joinMetaParts, recipeMatchesQuery } from '../lib/recipes.js';
 import { t } from '../lib/i18n.js';
 
 const emit = defineEmits(['start-recipe-timer', 'start-cooking', 'add-to-shopping', 'toast']);
-const recipeBook = useRecipeBook();
-const recipes = recipeBook.recipes;
+const props = defineProps({
+  id: { type: String, default: '' },
+});
+const router = useRouter();
+const store = useRecipeBookStore();
+const { recipes } = storeToRefs(store);
+
 const search = ref('');
 const sourceFilter = ref('all');
 const filterType = ref('all');
 const siteFilter = ref('all');
-const selectedRecipe = ref(null);
 
 const sourceOptions = [
   ['all', () => t('filter_all')],
@@ -57,28 +58,42 @@ const filteredRecipes = computed(() => {
 const savedCountLabel = computed(() => recipes.value.length === 1 ? t('recipebook_saved', { n: recipes.value.length }) : t('recipebook_saved_plural', { n: recipes.value.length }));
 const resultsLabel = computed(() => filteredRecipes.value.length < recipes.value.length ? t('results_showing', { n: filteredRecipes.value.length, total: recipes.value.length }) : '');
 
-function refresh() {
-  recipeBook.refresh();
-}
+const selectedRecipeId = computed(() => {
+  const id = props.id;
+  if (Array.isArray(id)) return id[0] ? String(id[0]) : '';
+  if (id == null) return '';
+  return String(id);
+});
+
+const selectedRecipe = computed(() => {
+  if (!selectedRecipeId.value) return null;
+  return recipes.value.find(recipe => recipe.id === selectedRecipeId.value) || null;
+});
+
+watch([selectedRecipeId, selectedRecipe], ([id, selected]) => {
+  if (id && !selected) {
+    router.replace('/recipe-book').catch(() => {});
+  }
+}, { immediate: true });
 
 function openDetail(recipe) {
-  recipeBook.viewed(recipe.id);
-  selectedRecipe.value = recipes.value.find(item => item.id === recipe.id) || recipe;
+  router.push({ name: 'recipe-book-detail', params: { id: recipe.id } }).catch(() => {});
+  store.viewed(recipe.id);
 }
 
 function confirmDelete(id) {
   if (!window.confirm(t('delete_confirm'))) return;
-  deleteRecipe(id);
-  refresh();
-  if (selectedRecipe.value?.id === id) selectedRecipe.value = null;
+  store.remove(id);
+  if (selectedRecipeId.value === id) {
+    router.replace('/recipe-book').catch(() => {});
+  }
 }
 
 function onImportBackup(event) {
   const file = event.target.files?.[0];
   if (!file) return;
   emit('toast', t('import_loading'));
-  importRecipeBook(file).then(total => {
-    refresh();
+  store.importBackup(file).then(total => {
     emit('toast', t('backup_import_ok', { n: total }), 'success');
   }).catch(() => {
     emit('toast', t('backup_import_err'), 'error');
@@ -88,23 +103,19 @@ function onImportBackup(event) {
 }
 
 function toggleFavorite(id) {
-  recipeBook.toggleFavorite(id);
-  if (selectedRecipe.value?.id === id) {
-    selectedRecipe.value = recipes.value.find(recipe => recipe.id === id) || selectedRecipe.value;
-  }
+  store.toggleFavorite(id);
 }
 
 function saveRecipeNotes(payload) {
-  if (recipeBook.saveNotes(payload.recipe.id, payload.notes)) {
-    selectedRecipe.value = recipes.value.find(recipe => recipe.id === payload.recipe.id) || { ...payload.recipe, notes: payload.notes };
+  if (store.saveNotes(payload.recipe.id, payload.notes)) {
     emit('toast', t('recipe_notes_saved'), 'success');
   }
 }
 
 defineExpose({
   goHome() {
-    refresh();
-    selectedRecipe.value = null;
+    store.refresh();
+    router.replace('/recipe-book').catch(() => {});
   },
 });
 </script>
@@ -117,7 +128,7 @@ defineExpose({
         <span id="saved-count" class="muted-label">{{ savedCountLabel }}</span>
       </div>
       <div class="backup-actions">
-        <button class="btn-ghost" @click="exportRecipeBook(); emit('toast', t('backup_export_ok'), 'success')">{{ t('backup_export') }}</button>
+        <button class="btn-ghost" @click="store.exportBackup(); emit('toast', t('backup_export_ok'), 'success')">{{ t('backup_export') }}</button>
         <label class="btn-ghost" style="display:inline-flex;align-items:center;justify-content:center;cursor:pointer">
           {{ t('backup_import') }}
           <input hidden type="file" accept="application/json,.json" @change="onImportBackup" />
@@ -166,7 +177,7 @@ defineExpose({
       <RecipeDetailView
         :recipe="selectedRecipe"
         saved-mode
-        @back="selectedRecipe = null"
+        @back="router.push('/recipe-book')"
         @start-recipe-timer="emit('start-recipe-timer', $event)"
         @start-cooking="emit('start-cooking', $event)"
         @add-to-shopping="emit('add-to-shopping', $event)"

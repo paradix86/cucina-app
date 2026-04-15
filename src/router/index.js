@@ -8,8 +8,10 @@ import TimerView from '../views/TimerView.vue';
 const routes = [
   { path: '/', redirect: '/recipe-book' },
   { path: '/recipe-book',  name: 'recipe-book',  component: RecipeBookView },
+  { path: '/recipe-book/:id', name: 'recipe-book-detail', component: RecipeBookView, props: true },
   { path: '/import',       name: 'import',        component: ImportView },
   { path: '/recipes',      name: 'recipes',       component: BuiltinRecipesView },
+  { path: '/recipes/:id', name: 'recipes-detail', component: BuiltinRecipesView, props: true },
   { path: '/shopping-list',name: 'shopping-list', component: ShoppingListView },
   { path: '/timer',        name: 'timer',         component: TimerView },
   // Catch-all: redirect unknown paths to recipe book

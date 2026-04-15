@@ -1,5 +1,5 @@
 import { computed, ref } from 'vue';
-import { useRecipeBook } from './useRecipeBook.js';
+import { useRecipeBookStore } from '../stores/recipeBook.js';
 import {
   ANTHROPIC_API_KEY,
   detectSource,
@@ -21,7 +21,7 @@ import { t } from '../lib/i18n.js';
 const sourceMap = { youtube: 'YouTube', tiktok: 'TikTok', instagram: 'Instagram', web: 'sito web' };
 
 export function useImportFlow() {
-  const recipeBook = useRecipeBook();
+  const recipeBook = useRecipeBookStore();
   const url = ref('');
   const loading = ref(false);
   const status = ref({ message: '', type: '' });
