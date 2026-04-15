@@ -1,0 +1,43 @@
+{
+  "compilerOptions": {
+    "target": "ESNext",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "lib": ["ESNext", "DOM"],
+
+    // Gradual migration: keep .js files working
+    "allowJs": true,
+    "checkJs": false,
+
+    // Vue support
+    "jsx": "preserve",
+
+    // Strict-ish: off for now, enable incrementally per file
+    "strict": false,
+    "noImplicitAny": false,
+
+    // Paths / resolution
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"]
+    },
+
+    // Output (type-check only via vue-tsc, vite handles actual build)
+    "noEmit": true,
+    "isolatedModules": true,
+    "verbatimModuleSyntax": true,
+
+    "esModuleInterop": true,
+    "skipLibCheck": true
+  },
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.d.ts",
+    "src/**/*.vue",
+    "src/**/*.js"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist"
+  ]
+}
