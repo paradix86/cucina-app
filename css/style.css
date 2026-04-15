@@ -325,7 +325,9 @@ h3 { font-size: 15px; font-weight: 600; margin-bottom: 4px; }
 /* ---- FORM INPUTS ---- */
 input[type="text"],
 input[type="url"],
-input[type="number"] {
+input[type="number"],
+textarea,
+select {
   font-size: 14px;
   padding: 9px 12px;
   border: 0.5px solid var(--border-md);
@@ -336,7 +338,9 @@ input[type="number"] {
   width: 100%;
   transition: border-color .15s;
 }
-input:focus {
+input:focus,
+textarea:focus,
+select:focus {
   outline: none;
   border-color: var(--green);
   box-shadow: 0 0 0 3px rgba(29,158,117,.12);
@@ -456,6 +460,74 @@ input[type="number"] { text-align: center; }
 .url-row input { flex: 1; }
 .preview-box { margin-top: 1rem; }
 .preview-actions { display: flex; gap: 8px; margin-top: 1rem; flex-wrap: wrap; }
+.import-mode-switch {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+.import-mode-pill {
+  min-height: 38px;
+}
+.manual-form-wrap {
+  margin-top: 2px;
+}
+.manual-form-title {
+  font-size: 17px;
+  margin-bottom: 6px;
+}
+.manual-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 10px;
+}
+.manual-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.manual-field label {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+.manual-list-wrap {
+  margin-top: 14px;
+}
+.manual-list-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+.manual-list-header .btn-ghost {
+  min-height: 38px;
+}
+.manual-list-items {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.manual-list-item {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  align-items: stretch;
+}
+.manual-list-item .btn-danger {
+  min-height: 42px;
+  min-width: 86px;
+}
+.manual-actions {
+  margin-top: 14px;
+  display: flex;
+  justify-content: flex-end;
+}
+.manual-actions .btn-primary {
+  min-height: 44px;
+}
 
 /* ---- IMPORT PREVIEW METADATA ---- */
 .preview-metadata {
