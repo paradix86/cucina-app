@@ -839,6 +839,35 @@ input[type="number"] { text-align: center; }
   color: var(--red);
 }
 
+/* ---- SHOPPING SECTIONS ---- */
+.shopping-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.shopping-section + .shopping-section {
+  margin-top: 8px;
+}
+.shopping-section-heading {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 2px 6px;
+  border-bottom: 1px solid var(--border);
+}
+.shopping-section-name {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--text-muted);
+}
+.shopping-section-count {
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--text-hint);
+}
+
 /* ---- GROUPED SHOPPING ITEMS ---- */
 .shopping-grouped-item {
   display: flex;
@@ -875,9 +904,20 @@ input[type="number"] { text-align: center; }
 }
 .shopping-group-contribution {
   display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 4px 0;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 7px 0;
+}
+.shopping-group-contribution + .shopping-group-contribution {
+  border-top: 1px dashed var(--border);
+}
+.shopping-group-contribution-main {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  flex: 1;
+  min-width: 0;
 }
 .shopping-group-contribution .contrib-qty {
   font-weight: 500;
@@ -886,10 +926,32 @@ input[type="number"] { text-align: center; }
   font-variant-numeric: tabular-nums;
 }
 .shopping-group-contribution .contrib-recipe {
-  flex: 1;
+  font-size: 12px;
+  color: var(--text-muted);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+.shopping-group-contribution.is-checked .contrib-qty,
+.shopping-group-contribution.is-checked .contrib-recipe {
+  text-decoration: line-through;
+  color: var(--text-hint);
+}
+.shopping-contrib-remove {
+  min-width: 34px;
+  min-height: 34px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-hint);
+  cursor: pointer;
+  font-size: 14px;
+  font-family: var(--font);
+  flex-shrink: 0;
+}
+.shopping-contrib-remove:hover {
+  background: var(--red-light);
+  color: var(--red);
 }
 
 /* ---- SERVINGS CTRL ---- */

@@ -2,15 +2,15 @@
  * storage.js — Personal recipe book management via localStorage
  */
 
-const STORAGE_KEY = 'cucina_recipebook_v3';
-const STORAGE_KEY_V2 = 'cucina_ricettario_v2';
-const SHOPPING_LIST_KEY = 'cucina_shopping_list_v1';
+export const STORAGE_KEY = 'cucina_recipebook_v3';
+export const STORAGE_KEY_V2 = 'cucina_ricettario_v2';
+export const SHOPPING_LIST_KEY = 'cucina_shopping_list_v1';
 
-function normalizePreparationTypeValue(value) {
+export function normalizePreparationTypeValue(value) {
   return ['classic', 'bimby', 'airfryer'].includes(value) ? value : '';
 }
 
-function getPreparationType(recipe) {
+export function getPreparationType(recipe) {
   const explicit = normalizePreparationTypeValue(recipe?.preparationType);
   if (explicit) return explicit;
   if (recipe?.bimby === true) return 'bimby';
@@ -33,7 +33,7 @@ function normalizeStoredRecipe(recipe) {
  * One-time migration: v2 (Italian field names) → v3 (English field names).
  * Called once from app.js before any render.
  */
-function migrateFromV2() {
+export function migrateFromV2() {
   if (!localStorage.getItem(STORAGE_KEY_V2)) return;   // nothing to migrate
   if (localStorage.getItem(STORAGE_KEY)) return;   // v3 already exists
 
@@ -66,7 +66,7 @@ function migrateFromV2() {
   }
 }
 
-function loadRecipeBook() {
+export function loadRecipeBook() {
   try {
     const arr = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
     return Array.isArray(arr) ? arr.map(normalizeStoredRecipe) : [];
@@ -75,7 +75,7 @@ function loadRecipeBook() {
   }
 }
 
-function saveRecipeBook(arr) {
+export function saveRecipeBook(arr) {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify((arr || []).map(normalizeStoredRecipe)));
   } catch (e) {
@@ -83,7 +83,7 @@ function saveRecipeBook(arr) {
   }
 }
 
-function addRecipe(recipe) {
+export function addRecipe(recipe) {
   const arr = loadRecipeBook();
   if (arr.find(r => r.id === recipe.id)) return false;
   arr.unshift(normalizeStoredRecipe(recipe));
@@ -91,11 +91,11 @@ function addRecipe(recipe) {
   return true;
 }
 
-function deleteRecipe(id) {
+export function deleteRecipe(id) {
   saveRecipeBook(loadRecipeBook().filter(r => r.id !== id));
 }
 
-function updateRecipeNotes(id, notes) {
+export function updateRecipeNotes(id, notes) {
   const arr = loadRecipeBook();
   const idx = arr.findIndex(recipe => recipe.id === id);
   if (idx === -1) return false;
@@ -104,7 +104,7 @@ function updateRecipeNotes(id, notes) {
   return true;
 }
 
-function toggleRecipeFavorite(id) {
+export function toggleRecipeFavorite(id) {
   const arr = loadRecipeBook();
   const idx = arr.findIndex(recipe => recipe.id === id);
   if (idx === -1) return false;
@@ -113,7 +113,7 @@ function toggleRecipeFavorite(id) {
   return true;
 }
 
-function markRecipeViewed(id) {
+export function markRecipeViewed(id) {
   const arr = loadRecipeBook();
   const idx = arr.findIndex(recipe => recipe.id === id);
   if (idx === -1) return false;
@@ -122,7 +122,7 @@ function markRecipeViewed(id) {
   return true;
 }
 
-function exportRecipeBook() {
+export function exportRecipeBook() {
   const arr = loadRecipeBook();
   const blob = new Blob([JSON.stringify(arr, null, 2)], { type: 'application/json' });
   const a = document.createElement('a');
@@ -134,7 +134,7 @@ function exportRecipeBook() {
   return arr.length;
 }
 
-function importRecipeBook(file) {
+export function importRecipeBook(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = e => {
@@ -154,7 +154,7 @@ function importRecipeBook(file) {
   });
 }
 
-function loadShoppingList() {
+export function loadShoppingList() {
   try {
     const arr = JSON.parse(localStorage.getItem(SHOPPING_LIST_KEY) || '[]');
     return Array.isArray(arr) ? arr : [];
@@ -163,7 +163,7 @@ function loadShoppingList() {
   }
 }
 
-function saveShoppingList(items) {
+export function saveShoppingList(items) {
   try {
     localStorage.setItem(SHOPPING_LIST_KEY, JSON.stringify(items || []));
   } catch (e) {
@@ -171,7 +171,7 @@ function saveShoppingList(items) {
   }
 }
 
-function addShoppingListItems(items, recipeMeta = {}) {
+export function addShoppingListItems(items, recipeMeta = {}) {
   const existing = loadShoppingList();
   const timestamp = Date.now();
   const additions = (items || [])
@@ -191,7 +191,7 @@ function addShoppingListItems(items, recipeMeta = {}) {
   return additions.length;
 }
 
-function toggleShoppingListItem(id) {
+export function toggleShoppingListItem(id) {
   const items = loadShoppingList();
   const idx = items.findIndex(item => item.id === id);
   if (idx === -1) return false;
@@ -200,7 +200,7 @@ function toggleShoppingListItem(id) {
   return true;
 }
 
-function removeShoppingListItem(id) {
+export function removeShoppingListItem(id) {
   const items = loadShoppingList();
   const next = items.filter(item => item.id !== id);
   if (next.length === items.length) return false;
@@ -208,7 +208,7 @@ function removeShoppingListItem(id) {
   return true;
 }
 
-function clearShoppingList() {
+export function clearShoppingList() {
   saveShoppingList([]);
 }
 
@@ -232,7 +232,7 @@ function clearShoppingList() {
  *   "chicken meat q.b." → { confidence: 'low' } (vague, not merged)
  *   "olive oil"         → { confidence: 'low' } (no quantity)
  */
-function parseIngredient(text) {
+export function parseIngredient(text) {
   if (!text) return { confidence: 'low', raw: text };
 
   const trimmed = String(text).trim();
@@ -347,7 +347,7 @@ function fromBaseUnits(baseQty, unit) {
 /**
  * Format a quantity nicely for display.
  */
-function formatQuantity(qty) {
+export function formatQuantity(qty) {
   if (qty === Math.floor(qty)) return String(Math.floor(qty));
   return qty.toFixed(1).replace(/\.0$/, '');
 }
@@ -361,7 +361,7 @@ function formatQuantity(qty) {
  * Six practical categories aligned with how real meals are built.
  */
 
-const SHOPPING_SECTIONS = [
+export const SHOPPING_SECTIONS = [
   'proteins',
   'carbs',
   'vegetables_fruit',
@@ -446,7 +446,7 @@ function _keywordMatches(normalized, keyword) {
  * Assign a section to an ingredient name.
  * Uses keyword matching with fallback to 'other'.
  */
-function assignSection(ingredientName) {
+export function assignSection(ingredientName) {
   if (!ingredientName) return 'other';
 
   const normalized = String(ingredientName).toLowerCase().trim();
@@ -463,7 +463,7 @@ function assignSection(ingredientName) {
 /**
  * Get i18n key for a section ID.
  */
-function getSectionI18nKey(sectionId) {
+export function getSectionI18nKey(sectionId) {
   const keys = {
     'proteins': 'section_proteins',
     'carbs': 'section_carbs',
@@ -474,7 +474,7 @@ function getSectionI18nKey(sectionId) {
   };
   return keys[sectionId] || 'section_other';
 }
-function groupShoppingItems(items) {
+export function groupShoppingItems(items) {
   if (!Array.isArray(items)) return { grouped: [], ungrouped: [] };
 
   const parseResults = items.map(item => ({

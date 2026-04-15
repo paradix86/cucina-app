@@ -540,91 +540,125 @@ function renderShoppingList() {
     return;
   }
 
-  // Group items intelligently
+  // Group items intelligently (existing logic preserved)
   const { grouped, ungrouped } = groupShoppingItems(items);
 
-  // Build grouped section first
-  const groupedHtml = grouped.map(group => {
-    const groupId = `group-${group.baseName.replace(/\s+/g, '-')}`;
-    const itemsHtml = group.items.map(item => {
-      const parsed = parseIngredient(item.text);
-      const displayQty = parsed.parsedQty
-        ? `${formatQuantity(parsed.parsedQty)} ${parsed.parsedUnit}`
-        : '';
-      const recipeName = item.sourceRecipeName || '?';
+  // Distribute entries into sections
+  const sectionMap = {};
+  SHOPPING_SECTIONS.forEach(s => { sectionMap[s] = { grouped: [], ungrouped: [] }; });
+
+  grouped.forEach(group => {
+    const section = assignSection(group.baseName);
+    sectionMap[section].grouped.push(group);
+  });
+
+  ungrouped.forEach(item => {
+    const parsed = parseIngredient(item.text);
+    const nameForSection = parsed.parsedName || item.text;
+    const section = assignSection(nameForSection);
+    sectionMap[section].ungrouped.push(item);
+  });
+
+  // Render sections in fixed order
+  const sectionsHtml = SHOPPING_SECTIONS.map(sectionId => {
+    const entries = sectionMap[sectionId];
+    const count = entries.grouped.length + entries.ungrouped.length;
+    if (count === 0) return '';
+
+    const sectionLabel = t(getSectionI18nKey(sectionId));
+
+    const groupedHtml = entries.grouped.map(group => {
+      const itemIds = group.items.map(item => item.id).join(',');
+      const totalLabel = group.groupType === 'numeric'
+        ? `${group.baseName} — ${group.displayQty} ${group.unit}`
+        : (group.displayName || group.baseName);
+      const itemsHtml = group.items.map(item => {
+        const parsed = parseIngredient(item.text);
+        const displayQty = group.groupType === 'numeric' && parsed.parsedQty
+          ? `${formatQuantity(parsed.parsedQty)} ${parsed.parsedUnit}`
+          : item.text;
+        const recipeName = item.sourceRecipeName || t('shopping_recipe_unknown');
+        return `
+          <div class="shopping-group-contribution${item.checked ? ' is-checked' : ''}">
+            <div class="shopping-group-contribution-main">
+              <span class="contrib-qty">${displayQty}</span>
+              <span class="contrib-recipe">${recipeName}</span>
+            </div>
+            <button class="shopping-contrib-remove" onclick="removeShoppingListContributionUI('${item.id}')"
+              aria-label="${t('shopping_remove')}">✕</button>
+          </div>`;
+      }).join('');
+
       return `
-        <div class="shopping-group-contribution">
-          <span class="contrib-qty">${displayQty}</span>
-          <span class="contrib-recipe">· ${recipeName}</span>
+        <div class="shopping-grouped-item">
+          <label class="shopping-item-main">
+            <input type="checkbox"
+              class="shopping-group-checkbox"
+              data-item-ids="${itemIds}"
+              ${group.items.some(i => !i.checked) ? '' : 'checked'}
+              onchange="toggleShoppingGroupCheckboxes(this.dataset.itemIds, this.checked)">
+            <span class="shopping-item-text shopping-item-total">
+              ${totalLabel}
+            </span>
+          </label>
+          <button class="shopping-remove" data-item-ids="${itemIds}" onclick="removeShoppingGroupUI(this.dataset.itemIds)"
+            aria-label="${t('shopping_remove')}">✕</button>
+          <div class="shopping-group-breakdown">
+            ${itemsHtml}
+          </div>
         </div>`;
     }).join('');
 
-    return `
-      <div class="shopping-grouped-item">
+    const ungroupedHtml = entries.ungrouped.map(item => `
+      <div class="shopping-item${item.checked ? ' is-checked' : ''}">
         <label class="shopping-item-main">
-          <input type="checkbox"
-            class="shopping-group-checkbox"
-            data-group="${groupId}"
-            ${group.items.some(i => !i.checked) ? '' : 'checked'}
-            onchange="toggleShoppingGroupCheckboxes('${groupId}', this.checked)">
-          <span class="shopping-item-text shopping-item-total">
-            ${group.baseName} — ${group.displayQty} ${group.unit}
-          </span>
+          <input type="checkbox" ${item.checked ? 'checked' : ''}
+            onchange="toggleShoppingListItemUI('${item.id}')">
+          <span class="shopping-item-text">${item.text}</span>
         </label>
-        <button class="shopping-remove" onclick="removeShoppingGroupUI('${groupId}')"
+        <button class="shopping-remove" onclick="removeShoppingListItemUI('${item.id}')"
           aria-label="${t('shopping_remove')}">✕</button>
-        <div class="shopping-group-breakdown">
-          ${itemsHtml}
+      </div>`).join('');
+
+    return `
+      <div class="shopping-section">
+        <div class="shopping-section-heading">
+          <span class="shopping-section-name">${sectionLabel}</span>
+          <span class="shopping-section-count">(${count})</span>
         </div>
+        ${groupedHtml}
+        ${ungroupedHtml}
       </div>`;
   }).join('');
 
-  // Build ungrouped section
-  const ungroupedHtml = ungrouped.map(item => `
-    <div class="shopping-item${item.checked ? ' is-checked' : ''}">
-      <label class="shopping-item-main">
-        <input type="checkbox" ${item.checked ? 'checked' : ''}
-          onchange="toggleShoppingListItemUI('${item.id}')">
-        <span class="shopping-item-text">${item.text}</span>
-      </label>
-      <button class="shopping-remove" onclick="removeShoppingListItemUI('${item.id}')"
-        aria-label="${t('shopping_remove')}">✕</button>
-    </div>`).join('');
-
-  listEl.innerHTML = `<div class="shopping-list-rows">` +
-    (groupedHtml || '') +
-    (ungroupedHtml || '') +
-    `</div>`;
+  listEl.innerHTML = `<div class="shopping-list-rows">${sectionsHtml}</div>`;
 }
 
-function toggleShoppingGroupCheckboxes(groupId, checked) {
+function toggleShoppingGroupCheckboxes(itemIdsCsv, checked) {
   const items = loadShoppingList();
-  const baseName = groupId.replace('group-', '').replace(/-/g, ' ');
-  const parsed = items
-    .filter(item => {
-      const p = parseIngredient(item.text);
-      return p.parsedName === baseName;
-    });
+  const idSet = new Set(String(itemIdsCsv || '').split(',').filter(Boolean));
+  if (!idSet.size) return;
 
-  parsed.forEach(item => {
+  let changed = false;
+  items.forEach(item => {
+    if (!idSet.has(item.id)) return;
     item.checked = checked;
+    changed = true;
   });
 
+  if (!changed) return;
   saveShoppingList(items);
   renderShoppingList();
 }
 
-function removeShoppingGroupUI(groupId) {
+function removeShoppingGroupUI(itemIdsCsv) {
   const items = loadShoppingList();
-  const baseName = groupId.replace('group-', '').replace(/-/g, ' ');
+  const idSet = new Set(String(itemIdsCsv || '').split(',').filter(Boolean));
+  if (!idSet.size) return;
 
-  // Remove all items in this group
-  const filtered = items.filter(item => {
-    const p = parseIngredient(item.text);
-    return p.parsedName !== baseName;
-  });
+  const filtered = items.filter(item => !idSet.has(item.id));
 
-  if (filtered.length === items.length) return; // Nothing removed
+  if (filtered.length === items.length) return;
   saveShoppingList(filtered);
   renderShoppingList();
 }
@@ -635,6 +669,11 @@ function toggleShoppingListItemUI(id) {
 }
 
 function removeShoppingListItemUI(id) {
+  if (!removeShoppingListItem(id)) return;
+  renderShoppingList();
+}
+
+function removeShoppingListContributionUI(id) {
   if (!removeShoppingListItem(id)) return;
   renderShoppingList();
 }

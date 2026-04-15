@@ -3,7 +3,7 @@
  * Must be loaded FIRST before all other JS files.
  */
 
-const TRANSLATIONS = {
+export const TRANSLATIONS = {
   it: {
     // Navigation
     nav_recipebook: 'Ricettario',
@@ -715,7 +715,7 @@ const TRANSLATIONS = {
   },
 };
 
-const SUPPORTED_LANGUAGES = ['it', 'en', 'de', 'fr', 'es'];
+export const SUPPORTED_LANGUAGES = ['it', 'en', 'de', 'fr', 'es'];
 const LANG_STORAGE_KEY = 'cucina_lang';
 
 let currentLang = 'it';
