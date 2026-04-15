@@ -1,163 +1,163 @@
 # 🍳 Cucina App
 
-A cooking web app designed for tablets and touchscreens (Lenovo Yoga C930 and similar devices).
+A cooking web app designed for tablets and touchscreens.
 
-No backend, no installation, and no build step: open `index.html` and you are ready to go.
+Vue 3 + Vite SPA. No backend. State is persisted in `localStorage`.
 
 ## Features
 
 | Section | What it does |
 |---|---|
-| 📚 **Recipe Book** | Your saved recipes, searchable and persistent through `localStorage` |
-| ＋ **Import** | Paste a YouTube / TikTok / Instagram / recipe website link and extract a structured recipe |
-| 🍝 **Recipes** | Built-in recipes, including classic and Bimby TM5 recipes |
-| ⏱ **Timer** | Multiple parallel timers, also launchable from recipes |
+| 📚 **Recipe Book** | Saved recipes with search, filters (source, type, site, favorites, recent), notes, and detail view |
+| ＋ **Import** | Import from recipe websites via adapter-based extraction; preview and save before committing |
+| 🍝 **Recipes** | Built-in dataset of classic and Bimby TM5 recipes |
+| 🛒 **Shopping List** | Add ingredients from recipes; smart grouping, quantity merging, and section assignment |
+| ⏱ **Timer** | Multiple parallel timers, launchable from recipes |
+| 🍳 **Cooking Mode** | Step-by-step guided view for active cooking |
 
-## How to use it
-
-### Option 1 — Run locally in the browser
+## Local development
 
 ```bash
-git clone https://github.com/your-username/cucina-app.git
+git clone https://github.com/paradix86/cucina-app.git
 cd cucina-app
-# Open index.html in your browser
-# or serve it with a small static server / Live Server
+npm install
+npm run dev
 ```
 
-### Option 2 — GitHub Pages
+App runs at `http://localhost:4173`.
 
-1. Go to **Settings → Pages** in your repository
-2. Select **Branch: main / root**
-3. The app will be available at:
-
-```text
-https://your-username.github.io/cucina-app/
+```bash
+npm run build     # production build → dist/
+npm run preview   # preview the built dist/
 ```
 
 ## Project structure
 
 ```text
 cucina-app/
-├── index.html
-├── README.md
-├── PROJECT_PLAN.md
-├── AGENTS.md
-├── CONTRIBUTING.md
-├── css/
-│   └── style.css
-├── js/
-│   ├── app.js
-│   ├── data.js
-│   ├── i18n.js
-│   ├── import.js
-│   ├── import-web.js
-│   ├── import-adapters.js
-│   ├── storage.js
-│   ├── timer.js
-│   ├── toast.js
-│   └── ui.js
-└── sw.js
+├── src/
+│   ├── App.vue              # root component — layout, router outlet, global event handlers
+│   ├── main.js              # bootstrap: Vue + Pinia + Router
+│   ├── types.d.ts           # shared TypeScript type declarations (gradual adoption)
+│   ├── router/
+│   │   └── index.js         # Vue Router, hash history
+│   ├── views/               # one component per route
+│   │   ├── RecipeBookView.vue
+│   │   ├── ImportView.vue
+│   │   ├── BuiltinRecipesView.vue
+│   │   ├── ShoppingListView.vue
+│   │   └── TimerView.vue
+│   ├── components/          # shared components
+│   │   ├── AppHeader.vue
+│   │   ├── AppFooter.vue
+│   │   ├── CookingModeView.vue
+│   │   ├── RecipeDetailView.vue
+│   │   └── ToastStack.vue
+│   ├── stores/              # Pinia stores — shared reactive state
+│   │   ├── recipeBook.js
+│   │   └── shoppingList.js
+│   ├── composables/         # Vue composables
+│   │   ├── useRecipeBook.js
+│   │   ├── useShoppingList.js
+│   │   ├── useImportFlow.js
+│   │   ├── useTimers.js
+│   │   ├── useToasts.js
+│   │   ├── useTheme.js
+│   │   └── useServiceWorker.js
+│   └── lib/                 # pure logic, no Vue dependency
+│       ├── storage.js        # localStorage CRUD, shopping grouping/parsing
+│       ├── recipes.js        # recipe helpers (filters, highlight, formatting)
+│       ├── i18n.js           # t() translation function
+│       ├── i18nData.js       # strings in EN, IT, DE, FR, ES
+│       ├── builtinData.js    # built-in recipe dataset
+│       ├── appMeta.js        # version and build metadata
+│       └── import/
+│           ├── core.js       # URL detection, domain normalization
+│           ├── web.js        # web fetch, readable extraction, failure inference
+│           └── adapters.js   # domain adapter registry and generic fallback
+├── public/
+│   ├── manifest.json        # PWA manifest
+│   ├── sw.js                # service worker
+│   └── icons/               # PWA icons
+├── vite.config.js
+├── tsconfig.json            # allowJs + gradual TS adoption
+└── package.json
 ```
 
 ## Recipe import
 
-The `+ Import` feature supports multiple import paths depending on the URL type.
+The `+ Import` tab supports recipe website URLs.
 
-### Social / AI-assisted import
+Architecture:
+1. URL → detect source type (web / YouTube / TikTok / Instagram)
+2. Fetch readable page content
+3. Select domain-specific adapter if available, otherwise use generic fallback
+4. Parse recipe fields, assign `sourceDomain`, `preparationType`, and suggested tags
+5. Show preview — user can adjust before saving
 
-YouTube, TikTok, Instagram, and other supported flows may use the existing import pipeline for structured extraction.
-
-### Website import
-
-Recipe websites are handled through a lightweight adapter-based architecture:
-- dedicated adapters for supported domains
-- generic fallback parsing for unsupported websites when possible
-
-Currently supported website adapters include:
+Currently supported website adapters:
 - `giallozafferano.it`
 - `ricetteperbimby.it`
 
-Imported recipes can persist metadata such as:
-- `source`
-- `sourceDomain`
-- `preparationType`
+Imported recipes persist: `source`, `sourceDomain`, `preparationType`, `tags`.
 
-### Browser-only architecture note
-
-Because the app is static and browser-based, some websites may still be limited by:
-- CORS restrictions
-- remote anti-bot protections
-- unreadable or inconsistent page structure
-
-The app should fail honestly when a site cannot be imported reliably.
-
-## Built-in recipes
-
-The app includes built-in recipes across multiple preparation methods:
-- Classic
-- Bimby TM5
-- Air Fryer support is implemented at model/UI/filter level, even if the built-in dataset may currently contain no air fryer recipes
+Some websites will remain unsupported due to CORS restrictions or anti-bot protections. The app fails honestly in those cases.
 
 ## Preparation types
 
-Recipes are classified with a first-class `preparationType` field:
+Recipes carry a first-class `preparationType` field:
 
 - `classic`
 - `bimby`
 - `airfryer`
 
-Backward compatibility is preserved with the older `bimby: true/false` flag.
+The legacy `bimby: boolean` field is preserved for backward compatibility with existing saved data.
 
 ## Adding built-in recipes
 
-Edit `js/data.js` and add an object to the built-in recipes array.
-
-Example:
+Edit [`src/lib/builtinData.js`](src/lib/builtinData.js) and add an entry to the recipes array:
 
 ```js
 {
   id: 'my-recipe-1',
   name: 'My Recipe',
-  category: 'First Courses',
+  category: 'Primi',
   preparationType: 'classic', // 'classic' | 'bimby' | 'airfryer'
-  bimby: false,               // legacy compatibility if still needed
   emoji: '🍝',
   time: '30 min',
   servings: '4',
   source: 'classica',
   ingredients: ['200 g pasta', '...'],
-  steps: ['Step 1...', 'Step 2...'],
+  steps: ['Step 1', 'Step 2'],
   timerMinutes: 10,
 }
 ```
 
-For Bimby recipes, robot settings can still use the structured step format:
+## i18n
 
-```text
-"Vel. 5 · 3 sec — Step description"
-"Temp. 100° · Vel. 1 · 10 min — Step description"
-```
+All user-facing strings go through `t('key')` (see [`src/lib/i18n.js`](src/lib/i18n.js)).
 
-## Offline / PWA behavior
+Supported languages: Italian, English, German, French, Spanish.
 
-The app is served as a static PWA with a cache-first service worker.
+New strings must be added to all five language sections in [`src/lib/i18nData.js`](src/lib/i18nData.js).
 
-Important development note:
-- if a cached static asset changes, update `CACHE_NAME` in `sw.js`
+## Offline / PWA
 
-## Compatibility
+The app ships a cache-first service worker (`public/sw.js`).
 
-Tested in modern browsers such as:
-- Chrome
-- Firefox
-- Safari
-- Edge
+If a deployed static asset changes, bump `CACHE_NAME` in `public/sw.js` to invalidate caches.
 
-Optimized for:
-- tablets
-- touchscreens
-- tent/tablet usage
-- light and dark themes
+## Deployment
+
+Build produces a static bundle in `dist/`. Deploy that folder to any static host.
+
+For GitHub Pages with a subdirectory URL, `vite.config.js` may need a `base` option set to the repo name.
+
+## Browser compatibility
+
+Tested in Chrome, Firefox, Safari, Edge (modern versions).
+
+Optimized for tablets and touchscreens. Supports light and dark themes.
 
 ## License
 

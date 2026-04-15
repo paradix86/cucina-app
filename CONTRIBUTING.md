@@ -1,184 +1,166 @@
 # CONTRIBUTING.md
 
-Thanks for contributing to Cucina App.
+## Prerequisites
 
-This project is intentionally simple:
-- static HTML / CSS / Vanilla JS
-- no dependencies
-- no bundler
-- no build step
+- Node.js 18+
+- npm
 
-The goal is to keep the app lightweight, readable, and easy to run locally.
-
-## Local setup
-
-You can run the app in any of these ways:
-
-### Option 1 — Open directly
-Open `index.html` in your browser.
-
-### Option 2 — Use a local static server
-Any small static server is fine. Examples:
+## Setup
 
 ```bash
-python -m http.server 3000
+git clone https://github.com/paradix86/cucina-app.git
+cd cucina-app
+npm install
 ```
 
-Then open:
+## Development
 
-```text
-http://127.0.0.1:3000
+```bash
+npm run dev      # dev server → http://localhost:4173
+npm run build    # production build → dist/
+npm run preview  # serve the built dist/ locally
 ```
 
-Using a local server is preferred when testing:
-- service worker behavior
-- caching
-- import flows
-- Playwright checks
+The app uses Vite with hot module replacement. After editing a `.vue` or `.js` file in `src/`, the browser updates automatically.
 
 ## Project structure
 
 ```text
-index.html
-css/style.css
-js/app.js
-js/data.js
-js/i18n.js
-js/import.js
-js/import-web.js
-js/import-adapters.js
-js/storage.js
-js/timer.js
-js/toast.js
-js/ui.js
-sw.js
+src/
+  App.vue              root component
+  main.js              bootstrap (Vue + Pinia + Router)
+  types.d.ts           shared TypeScript declarations
+  router/index.js      route definitions
+  views/               one component per route
+  components/          shared components
+  stores/              Pinia stores (recipeBook, shoppingList)
+  composables/         Vue composables
+  lib/                 pure logic (no Vue imports)
+    storage.js         localStorage CRUD + shopping parsing
+    i18n.js            t() translation function
+    i18nData.js        strings in 5 languages
+    builtinData.js     built-in recipe dataset
+    import/            import pipeline (core, web, adapters)
+public/
+  sw.js                service worker
+  manifest.json        PWA manifest
+  icons/               PWA icons
 ```
 
 ## Development rules
 
-### 1. Keep it dependency-free
-Do not add external libraries unless there is a very strong reason.
+### 1. i18n is required
 
-### 2. Keep it build-free
-Do not introduce bundlers, transpilers, or framework tooling.
+All user-facing strings go through `t('key')` in `src/lib/i18n.js`.
 
-### 3. Keep changes small
-Prefer focused, verifiable changes over broad refactors.
+Every new key must be added to **all five** language sections in `src/lib/i18nData.js` (IT, EN, DE, FR, ES).
 
-### 4. Respect i18n
-All user-facing strings must go through `t('key')` in `js/i18n.js`.
+### 2. localStorage compatibility
 
-### 5. Respect cached assets
-If you change a static asset that is cached by the service worker, update `CACHE_NAME` in `sw.js`.
+Existing saved data must survive upgrades. Recipe normalization lives in `normalizeStoredRecipe()` in `src/lib/storage.js`. Any new field added to the recipe model must have a safe default there.
 
-### 6. Watch for stale runtime
-This app uses a cache-first service worker. Stale JS/CSS is a common debugging trap and can make manual behavior differ from the latest code.
+Do not change how existing fields are stored in a way that breaks old data.
 
-### 7. Preserve backward compatibility
-Saved recipes may exist in:
-- legacy Italian field shape
-- newer English `v3` field shape
+### 3. Pinia for shared state
 
-Do not break existing `localStorage` data.
+New cross-view reactive state belongs in a Pinia store under `src/stores/`.
 
-### 8. Keep touch UX in mind
-The app is designed for tablets and touchscreens. Avoid tiny controls or cramped layouts.
+When destructuring state from a Pinia store inside a composable or setup function, use `storeToRefs(store)` to preserve reactivity:
 
-## Recipe model guidelines
+```js
+import { storeToRefs } from 'pinia';
+const { recipes } = storeToRefs(useRecipeBookStore());
+```
 
-Prefer the current English field shape for new work.
+Direct destructuring (`const { recipes } = store`) breaks reactivity for refs.
 
-Example:
+### 4. lib/ is Vue-free
+
+`src/lib/` contains pure logic only — no Vue imports, no refs, no reactive. This keeps it testable and framework-independent.
+
+### 5. Keep changes focused
+
+Prefer surgical, verifiable changes over broad refactors. If a request is narrowly scoped, treat it as such.
+
+### 6. Service worker and caching
+
+The app ships a cache-first service worker (`public/sw.js`).
+
+In a deployed environment, if a static asset changes, old clients will keep serving cached files until the SW detects an update. If you change assets that must invalidate across deployments, bump `CACHE_NAME` in `public/sw.js`.
+
+In local dev (`npm run dev`), the SW is not active — Vite serves files directly. This is the expected behavior.
+
+### 7. Touch UX
+
+The app is optimized for tablets and touchscreens. Avoid small tap targets or cramped layouts.
+
+## Recipe model
+
+Use the current v3 English shape for new work:
 
 ```js
 {
   id: '...',
   name: '...',
   category: '...',
-  preparationType: 'classic',
-  bimby: false,
+  preparationType: 'classic', // 'classic' | 'bimby' | 'airfryer'
+  bimby: false,               // legacy compat — keep it
   emoji: '🍳',
   time: '20 min',
   servings: '4',
   source: 'web',
   sourceDomain: 'giallozafferano.it',
-  ingredients: ['...'],
-  steps: ['...'],
+  ingredients: ['200 g pasta', '...'],
+  steps: ['Step 1', '...'],
   timerMinutes: 0,
   notes: '',
   favorite: false,
-  tags: []
+  tags: [],
+  lastViewedAt: 0,
 }
 ```
 
-## Website import guidelines
+## Website import
 
-Website import uses a lightweight adapter-based architecture.
+The import pipeline in `src/lib/import/` follows this flow:
 
-Current principles:
-- normalize the domain first
-- use a dedicated adapter for supported domains
-- keep the generic fallback honest
-- preserve `source`, `sourceDomain`, and `preparationType`
-- do not break already working site adapters when adding a new one
+1. Normalize domain via `normalizeSourceDomain()`
+2. Select a domain adapter if one exists (`adapters.js`)
+3. Fall back to generic parser if no adapter matches
+4. Persist `source`, `sourceDomain`, `preparationType`, and suggested `tags`
 
-Supported domain-specific adapters currently include:
-- `giallozafferano.it`
-- `ricetteperbimby.it`
+Adding a new adapter: add an entry to the adapter registry in `src/lib/import/adapters.js` with a domain matcher and a parse function. Do not break existing adapters.
 
-## UI guidelines
+## CSS
 
-- Reuse existing visual patterns and classes where possible
-- Keep the design clean and touch-friendly
-- Do not add visual noise
-- When adding new UI sections, keep them consistent with the existing tab/card style
+All styles are in `css/style.css`, organized with commented sections. Reuse existing CSS custom properties and utility classes. Check both light and dark theme after visual changes.
 
-## CSS guidelines
+## Testing
 
-- Keep CSS in `css/style.css`
-- Use clearly commented sections
-- Prefer extending the existing token/style system over adding disconnected styles
-- Check both light and dark theme behavior
+At minimum, for any non-trivial change:
 
-## Testing expectations
+1. `npm run dev` and exercise the affected flow
+2. Check browser console for errors
+3. If the change involves import, shopping list, or recipe persistence: test save → reload → verify data survived
+4. If the change is UI/flow related, run a targeted Playwright validation
+5. `npm run build` — confirm the build passes cleanly
 
-At minimum, for relevant changes:
-
-1. run the app locally
-2. clear service workers and caches if runtime behavior may be stale
-3. reload and confirm the current assets/scripts are actually loaded
-4. test the affected flow manually
-5. check browser console errors
-6. if the change is UI/flow related, run a targeted Playwright verification
-
-Practical stale-cache checklist:
-- clear service workers
-- clear caches
-- reload the app
-- confirm fresh assets are loaded
-- only then trust manual reproduction results
+**Stale SW caveat (deployed environments only):** if testing a deployed version and behavior seems wrong, clear service workers and caches, then reload. In local dev this does not apply.
 
 ## Pull request checklist
 
-Before opening a PR, verify that:
-
-- [ ] the feature or fix works locally
-- [ ] no obvious console errors were introduced
-- [ ] all new UI strings are in `js/i18n.js`
-- [ ] `CACHE_NAME` was updated in `sw.js` if needed
-- [ ] backward compatibility with saved data was considered
-- [ ] the change is scoped and does not include unnecessary refactors
-- [ ] Playwright or a targeted manual verification was performed
+- [ ] feature or fix works locally with `npm run dev`
+- [ ] `npm run build` passes with no errors
+- [ ] no console errors introduced
+- [ ] new UI strings added to `src/lib/i18nData.js` (all 5 languages)
+- [ ] `localStorage` backward compatibility considered
+- [ ] Playwright or targeted manual verification performed
+- [ ] `CACHE_NAME` bumped in `public/sw.js` if deployed cached assets changed
 
 ## Documentation
 
-If your change introduces:
-- a new functional area
-- a new workflow
-- a new persistence model
-- a new import adapter
+If your change introduces a new functional area, workflow, persistence model, or import adapter, update the relevant docs:
 
-update the relevant documentation:
 - `README.md`
 - `PROJECT_PLAN.md`
 - `AGENTS.md`

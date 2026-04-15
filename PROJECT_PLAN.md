@@ -1,307 +1,192 @@
-# Cucina App Project Plan
+# Cucina App — Project Plan
 
-This file serves as an operational backlog and quick reference for both human development and agent-assisted work.
+Operational backlog and roadmap for both human and agent-assisted development.
 
 ## Goals
 
 - Make the app more useful during real cooking sessions on tablets and touchscreens
 - Improve UX, local persistence, and offline reliability
-- Add organizational features without introducing dependencies or a build step
+- Add organizational features while keeping the app static and deployable anywhere
 
 ## Constraints
 
-- Vanilla JS, HTML, CSS
-- No external dependencies
-- No build step
-- All user-facing strings must go through `t('key')` in `js/i18n.js`
-- If a cached static asset changes, update `CACHE_NAME` in `sw.js`
-- Persistence should remain `localStorage`-only unless there is an explicit decision to change it
+- Vue 3 + Vite SPA (migrated from vanilla JS)
+- Pinia 3 for shared reactive state
+- No backend, no server-side logic
+- All user-facing strings must go through `t('key')` — new keys must be added to all 5 languages
+- Persistence is `localStorage`-only
+- `localStorage` backward compatibility must be preserved across upgrades
+- If a deployed cached asset changes, bump `CACHE_NAME` in `public/sw.js`
 
-## Release Order
+## Architecture state (current)
+
+The app has gone through a full architectural migration:
+
+- ~~Vanilla JS / no-build~~ → **Vue 3 + Vite**
+- ~~Global DOM manipulation~~ → **component-based SFCs**
+- ~~Module-level singleton refs~~ → **Pinia stores**
+- ~~Single flat file~~ → **Vue Router with hash-based routes**
+- **TypeScript foundation**: `tsconfig.json` + `src/types.d.ts`, gradual adoption, `.js` files remain JS
+
+## Milestones
 
 ### Milestone 1 — Cooking Core
-- [x] `Step-by-step cooking mode` — `M`
-- [x] `Toast notifications` — `S`
-- [x] `Manual dark mode toggle` — `S`
+- [x] Step-by-step cooking mode
+- [x] Toast notifications
+- [x] Manual dark mode toggle
 
 ### Milestone 2 — Personal Recipe Book
-- [x] `Personal notes on recipes` — `S`
-- [x] `Export / Import backup JSON (UI)` — `S`
-- [ ] `Manual import (form)` — `M`
+- [x] Personal notes on recipes
+- [x] Export / Import backup JSON
+- [ ] Manual import (form, no URL required) — **P0 backlog**
 
 ### Milestone 3 — Planning
-- [ ] `Shopping list` — `M`
-- [ ] `Weekly planner` — `L`
+- [x] Shopping list — with smart grouping, quantity merging, section assignment, merge across recipes
+- [ ] Weekly planner — **backlog**
 
 ### Milestone 4 — Project Hygiene
-- [x] `AGENTS.md` — `S`
-- [ ] `CONTRIBUTING.md` — `S`
+- [x] `AGENTS.md`
+- [x] `CONTRIBUTING.md`
+- [x] `README.md` (aligned to Vue/Vite)
+- [x] `PROJECT_PLAN.md` (this file)
 
 ### Milestone 5 — Smart Features
-- [ ] `Favorites` — `S`
-- [ ] `Custom tags` — `M`
-- [ ] `Recent recipes` — `S`
-- [ ] `Advanced filters` — `M`
-- [ ] `Meal prep / batch cooking` — `M`
-- [ ] `Pantry suggestions` — `L`
+- [x] Favorites
+- [x] Custom tags (on import + on saved recipes)
+- [x] Recent recipes (`lastViewedAt`)
+- [x] Advanced filters (source type, preparation type, site, favorites, recent)
+- [ ] Meal prep / batch cooking — **backlog**
+- [ ] Pantry suggestions — **backlog**
 
-## Prioritized Backlog
+### Milestone 6 — Architecture (completed)
+- [x] Vue 3 + Vite migration
+- [x] Vue Router (hash history, 5 routes)
+- [x] Pinia stores (recipeBook, shoppingList)
+- [x] TypeScript bootstrap (`tsconfig.json`, `src/types.d.ts`, `allowJs`)
+- [x] Adapter-based website import architecture
+- [x] Internationalisation (IT, EN, DE, FR, ES)
+- [x] PWA / service worker (`public/sw.js`, `public/manifest.json`)
+
+## Active backlog
 
 ### P0
-1. Manual import (form)
-2. Shopping list
-3. Weekly planner
-4. Favorites
-5. Recent recipes
+1. Manual import (form) — create a recipe without a URL
+2. Weekly planner
 
 ### P1
-1. Custom tags
-2. Advanced filters
-3. Pantry
-4. Meal prep
-5. CONTRIBUTING.md
+1. Meal prep / batch cooking view
+2. Pantry ingredient tracking
+3. Recipe sharing via JSON link/QR
+4. Ingredient checklist in cooking mode
 
 ### P2
-1. Site filter in Recipe Book
-2. Recipe collections
-3. Ingredient checklist in cooking mode
-4. Recipe duplication
-5. JSON recipe sharing
+1. Recipe duplication
+2. Recipe collections / grouping
+3. Search by ingredient
+4. Diet / allergen filters
 
-## Current Product Directions
+## Current product directions
 
 ### 1. Import architecture
-The app now uses a lightweight adapter-based import structure for supported recipe websites.
 
-Current supported website adapters:
-- `giallozafferano.it`
-- `ricetteperbimby.it`
+Adapter-based pipeline for supported recipe websites:
+1. domain normalization
+2. adapter selection
+3. site-specific parsing
+4. generic fallback
+5. tag and `preparationType` inference
 
-The architecture should continue evolving as:
-- core import flow
-- domain normalization
-- adapter selection
-- site-specific parsing
-- generic fallback parser
+Current supported adapters: `giallozafferano.it`, `ricetteperbimby.it`
+
+New adapters go in `src/lib/import/adapters.js`.
 
 ### 2. Recipe metadata richness
-The recipe model has evolved beyond the original MVP and now supports richer metadata, including:
-- `source`
-- `sourceDomain`
-- `preparationType`
-- `notes`
 
-This metadata should continue to power:
-- filtering
-- saved recipe detail views
-- future organizational features
+The recipe model supports:
+- `source`, `sourceDomain`
+- `preparationType` (`classic` | `bimby` | `airfryer`)
+- `notes`, `favorite`, `tags`, `lastViewedAt`
+
+This powers filtering, detail views, shopping list attribution, and future organizational features.
 
 ### 3. Preparation type as a first-class concept
-Recipes should continue being distinguished by cooking/preparation method:
 
-- `classic`
-- `bimby`
-- `airfryer`
+`preparationType` is normalized and stored on every recipe.
+It drives: card badges, filters, detail views, cooking mode instructions label, import inference.
+The legacy `bimby: boolean` field is kept for backward compatibility.
 
-This should remain consistent across:
-- cards
-- filters
-- detail views
-- imports
-- saved recipes
+## Feature specs
 
-## Feature Specs
+### Manual Import (form)
 
-### 1. Manual Import
-Outcome:
-- Create a recipe without using a URL
+Outcome: create a recipe without using a URL.
 
-Suggested MVP fields:
-- name
-- category
-- servings
-- optional emoji
-- time
-- dynamic ingredients
-- dynamic steps
-- optional main timer
-- preparation type
+Suggested MVP fields: name, category, servings, emoji, time, dynamic ingredients list, dynamic steps list, optional timer, preparation type.
 
 Files likely involved:
-- `index.html`
-- `js/ui.js`
-- `js/storage.js`
-- `js/i18n.js`
+- `src/views/ImportView.vue` (new tab panel or modal)
+- `src/composables/useImportFlow.js`
+- `src/stores/recipeBook.js`
+- `src/lib/i18nData.js`
 
 Acceptance criteria:
 - validated form
-- saved into Recipe Book
+- saved into Recipe Book via Pinia store
 - no backend required
 
-### 2. Shopping List
-Outcome:
-- Extract ingredients from one or more recipes into a persistent list
+### Weekly Planner
 
-Suggested MVP:
-- add ingredients from recipe detail
-- mark items as completed
-- remove item
-- clear list
+Outcome: assign recipes to day/meal slots over a week.
 
-Suggested v2:
-- deduplicate similar ingredients
-- grouping by category
+Suggested MVP: Monday–Sunday grid, lunch/dinner slots, recipe picker from saved book.
+
+Suggested v2: generate shopping list from the week, drag and drop.
 
 Files likely involved:
-- `js/storage.js`
-- `js/ui.js`
-- `index.html`
-- `css/style.css`
-- `js/i18n.js`
+- new `src/views/PlannerView.vue`
+- new `src/stores/planner.js`
+- `src/router/index.js`
+- `src/lib/storage.js`
+- `src/lib/i18nData.js`
 
 Acceptance criteria:
-- persistent list
-- easy ingredient addition from recipe detail
-
-### 3. Weekly Planner
-Outcome:
-- Assign recipes to week/day slots
-
-Suggested MVP:
-- Monday–Sunday view
-- lunch/dinner slots
-- recipe selection from planner
-
-Suggested v2:
-- generate shopping list from the week
-- drag and drop
-
-Files likely involved:
-- `js/storage.js`
-- `js/ui.js`
-- `index.html`
-- `css/style.css`
-- `js/i18n.js`
-
-Acceptance criteria:
-- persistent plan
+- persistent plan in `localStorage`
 - simple add/remove workflow
 
-### 4. Favorites
-Outcome:
-- Allow users to quickly mark and revisit preferred recipes
+## Recipe model reference
 
-Suggested model:
-- `recipe.favorite = boolean`
-
-Acceptance criteria:
-- can toggle favorite
-- visible in Recipe Book and/or filters
-- persists after reload
-
-### 5. Custom Tags
-Outcome:
-- Allow users to organize recipes with personal labels
-
-Suggested model:
-- `recipe.tags = string[]`
-
-Acceptance criteria:
-- add/remove tags
-- persist after reload
-- usable in future filtering
-
-### 6. Recent Recipes
-Outcome:
-- Surface recently viewed or used recipes
-
-Suggested model:
-- `recipe.updatedAt`
-- `recipe.lastViewedAt`
-
-Acceptance criteria:
-- recent ordering works
-- remains backward-compatible with older saved data
-
-### 7. Site Filter
-Outcome:
-- Filter saved imported recipes by source website/domain
-
-Suggested basis:
-- `recipe.sourceDomain`
-
-Acceptance criteria:
-- imported recipes can be grouped or filtered by site
-- missing domains do not break old recipes
-
-## Useful Additional Features
-
-- Favorites
-- Custom tags
-- Recent recipes
-- Include/exclude ingredient search
-- Diet or allergen filters
-- Ingredient checklist during cooking mode
-- Pantry ingredient tracking
-- Meal prep / batch cooking
-- Recipe sharing via JSON
-- Recipe duplication
-
-## Competitive Features Seen In Apps Like Mr. Cook
-
-- Guided cooking mode
-- Meal planner
-- Automatic shopping list
-- Search by ingredient
-- Favorites / collections
-- Import from web/social
-- Contextual timers
-- Pantry suggestions
-- Meal prep
-
-## Suggested Data Model Extensions
-
-Keep all additions backward-compatible with current local storage objects.
+Current shape (v3), forward-compatible:
 
 ```js
 {
   id: '...',
   name: '...',
   category: '...',
-  preparationType: 'classic',
-  bimby: false,
+  preparationType: 'classic', // 'classic' | 'bimby' | 'airfryer'
+  bimby: false,               // legacy compat
   emoji: '...',
   time: '20 min',
   servings: '4',
-  source: 'classica',
-  sourceDomain: '',
+  source: 'web',
+  sourceDomain: 'giallozafferano.it',
   ingredients: ['...'],
   steps: ['...'],
   timerMinutes: 10,
   notes: '',
   favorite: false,
   tags: [],
-  updatedAt: 0,
-  createdAt: 0
+  lastViewedAt: 0,
 }
 ```
 
-## Technical Notes For Codex
+Additions to the model must be backward-compatible and handled in `normalizeStoredRecipe()` in `src/lib/storage.js`.
 
-- Prefer small, verifiable changes
-- Always consider whether the service worker may be serving stale JS
-- When changing testable UI flows, rerun a targeted Playwright verification
-- Avoid large refactors mixed with new feature work
-- Reuse the existing English naming already present in `v3` storage where possible
-- If a new feature requires a new tab, keep the design coherent with the existing tab structure
+## Definition of done
 
-## Definition Of Done
-
-A feature is considered complete when:
-
+A feature is complete when:
 - it has working UI
-- it has complete i18n strings
-- it persists correctly when applicable
-- it introduces no console errors
-- it passes a targeted manual or Playwright verification
-- it does not break offline/cache behavior
+- all new strings are in `src/lib/i18nData.js` (all 5 languages)
+- state persists correctly via Pinia store → `localStorage`
+- no console errors
+- `npm run build` passes
+- a targeted manual or Playwright verification was performed

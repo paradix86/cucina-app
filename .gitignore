@@ -1,19 +1,17 @@
-# Codex files
-
 # MCP & Claude Code
 .mcp.json
 .claude/
 mcp-logs/
 *.mcp.log
 
-# Playwright
+# Playwright test artifacts
 test-screenshots/
 playwright-report/
 test-results/
 .playwright/
 .playwright-mcp/
 
-# OS
+# OS noise
 .DS_Store
 Thumbs.db
 desktop.ini
@@ -29,26 +27,21 @@ desktop.ini
 logs/
 npm-debug.log*
 
-# Node (in case someone adds a package.json later)
+# Node
 node_modules/
 .npm/
 
-# PWA cache (generated, not source)
-.cache/
+# Vite build output and internal cache
+dist/
+.vite/
+vite.config.js.timestamp-*
 
-# Env / secrets (never commit API keys)
+# Env / secrets — never commit API keys
 .env
 .env.local
 .env*.local
 
-# Backup files
+# Backup noise
 *.bak
 *.backup
 *~
-
-# Keep committed
-!.vscode/
-!.vscode/extensions.json
-!manifest.json
-!sw.js
-!icons/
