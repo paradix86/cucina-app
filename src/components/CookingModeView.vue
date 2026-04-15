@@ -1,5 +1,6 @@
 <script setup>
 import { computed, onBeforeUnmount, ref } from 'vue';
+import { useWakeLock } from '@vueuse/core';
 import { extractStepSeconds, formatClock } from '../lib/recipes.js';
 import { t } from '../lib/i18n.js';
 import { useToasts } from '../composables/useToasts.js';
@@ -15,8 +16,8 @@ const timerTotal = ref(0);
 const timerRemaining = ref(0);
 const timerRunning = ref(false);
 let timerInterval = null;
-let wakeLock = null;
 const { showToast } = useToasts();
+const { request: requestWakeLock, release: releaseWakeLock } = useWakeLock();
 
 const currentStep = computed(() => props.recipe.steps?.[stepIndex.value] || '');
 const isComplete = ref(false);
@@ -27,23 +28,6 @@ function clearTimer() {
   timerTotal.value = 0;
   timerRemaining.value = 0;
   timerRunning.value = false;
-}
-
-async function requestWakeLock() {
-  if ('wakeLock' in navigator) {
-    try {
-      wakeLock = await navigator.wakeLock.request('screen');
-    } catch (error) {
-      console.warn('Wake Lock not available:', error);
-    }
-  }
-}
-
-function releaseWakeLock() {
-  if (wakeLock) {
-    wakeLock.release();
-    wakeLock = null;
-  }
 }
 
 function setupStepTimer() {
@@ -100,15 +84,15 @@ function nextStep() {
 
 function exitMode() {
   clearTimer();
-  releaseWakeLock();
+  releaseWakeLock().catch(() => {});
   emit('exit');
 }
 
 setupStepTimer();
-requestWakeLock();
+requestWakeLock('screen').catch(() => {});
 onBeforeUnmount(() => {
   clearTimer();
-  releaseWakeLock();
+  releaseWakeLock().catch(() => {});
 });
 </script>
 

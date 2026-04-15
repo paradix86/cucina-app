@@ -1,6 +1,7 @@
 <script setup>
 import { computed, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
+import { useDebounce } from '@vueuse/core';
 import RecipeDetailView from '../components/RecipeDetailView.vue';
 import { BUILTIN_RECIPES } from '../lib/builtinData.js';
 import { useRecipeBookStore } from '../stores/recipeBook.js';
@@ -15,6 +16,7 @@ const props = defineProps({
 const router = useRouter();
 
 const search = ref('');
+const debouncedSearch = useDebounce(search, 180);
 const selectedCategory = ref('__all__');
 const selectedPrep = ref('all');
 const maxTime = ref(120);
@@ -22,7 +24,7 @@ const recipeBook = useRecipeBookStore();
 
 const categories = computed(() => ['__all__', ...new Set(BUILTIN_RECIPES.map(recipe => recipe.category))]);
 const filteredRecipes = computed(() => BUILTIN_RECIPES
-  .filter(recipe => recipeMatchesQuery(recipe, search.value.trim()))
+  .filter(recipe => recipeMatchesQuery(recipe, debouncedSearch.value.trim()))
   .filter(recipe => selectedCategory.value === '__all__' || recipe.category === selectedCategory.value)
   .filter(recipe => selectedPrep.value === 'all' || getPreparationType(recipe) === selectedPrep.value)
   .filter(recipe => parseRecipeTime(recipe.time) <= maxTime.value));
@@ -107,7 +109,7 @@ defineExpose({
       <div v-else class="ricette-grid" id="builtin-grid">
         <div v-for="recipe in filteredRecipes" :key="recipe.id" class="ricetta-card" :class="getPreparationInfo(recipe).cardCls" @click="openBuiltinDetail(recipe)">
           <span class="card-src" :class="getPreparationInfo(recipe).cls">{{ getPreparationInfo(recipe).txt }}</span>
-          <div class="card-name" v-html="highlight(recipe.name || '', search.trim())"></div>
+          <div class="card-name" v-html="highlight(recipe.name || '', debouncedSearch.trim())"></div>
           <div class="card-meta">{{ joinMetaParts([recipe.category, recipe.time, `${recipe.servings} ${t('detail_servings').toLowerCase()}`]) }}</div>
         </div>
       </div>

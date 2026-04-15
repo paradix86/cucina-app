@@ -1,7 +1,8 @@
-import { ref } from 'vue';
+import { watchEffect } from 'vue';
+import { useLocalStorage } from '@vueuse/core';
 
 const THEME_STORAGE_KEY = 'cucina_theme';
-const theme = ref(localStorage.getItem(THEME_STORAGE_KEY) || 'system');
+const theme = useLocalStorage(THEME_STORAGE_KEY, 'system');
 
 function applyThemePreference(value) {
   if (value === 'light' || value === 'dark') {
@@ -11,14 +12,16 @@ function applyThemePreference(value) {
   }
 }
 
-applyThemePreference(theme.value);
+watchEffect(() => {
+  const next = ['system', 'light', 'dark'].includes(theme.value) ? theme.value : 'system';
+  if (next !== theme.value) theme.value = next;
+  applyThemePreference(next);
+});
 
 export function useTheme() {
   function setThemePreference(value) {
     const next = ['system', 'light', 'dark'].includes(value) ? value : 'system';
     theme.value = next;
-    localStorage.setItem(THEME_STORAGE_KEY, next);
-    applyThemePreference(next);
   }
 
   return {

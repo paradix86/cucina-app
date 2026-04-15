@@ -2,6 +2,7 @@
 import { computed, ref, watch } from 'vue';
 import { storeToRefs } from 'pinia';
 import { useRouter } from 'vue-router';
+import { useDebounce } from '@vueuse/core';
 import RecipeDetailView from '../components/RecipeDetailView.vue';
 import { useRecipeBookStore } from '../stores/recipeBook.js';
 import { getPreparationInfo, getSourceDomainLabel, highlight, joinMetaParts, recipeMatchesQuery } from '../lib/recipes.js';
@@ -16,6 +17,7 @@ const store = useRecipeBookStore();
 const { recipes } = storeToRefs(store);
 
 const search = ref('');
+const debouncedSearch = useDebounce(search, 180);
 const sourceFilter = ref('all');
 const filterType = ref('all');
 const siteFilter = ref('all');
@@ -39,7 +41,7 @@ const siteCounts = computed(() => recipes.value.reduce((acc, recipe) => {
 const sortedDomains = computed(() => Object.keys(siteCounts.value).sort((a, b) => getSourceDomainLabel(a).localeCompare(getSourceDomainLabel(b))));
 
 const filteredRecipes = computed(() => {
-  const query = search.value.trim();
+  const query = debouncedSearch.value.trim();
   const list = recipes.value.filter(recipe => {
     const matchQuery = recipeMatchesQuery(recipe, query);
     const matchSource = sourceFilter.value === 'all' || (recipe.source || 'web') === sourceFilter.value;
@@ -167,7 +169,7 @@ defineExpose({
           <span class="card-src" :class="getPreparationInfo(recipe).cls">{{ getPreparationInfo(recipe).txt }}</span>
           <button class="card-del btn-danger" @click.stop="confirmDelete(recipe.id)" title="✕">✕</button>
           <button class="card-fav" @click.stop="toggleFavorite(recipe.id)" :title="recipe.favorite ? t('favorite_remove') : t('favorite_add')">{{ recipe.favorite ? '★' : '☆' }}</button>
-          <div class="card-name" v-html="highlight(recipe.name || '', search.trim())"></div>
+          <div class="card-name" v-html="highlight(recipe.name || '', debouncedSearch.trim())"></div>
           <div class="card-meta">{{ joinMetaParts([recipe.category, recipe.time]) }}</div>
           <div v-if="recipe.sourceDomain" class="card-origin">{{ getSourceDomainLabel(recipe.sourceDomain) }}</div>
         </div>
