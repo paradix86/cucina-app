@@ -124,6 +124,18 @@ function duplicateRecipe(recipe) {
   router.push({ name: 'recipe-book-detail', params: { id: duplicated.id } }).catch(() => {});
 }
 
+function saveRecipeEdit(payload) {
+  const ok = store.update(payload.recipeId, payload.updates);
+  if (ok) {
+    emit('toast', t('recipe_edit_saved'), 'success');
+  } else {
+    emit('toast', t('recipe_edit_save_err'), 'error');
+  }
+  if (typeof payload.onComplete === 'function') {
+    payload.onComplete(ok);
+  }
+}
+
 defineExpose({
   goHome() {
     store.refresh();
@@ -196,6 +208,7 @@ defineExpose({
         @toggle-favorite="toggleFavorite($event.id)"
         @save-notes="saveRecipeNotes"
         @duplicate-recipe="duplicateRecipe"
+        @save-recipe-edit="saveRecipeEdit"
       />
     </div>
   </section>

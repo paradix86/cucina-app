@@ -308,6 +308,43 @@ function cleanRicetteBimbyNetTitle(title: string): string {
     .trim();
 }
 
+function extractBimbyTaggedStep(stepText: string): string {
+  const text = decodeImportEntities(stripImportLinksAndImages(stepText))
+    .replace(/\*\*/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+  if (!text) return '';
+
+  const tags: string[] = [];
+  const timeMatch = text.match(/(\d+\s*(?:sec(?:ondi?)?\.?|min(?:uti?)?\.?))/i);
+  const speedMatch = text.match(/\bvel\.?\s*([0-9]+(?:\.[0-9]+)?)/i);
+  const tempMatch = text.match(/(?:\btemp\.?\s*|\b)(\d{2,3})\s*°\s*[cf]?/i);
+
+  if (tempMatch) tags.push(`Temp. ${tempMatch[1]}°`);
+  if (speedMatch) tags.push(`Vel. ${speedMatch[1]}`);
+  if (timeMatch) {
+    const normalizedTime = timeMatch[1]
+      .replace(/sec(?:ondi?)?\.?/i, 'sec')
+      .replace(/min(?:uti?)?\.?/i, 'min')
+      .replace(/\s+/g, ' ')
+      .trim();
+    tags.push(normalizedTime);
+  }
+
+  if (!tags.length) return text;
+
+  const instruction = text
+    .replace(/(\d+\s*(?:sec(?:ondi?)?\.?|min(?:uti?)?\.?))/i, '')
+    .replace(/\bvel\.?\s*[0-9]+(?:\.[0-9]+)?/i, '')
+    .replace(/(?:\btemp\.?\s*|\b)\d{2,3}\s*°\s*[cf]?/i, '')
+    .replace(/^[,;:\-\s]+/, '')
+    .replace(/\s{2,}/g, ' ')
+    .trim();
+
+  const safeInstruction = instruction || text;
+  return `${tags.join(' · ')} — ${safeInstruction}`;
+}
+
 function parseRicetteBimbyNetAdapter(markdown: string, url: string): ImportPreviewRecipe {
   const md = normalizeImportText(markdown);
   const titleMatch = md.match(/^#\s+(.+)$/m);
@@ -346,12 +383,14 @@ function parseRicetteBimbyNetAdapter(markdown: string, url: string): ImportPrevi
       }
       const stepMatch = line.match(/^\d+\.\s+(.*)$/);
       if (!stepMatch) return acc;
-      const cleaned = stripImportLinksAndImages(stepMatch[1])
-        .replace(/^\d+\s+/, '')
-        .replace(/\*\*/g, '')
-        .replace(/\s+/g, ' ')
-        .trim();
+      const cleaned = extractBimbyTaggedStep(stepMatch[1]);
       if (!cleaned) return acc;
+      if (cleaned.includes(' — ')) {
+        const [tagPart, textPart] = cleaned.split(' — ');
+        const textWithContext = currentSection ? `${currentSection}: ${textPart}` : textPart;
+        acc.push(`${tagPart} — ${textWithContext}`.trim());
+        return acc;
+      }
       acc.push(currentSection ? `${currentSection}: ${cleaned}` : cleaned);
       return acc;
     }, []);

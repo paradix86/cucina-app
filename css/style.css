@@ -542,6 +542,19 @@ input[type="number"] { text-align: center; }
 .manual-actions .btn-primary {
   min-height: 44px;
 }
+.recipe-edit-box {
+  margin-top: 1rem;
+}
+.recipe-edit-actions {
+  margin-top: 14px;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.recipe-edit-actions .btn-primary,
+.recipe-edit-actions .btn-ghost {
+  min-height: 42px;
+}
 
 /* ---- IMPORT PREVIEW METADATA ---- */
 .preview-metadata {
@@ -996,6 +1009,15 @@ input[type="number"] { text-align: center; }
 }
 .shopping-grouped-item.is-checked {
   opacity: .92;
+}
+.shopping-grouped-item.is-checked .shopping-item-total,
+.shopping-grouped-item.is-checked .shopping-group-progress,
+.shopping-grouped-item.is-checked .shopping-item-sub {
+  text-decoration: line-through;
+  color: var(--text-hint);
+}
+.shopping-grouped-item.is-partial .shopping-item-total {
+  color: color-mix(in srgb, var(--green) 70%, var(--text) 30%);
 }
 .shopping-group-header {
   display: flex;

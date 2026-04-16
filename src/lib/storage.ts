@@ -53,6 +53,7 @@ type RecipeInput = Partial<Recipe> & {
 
 type RecipeBookStorageValue = RecipeInput[];
 type RecipeMeta = { id?: string; name?: string };
+type AddShoppingOptions = { scaleFactor?: number };
 
 function parseJson<T>(value: string, fallback: T): T {
   try {
@@ -184,6 +185,20 @@ export function deleteRecipe(id: string): void {
   saveRecipeBook(loadRecipeBook().filter(r => r.id !== id));
 }
 
+export function updateRecipe(id: string, updates: Partial<Recipe>): boolean {
+  const arr = loadRecipeBook();
+  const idx = arr.findIndex(recipe => recipe.id === id);
+  if (idx === -1) return false;
+
+  arr[idx] = normalizeStoredRecipe({
+    ...arr[idx],
+    ...updates,
+    id: arr[idx].id,
+  });
+  saveRecipeBook(arr);
+  return true;
+}
+
 export function updateRecipeNotes(id: string, notes: string): boolean {
   const arr = loadRecipeBook();
   const idx = arr.findIndex(recipe => recipe.id === id);
@@ -285,6 +300,89 @@ export function addShoppingListItems(items: string[], recipeMeta: RecipeMeta = {
   return additions.length;
 }
 
+function normalizeShoppingIngredientText(text: string): string {
+  const cleaned = String(text || '')
+    .replace(/^[\-\*\u2022]\s*/, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .replace(/[:;,]$/, '')
+    .trim();
+
+  if (!cleaned) return '';
+  // Skip heading-like pseudo ingredients
+  if (/^per\s+(?:la|il|lo|l'|i|gli|le)\b/i.test(cleaned)) return '';
+
+  // Normalize common parenthetical quantity note layout
+  const parenQty = cleaned.match(/^(\d+(?:[.,]\d+)?)\s*\(([^)]+)\)\s+(.+)$/i);
+  if (parenQty) {
+    return `${parenQty[1]} ${parenQty[3]} (${parenQty[2]})`.replace(/\s+/g, ' ').trim();
+  }
+  return cleaned;
+}
+
+function scaleParsedIngredient(parsed: ParsedIngredient, factor: number): string {
+  const qty = parsed.parsedQty || 0;
+  const scaledQty = qty * factor;
+  const unit = parsed.parsedUnit;
+  const name = parsed.parsedName || '';
+  if (!unit || !name || !scaledQty) return parsed.raw;
+
+  if (unit === 'g' || unit === 'kg') {
+    const base = unit === 'kg' ? scaledQty * 1000 : scaledQty;
+    if (base >= 1000) return `${formatQuantity(base / 1000)} kg ${name}`.trim();
+    return `${formatQuantity(base)} g ${name}`.trim();
+  }
+  if (unit === 'ml' || unit === 'l') {
+    const base = unit === 'l' ? scaledQty * 1000 : scaledQty;
+    if (base >= 1000) return `${formatQuantity(base / 1000)} l ${name}`.trim();
+    return `${formatQuantity(base)} ml ${name}`.trim();
+  }
+  if (unit === 'eggs') return `${formatQuantity(scaledQty)} eggs`.trim();
+  if (unit === 'pieces') return `${formatQuantity(scaledQty)} ${name}`.trim();
+  return `${formatQuantity(scaledQty)} ${unit} ${name}`.trim();
+}
+
+function scaleShoppingIngredientText(text: string, factor: number): string {
+  const normalized = normalizeShoppingIngredientText(text);
+  if (!normalized) return '';
+  if (factor === 1) return normalized;
+
+  const parsed = parseIngredient(normalized);
+  if (parsed.confidence === 'high' && parsed.parsedQty && parsed.parsedUnit) {
+    return scaleParsedIngredient(parsed, factor);
+  }
+  return normalized;
+}
+
+export function addShoppingListItemsWithScale(items: string[], recipeMeta: RecipeMeta = {}, options: AddShoppingOptions = {}): number {
+  const existing = loadShoppingList();
+  const timestamp = Date.now();
+  const factor = Number.isFinite(options.scaleFactor) && (options.scaleFactor || 0) > 0 ? Number(options.scaleFactor) : 1;
+  const additions = (items || [])
+    .map((text, index) => ({
+      id: `shop-${timestamp}-${index}-${Math.random().toString(36).slice(2, 8)}`,
+      text: scaleShoppingIngredientText(String(text), factor),
+      checked: false,
+      sourceRecipeId: recipeMeta.id || undefined,
+      sourceRecipeName: recipeMeta.name || undefined,
+      createdAt: timestamp,
+    }))
+    .filter(item => item.text) as ShoppingItem[];
+
+  const next = [...existing, ...additions];
+  saveShoppingList(next);
+  return additions.length;
+}
+
+export function removeShoppingListItemsByRecipe(recipeId: string): number {
+  if (!recipeId) return 0;
+  const items = loadShoppingList();
+  const next = items.filter(item => item.sourceRecipeId !== recipeId);
+  const removed = items.length - next.length;
+  if (removed > 0) saveShoppingList(next);
+  return removed;
+}
+
 export function toggleShoppingListItem(id: string): boolean {
   const items = loadShoppingList();
   const idx = items.findIndex(item => item.id === id);
@@ -329,8 +427,9 @@ export function clearShoppingList(): void {
 export function parseIngredient(text: string): ParsedIngredient {
   if (!text) return { confidence: 'low', raw: String(text || ''), parsedQty: null, parsedUnit: null, parsedName: null };
 
-  const trimmed = String(text).trim();
+  const trimmed = normalizeShoppingIngredientText(String(text));
   const result: ParsedIngredient = { raw: trimmed, parsedQty: null, parsedUnit: null, parsedName: null, confidence: 'low' };
+  if (!trimmed) return result;
 
   // Reject vague measures
   if (/\b(q\.b|to\s*taste|q\.s|quanto\s*basta|asporto|a\s*piacere|as\s*needed)\b/i.test(trimmed)) {
@@ -355,6 +454,19 @@ export function parseIngredient(text: string): ParsedIngredient {
         result.parsedName = normalizeName(nameRaw);
         result.confidence = 'high';
       }
+    }
+  }
+
+  // Fallback: quantity + name (without explicit unit), only for clear countables
+  const noUnitMatch = trimmed.match(/^(\d+(?:[.,]\d+)?)\s+(.+)$/);
+  if (noUnitMatch) {
+    const qty = parseFloat(noUnitMatch[1].replace(',', '.'));
+    const nameRaw = normalizeName(noUnitMatch[2]);
+    if (!isNaN(qty) && qty > 0 && /^(uov|egg|limon|patat|cipoll|spicch|clove|banana|mela|arancia|pera|carota|zucchin)/i.test(nameRaw)) {
+      result.parsedQty = qty;
+      result.parsedUnit = 'pieces';
+      result.parsedName = nameRaw;
+      result.confidence = 'high';
     }
   }
 
@@ -495,9 +607,9 @@ const SECTION_KEYWORDS: Record<ShoppingSectionId, string[]> = {
   ],
   'vegetables_fruit': [
     'carrot', 'carota', 'onion', 'cipolla', 'garlic', 'aglio',
-    'tomato', 'pomodoro', 'lettuce', 'lattuga', 'spinach', 'spinaci', 'broccoli',
+    'tomato', 'pomodoro', 'pomodori', 'pelati', 'lettuce', 'lattuga', 'spinach', 'spinaci', 'broccoli',
     'cabbage', 'cavolo', 'zucchini', 'zucca', 'peperone', 'eggplant', 'melanzana',
-    'banana', 'apple', 'mela', 'orange', 'arancia', 'lemon', 'limone',
+    'banana', 'apple', 'mela', 'orange', 'arancia', 'lemon', 'limone', 'limoni',
     'strawberry', 'fragola', 'blueberry', 'mirtillo', 'grape', 'uva', 'pear', 'pera',
     'cucumber', 'cetriolo', 'pumpkin', 'bean', 'fagiolo', 'pea', 'pisello',
     'artichoke', 'carciofo', 'asparagus', 'asparago', 'radish', 'ravanello',

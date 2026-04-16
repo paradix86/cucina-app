@@ -8,6 +8,7 @@ import {
   loadRecipeBook,
   markRecipeViewed,
   toggleRecipeFavorite,
+  updateRecipe,
   updateRecipeNotes,
 } from '../lib/storage';
 import type { Recipe } from '../types';
@@ -72,6 +73,12 @@ export const useRecipeBookStore = defineStore('recipeBook', () => {
     return ok;
   }
 
+  function update(id: string, updates: Partial<Recipe>): boolean {
+    const ok = updateRecipe(id, updates);
+    refresh();
+    return ok;
+  }
+
   function viewed(id: string): void {
     markRecipeViewed(id);
     refresh();
@@ -96,6 +103,7 @@ export const useRecipeBookStore = defineStore('recipeBook', () => {
     refresh,
     add,
     duplicate,
+    update,
     remove,
     toggleFavorite,
     saveNotes,

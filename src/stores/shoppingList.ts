@@ -1,13 +1,14 @@
 import { computed, ref } from 'vue';
 import { defineStore } from 'pinia';
 import {
-  addShoppingListItems,
+  addShoppingListItemsWithScale,
   assignSection,
   clearShoppingList,
   getSectionI18nKey,
   groupShoppingItems,
   loadShoppingList,
   parseIngredient,
+  removeShoppingListItemsByRecipe,
   removeShoppingListItem,
   saveShoppingList,
   SHOPPING_SECTIONS,
@@ -27,10 +28,21 @@ export const useShoppingListStore = defineStore('shoppingList', () => {
     items.value = loadShoppingList();
   }
 
-  function addRecipeIngredients(recipe: Pick<Recipe, 'id' | 'name' | 'ingredients'>): number {
-    const added = addShoppingListItems(recipe.ingredients || [], { id: recipe.id, name: recipe.name });
+  function addRecipeIngredients(recipe: Pick<Recipe, 'id' | 'name' | 'ingredients'>, options: { scaleFactor?: number } = {}): number {
+    const added = addShoppingListItemsWithScale(recipe.ingredients || [], { id: recipe.id, name: recipe.name }, options);
     refresh();
     return added;
+  }
+
+  function removeRecipeIngredients(recipeId: string): number {
+    const removed = removeShoppingListItemsByRecipe(recipeId);
+    refresh();
+    return removed;
+  }
+
+  function hasRecipeItems(recipeId: string): boolean {
+    if (!recipeId) return false;
+    return items.value.some(item => item.sourceRecipeId === recipeId);
   }
 
   function toggleItem(id: string): boolean {
@@ -103,6 +115,8 @@ export const useShoppingListStore = defineStore('shoppingList', () => {
     items,
     refresh,
     addRecipeIngredients,
+    removeRecipeIngredients,
+    hasRecipeItems,
     toggleItem,
     removeItem,
     toggleGroup,

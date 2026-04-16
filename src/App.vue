@@ -44,7 +44,17 @@ function handleRecipeTimer(recipe) {
 }
 
 function handleAddToShopping(recipe) {
-  const added = shoppingList.addRecipeIngredients(recipe);
+  if (recipe?.action === 'remove' && recipe?.recipe?.id) {
+    const removed = shoppingList.removeRecipeIngredients(recipe.recipe.id);
+    if (removed) showToast(t('shopping_removed_toast', { n: removed }), 'info');
+    return;
+  }
+
+  const payload = recipe?.recipe ? recipe : { recipe, selectedServings: undefined, baseServings: undefined };
+  const baseServings = Number(payload.baseServings) || parseInt(payload.recipe?.servings, 10) || 1;
+  const selectedServings = Number(payload.selectedServings) || baseServings;
+  const scaleFactor = baseServings > 0 ? selectedServings / baseServings : 1;
+  const added = shoppingList.addRecipeIngredients(payload.recipe, { scaleFactor });
   if (added) showToast(t('shopping_added_toast', { n: added }), 'success');
 }
 
