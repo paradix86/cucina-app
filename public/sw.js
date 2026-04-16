@@ -1,4 +1,4 @@
-const CACHE_NAME = 'cucina-vue-v1';
+const CACHE_NAME = 'cucina-vue-v2';
 
 const STATIC_ASSETS = [
   '/',

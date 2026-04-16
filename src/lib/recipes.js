@@ -32,6 +32,7 @@ export function getSourceDomainLabel(domain) {
   const pretty = {
     'giallozafferano.it': 'GialloZafferano',
     'ricetteperbimby.it': 'RicettePerBimby',
+    'ricette-bimby.net': 'Ricette Bimby',
     'youtube.com': 'YouTube',
     'youtu.be': 'YouTube',
     'instagram.com': 'Instagram',

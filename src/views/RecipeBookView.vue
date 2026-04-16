@@ -114,6 +114,16 @@ function saveRecipeNotes(payload) {
   }
 }
 
+function duplicateRecipe(recipe) {
+  const duplicated = store.duplicate(recipe.id);
+  if (!duplicated) {
+    emit('toast', t('recipe_duplicate_err'), 'error');
+    return;
+  }
+  emit('toast', t('recipe_duplicate_ok'), 'success');
+  router.push({ name: 'recipe-book-detail', params: { id: duplicated.id } }).catch(() => {});
+}
+
 defineExpose({
   goHome() {
     store.refresh();
@@ -185,6 +195,7 @@ defineExpose({
         @add-to-shopping="emit('add-to-shopping', $event)"
         @toggle-favorite="toggleFavorite($event.id)"
         @save-notes="saveRecipeNotes"
+        @duplicate-recipe="duplicateRecipe"
       />
     </div>
   </section>

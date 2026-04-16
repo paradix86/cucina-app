@@ -1,6 +1,6 @@
 import { APP_META } from '../lib/appMeta.js';
 
-const SW_RELOAD_FLAG = `cucina_sw_reloaded_${APP_META.buildDate}`;
+const SW_RELOAD_FLAG = `cucina_sw_reloaded_${APP_META.buildId}`;
 
 export async function refreshAppRuntime() {
   try {

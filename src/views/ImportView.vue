@@ -56,6 +56,14 @@ function removeIngredientField(index) {
   manualForm.value.ingredients.splice(index, 1);
 }
 
+function moveIngredientField(index, direction) {
+  const targetIndex = index + direction;
+  if (targetIndex < 0 || targetIndex >= manualForm.value.ingredients.length) return;
+  const next = [...manualForm.value.ingredients];
+  [next[index], next[targetIndex]] = [next[targetIndex], next[index]];
+  manualForm.value.ingredients = next;
+}
+
 function addStepField() {
   manualForm.value.steps.push('');
 }
@@ -63,6 +71,14 @@ function addStepField() {
 function removeStepField(index) {
   if (manualForm.value.steps.length <= 1) return;
   manualForm.value.steps.splice(index, 1);
+}
+
+function moveStepField(index, direction) {
+  const targetIndex = index + direction;
+  if (targetIndex < 0 || targetIndex >= manualForm.value.steps.length) return;
+  const next = [...manualForm.value.steps];
+  [next[index], next[targetIndex]] = [next[targetIndex], next[index]];
+  manualForm.value.steps = next;
 }
 
 function saveManualRecipe() {
@@ -192,7 +208,11 @@ function savePreview() {
             <div class="manual-list-items">
               <div v-for="(ingredient, index) in manualForm.ingredients" :key="`ingredient-${index}`" class="manual-list-item">
                 <input v-model="manualForm.ingredients[index]" type="text" :placeholder="t('manual_ingredient_placeholder', { n: index + 1 })" />
-                <button class="btn-danger" :disabled="manualForm.ingredients.length <= 1" @click="removeIngredientField(index)">{{ t('manual_remove_item') }}</button>
+                <div class="manual-item-actions">
+                  <button class="btn-ghost btn-reorder" :title="t('manual_move_up')" :disabled="index === 0" @click="moveIngredientField(index, -1)">↑</button>
+                  <button class="btn-ghost btn-reorder" :title="t('manual_move_down')" :disabled="index === manualForm.ingredients.length - 1" @click="moveIngredientField(index, 1)">↓</button>
+                  <button class="btn-danger" :disabled="manualForm.ingredients.length <= 1" @click="removeIngredientField(index)">{{ t('manual_remove_item') }}</button>
+                </div>
               </div>
             </div>
           </div>
@@ -204,7 +224,11 @@ function savePreview() {
             <div class="manual-list-items">
               <div v-for="(step, index) in manualForm.steps" :key="`step-${index}`" class="manual-list-item">
                 <textarea v-model="manualForm.steps[index]" rows="2" :placeholder="t('manual_step_placeholder', { n: index + 1 })"></textarea>
-                <button class="btn-danger" :disabled="manualForm.steps.length <= 1" @click="removeStepField(index)">{{ t('manual_remove_item') }}</button>
+                <div class="manual-item-actions">
+                  <button class="btn-ghost btn-reorder" :title="t('manual_move_up')" :disabled="index === 0" @click="moveStepField(index, -1)">↑</button>
+                  <button class="btn-ghost btn-reorder" :title="t('manual_move_down')" :disabled="index === manualForm.steps.length - 1" @click="moveStepField(index, 1)">↓</button>
+                  <button class="btn-danger" :disabled="manualForm.steps.length <= 1" @click="removeStepField(index)">{{ t('manual_remove_item') }}</button>
+                </div>
               </div>
             </div>
           </div>

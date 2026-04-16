@@ -29,6 +29,15 @@ function stripImportLinksAndImages(value: string | null | undefined): string {
   );
 }
 
+function decodeImportEntities(value: string | null | undefined): string {
+  return String(value || '')
+    .replace(/&#39;|&apos;/g, "'")
+    .replace(/&quot;/g, '"')
+    .replace(/&amp;/g, '&')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&deg;/gi, '°');
+}
+
 function parseImportMinutes(value: string | null | undefined): number {
   const text = String(value || '');
   const hour = text.match(/(\d+)\s*h/i);
@@ -122,6 +131,7 @@ function normalizeImportedServings(text: string | null | undefined, fallback = '
 
 function inferImportPreparationType(text: string, domain: string): PreparationType {
   if (domain === 'ricetteperbimby.it') return 'bimby';
+  if (domain === 'ricette-bimby.net') return 'bimby';
   const lower = text.toLowerCase();
   if (/\bbimby\b|tm[56]\b|tm31\b|varoma\b|nel boccale|vel\./.test(lower)) return 'bimby';
   if (/air\s*fryer|friggitrice\s+ad\s+aria|\bcestello\b/.test(lower)) return 'airfryer';
@@ -131,6 +141,7 @@ function inferImportPreparationType(text: string, domain: string): PreparationTy
 const DOMAIN_TAG_MAP: Record<string, string> = {
   'giallozafferano.it': 'GialloZafferano',
   'ricetteperbimby.it': 'RicettePerBimby',
+  'ricette-bimby.net': 'Ricette Bimby',
 };
 
 function suggestImportTags(
@@ -291,6 +302,80 @@ function parseRicettePerBimbyAdapter(markdown: string, url: string): ImportPrevi
   });
 }
 
+function cleanRicetteBimbyNetTitle(title: string): string {
+  return stripImportMarkdownNoise(decodeImportEntities(title))
+    .replace(/\s*-\s*Ricette[-\s]*Bimby\s*$/i, '')
+    .trim();
+}
+
+function parseRicetteBimbyNetAdapter(markdown: string, url: string): ImportPreviewRecipe {
+  const md = normalizeImportText(markdown);
+  const titleMatch = md.match(/^#\s+(.+)$/m);
+  const totalTimeMatch = md.match(/Tempo totale\s*\n+\s*([^\n]+)/i);
+  const servingsMatch = md.match(/Porzioni\s*\n+\s*([^\n]+)/i);
+
+  const ingredientsStart = md.search(/^###?\s+Ingredienti\b/m);
+  const prepStart = md.search(/^###?\s+Preparazione\b/m);
+  if (ingredientsStart === -1 || prepStart === -1 || prepStart <= ingredientsStart) {
+    throw new Error('RBN_SECTIONS_NOT_FOUND');
+  }
+
+  const ingredients = md
+    .slice(ingredientsStart, prepStart)
+    .split('\n')
+    .map(line => line.trim())
+    .filter(line => line.startsWith('*'))
+    .map(line => line.replace(/^\*\s+/, '').replace(/\*\*/g, '').trim())
+    .map(line => stripImportLinksAndImages(decodeImportEntities(line)))
+    .filter(Boolean);
+
+  const prepTail = md.slice(prepStart);
+  const prepEndRel = prepTail.search(/^###?\s+(?:Note|Commenti|Lascia un commento|Articoli correlati)\b/m);
+  const prepBlock = prepEndRel >= 0 ? prepTail.slice(0, prepEndRel) : prepTail;
+  let currentSection = '';
+  const steps = prepBlock
+    .split('\n')
+    .map(line => line.trim())
+    .filter(Boolean)
+    .reduce<string[]>((acc, rawLine) => {
+      const line = decodeImportEntities(rawLine);
+      const sectionMatch = line.match(/^###\s+(.*)/);
+      if (sectionMatch) {
+        currentSection = stripImportLinksAndImages(sectionMatch[1]).replace(/:$/, '').trim();
+        return acc;
+      }
+      const stepMatch = line.match(/^\d+\.\s+(.*)$/);
+      if (!stepMatch) return acc;
+      const cleaned = stripImportLinksAndImages(stepMatch[1])
+        .replace(/^\d+\s+/, '')
+        .replace(/\*\*/g, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+      if (!cleaned) return acc;
+      acc.push(currentSection ? `${currentSection}: ${cleaned}` : cleaned);
+      return acc;
+    }, []);
+
+  if (!titleMatch || !ingredients.length || !steps.length) throw new Error('RBN_PARSE_INCOMPLETE');
+
+  const cleanTitle = cleanRicetteBimbyNetTitle(titleMatch[1]);
+  const localCategory = extractNearbyCategorySignal(md, cleanTitle);
+  const category = normalizeImportCategory(localCategory || inferImportCategoryFromTitleAndText(cleanTitle, prepBlock));
+  const total = totalTimeMatch ? stripImportLinksAndImages(totalTimeMatch[1]).trim() : '';
+
+  return buildImportedRecipe(url, {
+    name: cleanTitle,
+    category,
+    emoji: inferImportEmoji(category),
+    time: total || 'n.d.',
+    servings: servingsMatch ? normalizeImportedServings(servingsMatch[1], '1') : '1',
+    ingredients,
+    steps,
+    timerMinutes: parseImportMinutes(total),
+    preparationType: 'bimby',
+  });
+}
+
 function parseGenericReadableRecipe(markdown: string, url: string): ImportPreviewRecipe | null {
   const md = normalizeImportText(markdown);
   const titleMatch = md.match(/^#\s+(.+)$/m);
@@ -328,6 +413,7 @@ function parseGenericReadableRecipe(markdown: string, url: string): ImportPrevie
 const WEBSITE_IMPORT_ADAPTERS: WebsiteImportAdapter[] = [
   { domain: 'giallozafferano.it', parse: parseGialloZafferanoAdapter },
   { domain: 'ricetteperbimby.it', parse: parseRicettePerBimbyAdapter },
+  { domain: 'ricette-bimby.net', parse: parseRicetteBimbyNetAdapter },
 ];
 
 function getImportAdapterForDomain(domain: string): WebsiteImportAdapter | null {

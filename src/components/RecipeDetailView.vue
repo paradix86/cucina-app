@@ -18,6 +18,7 @@ const emit = defineEmits([
   'save-builtin',
   'toggle-favorite',
   'save-notes',
+  'duplicate-recipe',
 ]);
 
 const servings = ref(parseInt(props.recipe.servings, 10) || 4);
@@ -66,10 +67,13 @@ function changeServings(delta) {
       <div class="sec-label" style="margin-top:1rem">{{ prepInfo.type === 'bimby' ? t('detail_steps_bimby') : t('detail_steps') }}</div>
       <template v-for="step in steps" :key="`${step.index}-${step.text}`">
         <div v-if="step.type === 'bimby'" class="bimby-step">
-          <div class="bimby-step-tags">
-            <span v-for="tag in step.tags" :key="tag" class="bimby-tag">{{ tag }}</span>
+          <span class="step-n">{{ step.index }}</span>
+          <div class="bimby-step-body">
+            <div class="bimby-step-tags">
+              <span v-for="tag in step.tags" :key="tag" class="bimby-tag">{{ tag }}</span>
+            </div>
+            <p class="step-txt">{{ step.text }}</p>
           </div>
-          <p>{{ step.index }}. {{ step.text }}</p>
         </div>
         <div v-else class="step-row">
           <span class="step-n">{{ step.index }}</span>
@@ -86,6 +90,9 @@ function changeServings(delta) {
         <button v-if="canSaveBuiltin" class="btn-primary" @click="emit('save-builtin', recipe)">{{ t('builtin_save') }}</button>
         <button v-if="savedMode" class="btn-secondary" @click="emit('toggle-favorite', recipe)">
           {{ recipe.favorite ? t('favorite_remove') : t('favorite_add') }}
+        </button>
+        <button v-if="savedMode" class="btn-secondary" @click="emit('duplicate-recipe', recipe)">
+          {{ t('recipe_duplicate') }}
         </button>
       </div>
     </div>

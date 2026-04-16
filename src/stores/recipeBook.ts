@@ -25,6 +25,36 @@ export const useRecipeBookStore = defineStore('recipeBook', () => {
     return ok;
   }
 
+  function duplicate(id: string): Recipe | null {
+    const original = recipes.value.find(recipe => recipe.id === id);
+    if (!original) return null;
+
+    const existingNames = new Set(recipes.value.map(recipe => (recipe.name || '').trim().toLowerCase()));
+    const baseName = (original.name || '').trim();
+    let nextName = `${baseName} (copy)`;
+    let suffix = 2;
+    while (existingNames.has(nextName.toLowerCase())) {
+      nextName = `${baseName} (copy ${suffix})`;
+      suffix += 1;
+    }
+
+    const duplicated: Recipe = {
+      ...original,
+      id: `copy-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      name: nextName,
+      favorite: false,
+      lastViewedAt: undefined,
+      notes: '',
+      ingredients: [...(original.ingredients || [])],
+      steps: [...(original.steps || [])],
+      tags: [...(original.tags || [])],
+    };
+
+    const ok = addRecipe(duplicated);
+    refresh();
+    return ok ? duplicated : null;
+  }
+
   function remove(id: string): void {
     deleteRecipe(id);
     refresh();
@@ -65,6 +95,7 @@ export const useRecipeBookStore = defineStore('recipeBook', () => {
     recipes,
     refresh,
     add,
+    duplicate,
     remove,
     toggleFavorite,
     saveNotes,
