@@ -4,22 +4,20 @@ import {
   ANTHROPIC_API_KEY,
   detectSource,
   normalizeSourceDomain,
-} from '../lib/import/core.js';
+} from '../lib/import/core';
 import {
   extractPageHeadingsHint,
   fetchReadableImportPage,
   inferImportFailureStage,
-} from '../lib/import/web.js';
+} from '../lib/import/web';
 import {
   getImportAdapterForDomain,
   importWebsiteRecipeWithAdapters,
   suggestImportTags,
-} from '../lib/import/adapters.js';
+} from '../lib/import/adapters';
 import { normalizePreparationTypeValue } from '../lib/storage';
 import { t } from '../lib/i18n.js';
-import type { ImportDiagnostic, ImportPreviewRecipe, PreparationType, StatusState } from '../types';
-
-type ImportSource = 'youtube' | 'tiktok' | 'instagram' | 'web';
+import type { ImportDiagnostic, ImportPreviewRecipe, ImportSource, PreparationType, StatusState } from '../types';
 
 const sourceMap: Record<ImportSource, string> = {
   youtube: 'YouTube',
@@ -77,7 +75,7 @@ export function useImportFlow() {
       return false;
     }
 
-    const source = detectSource(nextUrl) as ImportSource;
+    const source = detectSource(nextUrl);
     const domain = normalizeSourceDomain(nextUrl);
     const adapterObj = getImportAdapterForDomain(domain);
     const adapterLabel = adapterObj ? adapterObj.domain : 'generic fallback';
@@ -91,7 +89,7 @@ export function useImportFlow() {
     try {
       if (source === 'web') {
         fetchedMarkdown = await fetchReadableImportPage(nextUrl);
-        const recipe = importWebsiteRecipeWithAdapters(fetchedMarkdown, nextUrl) as ImportPreviewRecipe;
+        const recipe = importWebsiteRecipeWithAdapters(fetchedMarkdown, nextUrl);
         if (!recipe.tags || !recipe.tags.length) {
           recipe.tags = suggestImportTags(
             recipe.sourceDomain,

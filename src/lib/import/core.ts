@@ -1,6 +1,8 @@
+import type { ImportSource } from '../../types';
+
 const ANTHROPIC_API_KEY = '';
 
-function normalizeSourceDomain(url) {
+function normalizeSourceDomain(url: string): string {
   try {
     let hostname = new URL(url).hostname.toLowerCase().replace(/^www\./, '');
     if (hostname === 'youtu.be' || hostname.endsWith('.youtube.com')) hostname = 'youtube.com';
@@ -20,7 +22,7 @@ function normalizeSourceDomain(url) {
   }
 }
 
-function detectSource(url) {
+function detectSource(url: string): ImportSource {
   if (/youtube\.com|youtu\.be/i.test(url)) return 'youtube';
   if (/tiktok\.com/i.test(url)) return 'tiktok';
   if (/instagram\.com/i.test(url)) return 'instagram';

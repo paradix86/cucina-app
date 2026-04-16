@@ -75,7 +75,7 @@ export interface GroupedShoppingItemsResult {
 export interface ImportDiagnostic {
   domain: string;
   adapter: string;
-  stage: string;
+  stage: ImportFailureStage;
   reason: string;
   hint: string | null;
 }
@@ -90,6 +90,14 @@ export interface ImportPreviewRecipe extends Partial<Recipe> {
   name: string;
   ingredients: string[];
   steps: string[];
-  source: string;
+  source: ImportSource;
   preparationType: PreparationType;
+}
+
+export type ImportSource = 'youtube' | 'tiktok' | 'instagram' | 'web';
+export type ImportFailureStage = 'normalize-url' | 'fetch-readable-page' | 'select-adapter' | 'parse-content' | 'build-preview';
+
+export interface WebsiteImportAdapter {
+  domain: string;
+  parse: (markdown: string, url: string) => ImportPreviewRecipe;
 }

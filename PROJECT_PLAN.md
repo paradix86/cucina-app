@@ -26,7 +26,7 @@ The app has gone through a full architectural migration:
 - ~~Global DOM manipulation~~ → **component-based SFCs**
 - ~~Module-level singleton refs~~ → **Pinia stores**
 - ~~Single flat file~~ → **Vue Router with hash-based routes**
-- **TypeScript foundation**: `tsconfig.json` + `src/types.d.ts`, gradual adoption, `.js` files remain JS
+- **TypeScript gradual migration**: shared types + typed stores + typed storage + typed import layer
 
 ## Milestones
 
@@ -38,7 +38,7 @@ The app has gone through a full architectural migration:
 ### Milestone 2 — Personal Recipe Book
 - [x] Personal notes on recipes
 - [x] Export / Import backup JSON
-- [ ] Manual import (form, no URL required) — **P0 backlog**
+- [x] Manual import (form, no URL required)
 
 ### Milestone 3 — Planning
 - [x] Shopping list — with smart grouping, quantity merging, section assignment, merge across recipes
@@ -62,7 +62,9 @@ The app has gone through a full architectural migration:
 - [x] Vue 3 + Vite migration
 - [x] Vue Router (hash history, 5 routes)
 - [x] Pinia stores (recipeBook, shoppingList)
-- [x] TypeScript bootstrap (`tsconfig.json`, `src/types.d.ts`, `allowJs`)
+- [x] TypeScript bootstrap (`tsconfig.json`, `allowJs`)
+- [x] TypeScript migration (stores, storage/domain, import parsing layer)
+- [x] VueUse targeted adoption
 - [x] Adapter-based website import architecture
 - [x] Internationalisation (IT, EN, DE, FR, ES)
 - [x] PWA / service worker (`public/sw.js`, `public/manifest.json`)
@@ -70,8 +72,7 @@ The app has gone through a full architectural migration:
 ## Active backlog
 
 ### P0
-1. Manual import (form) — create a recipe without a URL
-2. Weekly planner
+1. Weekly planner
 
 ### P1
 1. Meal prep / batch cooking view
@@ -98,7 +99,7 @@ Adapter-based pipeline for supported recipe websites:
 
 Current supported adapters: `giallozafferano.it`, `ricetteperbimby.it`
 
-New adapters go in `src/lib/import/adapters.js`.
+New adapters go in `src/lib/import/adapters.ts`.
 
 ### 2. Recipe metadata richness
 
@@ -117,22 +118,11 @@ The legacy `bimby: boolean` field is kept for backward compatibility.
 
 ## Feature specs
 
-### Manual Import (form)
+### Manual Import (form) — delivered
 
-Outcome: create a recipe without using a URL.
+Outcome delivered: users can create recipes without a URL from the Import view.
 
-Suggested MVP fields: name, category, servings, emoji, time, dynamic ingredients list, dynamic steps list, optional timer, preparation type.
-
-Files likely involved:
-- `src/views/ImportView.vue` (new tab panel or modal)
-- `src/composables/useImportFlow.js`
-- `src/stores/recipeBook.js`
-- `src/lib/i18nData.js`
-
-Acceptance criteria:
-- validated form
-- saved into Recipe Book via Pinia store
-- no backend required
+Implemented MVP fields: name, category, servings, emoji, time, dynamic ingredients list, dynamic steps list, optional timer, preparation type.
 
 ### Weekly Planner
 
@@ -144,9 +134,9 @@ Suggested v2: generate shopping list from the week, drag and drop.
 
 Files likely involved:
 - new `src/views/PlannerView.vue`
-- new `src/stores/planner.js`
+- new `src/stores/planner.ts`
 - `src/router/index.js`
-- `src/lib/storage.js`
+- `src/lib/storage.ts`
 - `src/lib/i18nData.js`
 
 Acceptance criteria:
@@ -179,7 +169,7 @@ Current shape (v3), forward-compatible:
 }
 ```
 
-Additions to the model must be backward-compatible and handled in `normalizeStoredRecipe()` in `src/lib/storage.js`.
+Additions to the model must be backward-compatible and handled in `normalizeStoredRecipe()` in `src/lib/storage.ts`.
 
 ## Definition of done
 

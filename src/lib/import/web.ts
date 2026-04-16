@@ -1,10 +1,12 @@
-async function fetchReadableImportPage(url) {
+import type { ImportFailureStage } from '../../types';
+
+async function fetchReadableImportPage(url: string): Promise<string> {
   const resp = await fetch(`https://r.jina.ai/${url}`);
   if (!resp.ok) throw new Error(`WEB_FETCH_${resp.status}`);
   return resp.text();
 }
 
-function extractPageHeadingsHint(markdown) {
+function extractPageHeadingsHint(markdown: string | null | undefined): string | null {
   const headings = (markdown || '')
     .split('\n')
     .map(line => line.trim())
@@ -13,7 +15,7 @@ function extractPageHeadingsHint(markdown) {
   return headings.length ? headings.join(' · ') : null;
 }
 
-function inferImportFailureStage(message) {
+function inferImportFailureStage(message: string): ImportFailureStage {
   if (!message) return 'parse-content';
   if (message.startsWith('WEB_FETCH_') || message.startsWith('HTTP ')) return 'fetch-readable-page';
   if (message === 'UNSUPPORTED_WEB_IMPORT') return 'select-adapter';

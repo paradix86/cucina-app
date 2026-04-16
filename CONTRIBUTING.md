@@ -16,12 +16,13 @@ npm install
 ## Development
 
 ```bash
-npm run dev      # dev server → http://localhost:4173
+npm run dev      # dev server (URL printed by Vite)
 npm run build    # production build → dist/
 npm run preview  # serve the built dist/ locally
+npx vue-tsc --noEmit   # TypeScript check for migrated scope
 ```
 
-The app uses Vite with hot module replacement. After editing a `.vue` or `.js` file in `src/`, the browser updates automatically.
+The app uses Vite with HMR. After editing files in `src/`, the browser updates automatically.
 
 ## Project structure
 
@@ -29,18 +30,18 @@ The app uses Vite with hot module replacement. After editing a `.vue` or `.js` f
 src/
   App.vue              root component
   main.js              bootstrap (Vue + Pinia + Router)
-  types.d.ts           shared TypeScript declarations
+  types.ts             shared TypeScript declarations
   router/index.js      route definitions
   views/               one component per route
   components/          shared components
   stores/              Pinia stores (recipeBook, shoppingList)
   composables/         Vue composables
   lib/                 pure logic (no Vue imports)
-    storage.js         localStorage CRUD + shopping parsing
+    storage.ts         localStorage CRUD + shopping parsing
     i18n.js            t() translation function
     i18nData.js        strings in 5 languages
     builtinData.js     built-in recipe dataset
-    import/            import pipeline (core, web, adapters)
+    import/            typed import pipeline (core.ts, web.ts, adapters.ts)
 public/
   sw.js                service worker
   manifest.json        PWA manifest
@@ -57,7 +58,7 @@ Every new key must be added to **all five** language sections in `src/lib/i18nDa
 
 ### 2. localStorage compatibility
 
-Existing saved data must survive upgrades. Recipe normalization lives in `normalizeStoredRecipe()` in `src/lib/storage.js`. Any new field added to the recipe model must have a safe default there.
+Existing saved data must survive upgrades. Recipe normalization lives in `normalizeStoredRecipe()` in `src/lib/storage.ts`. Any new field added to the recipe model must have a safe default there.
 
 Do not change how existing fields are stored in a way that breaks old data.
 
@@ -77,6 +78,8 @@ Direct destructuring (`const { recipes } = store`) breaks reactivity for refs.
 ### 4. lib/ is Vue-free
 
 `src/lib/` contains pure logic only — no Vue imports, no refs, no reactive. This keeps it testable and framework-independent.
+
+Domain-critical logic should be typed first (storage, import adapters/parsers, store contracts).
 
 ### 5. Keep changes focused
 
@@ -125,11 +128,11 @@ Use the current v3 English shape for new work:
 The import pipeline in `src/lib/import/` follows this flow:
 
 1. Normalize domain via `normalizeSourceDomain()`
-2. Select a domain adapter if one exists (`adapters.js`)
+2. Select a domain adapter if one exists (`adapters.ts`)
 3. Fall back to generic parser if no adapter matches
 4. Persist `source`, `sourceDomain`, `preparationType`, and suggested `tags`
 
-Adding a new adapter: add an entry to the adapter registry in `src/lib/import/adapters.js` with a domain matcher and a parse function. Do not break existing adapters.
+Adding a new adapter: add an entry to the adapter registry in `src/lib/import/adapters.ts` with a domain matcher and a parse function. Do not break existing adapters.
 
 ## CSS
 
@@ -143,13 +146,15 @@ At minimum, for any non-trivial change:
 2. Check browser console for errors
 3. If the change involves import, shopping list, or recipe persistence: test save → reload → verify data survived
 4. If the change is UI/flow related, run a targeted Playwright validation
-5. `npm run build` — confirm the build passes cleanly
+5. `npx vue-tsc --noEmit` — confirm TS checks pass
+6. `npm run build` — confirm the build passes cleanly
 
 **Stale SW caveat (deployed environments only):** if testing a deployed version and behavior seems wrong, clear service workers and caches, then reload. In local dev this does not apply.
 
 ## Pull request checklist
 
 - [ ] feature or fix works locally with `npm run dev`
+- [ ] `npx vue-tsc --noEmit` passes
 - [ ] `npm run build` passes with no errors
 - [ ] no console errors introduced
 - [ ] new UI strings added to `src/lib/i18nData.js` (all 5 languages)

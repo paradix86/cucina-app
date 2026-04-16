@@ -1,6 +1,9 @@
-import { normalizeSourceDomain } from './core.js';
+import { normalizeSourceDomain } from './core';
+import type { ImportPreviewRecipe, PreparationType, WebsiteImportAdapter } from '../../types';
 
-function normalizeImportText(value) {
+type AppCategory = '' | 'Primi' | 'Secondi' | 'Dolci' | 'Antipasti' | 'Zuppe' | 'Sughi' | 'Bevande';
+
+function normalizeImportText(value: string | null | undefined): string {
   return (value || '')
     .replace(/\r/g, '')
     .replace(/\u00a0/g, ' ')
@@ -9,24 +12,24 @@ function normalizeImportText(value) {
     .trim();
 }
 
-function stripImportMarkdownNoise(value) {
+function stripImportMarkdownNoise(value: string | null | undefined): string {
   return normalizeImportText(
     (value || '')
       .replace(/!\[[^\]]*]\([^)]*\)/g, ' ')
       .replace(/\[([^\]]+)\]\([^)]*\)/g, '$1')
-      .replace(/\s+\d+(?:\s+\d+)*/g, match => (match.length <= 8 ? ' ' : match))
+      .replace(/\s+\d+(?:\s+\d+)*/g, match => (match.length <= 8 ? ' ' : match)),
   );
 }
 
-function stripImportLinksAndImages(value) {
+function stripImportLinksAndImages(value: string | null | undefined): string {
   return normalizeImportText(
     (value || '')
       .replace(/!\[[^\]]*]\([^)]*\)/g, ' ')
-      .replace(/\[([^\]]+)\]\([^)]*\)/g, '$1')
+      .replace(/\[([^\]]+)\]\([^)]*\)/g, '$1'),
   );
 }
 
-function parseImportMinutes(value) {
+function parseImportMinutes(value: string | null | undefined): number {
   const text = String(value || '');
   const hour = text.match(/(\d+)\s*h/i);
   const min = text.match(/(\d+)\s*min/i);
@@ -35,13 +38,13 @@ function parseImportMinutes(value) {
   return hours * 60 + minutes;
 }
 
-function normalizeImportCategory(category) {
+function normalizeImportCategory(category: string): AppCategory {
   return ['Primi', 'Secondi', 'Dolci', 'Antipasti', 'Zuppe', 'Sughi', 'Bevande'].includes(category)
-    ? category
+    ? (category as AppCategory)
     : '';
 }
 
-function normalizeCategorySignal(text) {
+function normalizeCategorySignal(text: string | null | undefined): string {
   return String(text || '')
     .toLowerCase()
     .normalize('NFD')
@@ -49,7 +52,7 @@ function normalizeCategorySignal(text) {
     .trim();
 }
 
-function mapCategorySignalToAppCategory(text) {
+function mapCategorySignalToAppCategory(text: string | null | undefined): AppCategory {
   const normalized = normalizeCategorySignal(text);
   if (!normalized) return '';
   if (/drink|bevande|cocktail|frullat|frappe|sorbett|granite|succo|smoothie|tisane|liquori/.test(normalized)) return 'Bevande';
@@ -62,8 +65,8 @@ function mapCategorySignalToAppCategory(text) {
   return '';
 }
 
-function getLastImportHeadingIndex(markdown, title) {
-  const lines = String(markdown || '').split('\n').map(line => line.trim());
+function getLastImportHeadingIndex(markdown: string, title: string): number {
+  const lines = markdown.split('\n').map(line => line.trim());
   const cleanTitle = normalizeCategorySignal(stripImportLinksAndImages(title));
   let found = -1;
   lines.forEach((line, index) => {
@@ -74,8 +77,8 @@ function getLastImportHeadingIndex(markdown, title) {
   return found;
 }
 
-function extractNearbyCategorySignal(markdown, title) {
-  const lines = String(markdown || '').split('\n').map(line => line.trim());
+function extractNearbyCategorySignal(markdown: string, title: string): AppCategory {
+  const lines = markdown.split('\n').map(line => line.trim());
   const headingIdx = getLastImportHeadingIndex(markdown, title);
   if (headingIdx === -1) return '';
 
@@ -92,11 +95,11 @@ function extractNearbyCategorySignal(markdown, title) {
   return '';
 }
 
-function inferImportCategoryFromTitleAndText(title, text = '') {
-  return normalizeImportCategory(mapCategorySignalToAppCategory(`${title || ''}\n${text || ''}`));
+function inferImportCategoryFromTitleAndText(title: string, text = ''): AppCategory {
+  return normalizeImportCategory(mapCategorySignalToAppCategory(`${title}\n${text}`));
 }
 
-function inferImportEmoji(category) {
+function inferImportEmoji(category: AppCategory): string {
   switch (category) {
     case 'Primi': return '🍝';
     case 'Secondi': return '🍽️';
@@ -109,7 +112,7 @@ function inferImportEmoji(category) {
   }
 }
 
-function normalizeImportedServings(text, fallback = '1') {
+function normalizeImportedServings(text: string | null | undefined, fallback = '1'): string {
   const cleaned = normalizeImportText(text)
     .replace(/\s*persone?\b/gi, '')
     .replace(/\s*persona\b/gi, '')
@@ -117,32 +120,35 @@ function normalizeImportedServings(text, fallback = '1') {
   return cleaned || fallback;
 }
 
-function inferImportPreparationType(text, domain) {
+function inferImportPreparationType(text: string, domain: string): PreparationType {
   if (domain === 'ricetteperbimby.it') return 'bimby';
-  const lower = (text || '').toLowerCase();
+  const lower = text.toLowerCase();
   if (/\bbimby\b|tm[56]\b|tm31\b|varoma\b|nel boccale|vel\./.test(lower)) return 'bimby';
   if (/air\s*fryer|friggitrice\s+ad\s+aria|\bcestello\b/.test(lower)) return 'airfryer';
   return 'classic';
 }
 
-const DOMAIN_TAG_MAP = {
+const DOMAIN_TAG_MAP: Record<string, string> = {
   'giallozafferano.it': 'GialloZafferano',
   'ricetteperbimby.it': 'RicettePerBimby',
 };
 
-function suggestImportTags(domain, preparationType, category, name) {
-  const tags = [];
-  const domainTag = DOMAIN_TAG_MAP[domain];
+function suggestImportTags(
+  domain: string | undefined,
+  preparationType: PreparationType | undefined,
+  category: string | undefined,
+  name: string | undefined,
+): string[] {
+  const tags: string[] = [];
+  const domainTag = domain ? DOMAIN_TAG_MAP[domain] : '';
   if (domainTag) tags.push(domainTag);
   if (preparationType === 'bimby') tags.push('Bimby');
   if (preparationType === 'airfryer') tags.push('Air Fryer');
-  if (/frullat|frapp[eé]|smoothie|succo\b|bevanda|cocktail|granita|sorbett/i.test(name || '')) {
-    tags.push('Drink');
-  }
+  if (/frullat|frapp[eé]|smoothie|succo\b|bevanda|cocktail|granita|sorbett/i.test(name || '')) tags.push('Drink');
   return tags;
 }
 
-function buildImportedRecipe(url, fields) {
+function buildImportedRecipe(url: string, fields: Partial<ImportPreviewRecipe>): ImportPreviewRecipe {
   return {
     id: `imp_${Date.now()}`,
     name: '',
@@ -163,14 +169,14 @@ function buildImportedRecipe(url, fields) {
   };
 }
 
-function cleanGialloZafferanoTitle(title) {
+function cleanGialloZafferanoTitle(title: string): string {
   return stripImportMarkdownNoise(title)
     .replace(/^Ricetta\s+/i, '')
     .replace(/\s*-\s*La Ricetta di GialloZafferano\s*$/i, '')
     .trim();
 }
 
-function parseGialloZafferanoIngredients(block) {
+function parseGialloZafferanoIngredients(block: string): string[] {
   const cleanedBlock = normalizeImportText((block || '').replace(/!\[[^\]]*]\([^)]*\)/g, ' '));
   const firstIngredientIdx = cleanedBlock.search(/\[[^\]]+\]\([^)]*\)/);
   if (firstIngredientIdx === -1) return [];
@@ -185,10 +191,10 @@ function parseGialloZafferanoIngredients(block) {
       const rest = normalizeImportText(match[2]).replace(/\s*!+\s*/g, ' ').replace(/\s{2,}/g, ' ').trim();
       return rest ? `${name} ${rest}`.trim() : name;
     })
-    .filter(Boolean);
+    .filter((v): v is string => Boolean(v));
 }
 
-function parseGialloZafferanoAdapter(markdown, url) {
+function parseGialloZafferanoAdapter(markdown: string, url: string): ImportPreviewRecipe {
   const md = normalizeImportText(markdown);
   const titleMatch = md.match(/^#\s+(.+)$/m);
   const difficultyMatch = md.match(/\*\s+Difficoltà:\s+\*\*(.*?)\*\*/i);
@@ -234,11 +240,11 @@ function parseGialloZafferanoAdapter(markdown, url) {
   });
 }
 
-function cleanRicettePerBimbyTitle(title) {
+function cleanRicettePerBimbyTitle(title: string): string {
   return stripImportMarkdownNoise(title).replace(/\s*-\s*Ricette Bimby\s*$/i, '').trim();
 }
 
-function parseRicettePerBimbyAdapter(markdown, url) {
+function parseRicettePerBimbyAdapter(markdown: string, url: string): ImportPreviewRecipe {
   const md = normalizeImportText(markdown);
   const titleMatch = md.match(/^#\s+(.+)$/m);
   const difficultyMatch = md.match(/Difficoltà\s*\n+\s*([^\n]+)/i);
@@ -285,7 +291,7 @@ function parseRicettePerBimbyAdapter(markdown, url) {
   });
 }
 
-function parseGenericReadableRecipe(markdown, url) {
+function parseGenericReadableRecipe(markdown: string, url: string): ImportPreviewRecipe | null {
   const md = normalizeImportText(markdown);
   const titleMatch = md.match(/^#\s+(.+)$/m);
   const ingredientsMatch = md.match(/##\s*(?:Ingredienti|Ingredients)\s*\n([\s\S]*?)\n##\s*/i);
@@ -319,16 +325,16 @@ function parseGenericReadableRecipe(markdown, url) {
   });
 }
 
-const WEBSITE_IMPORT_ADAPTERS = [
+const WEBSITE_IMPORT_ADAPTERS: WebsiteImportAdapter[] = [
   { domain: 'giallozafferano.it', parse: parseGialloZafferanoAdapter },
   { domain: 'ricetteperbimby.it', parse: parseRicettePerBimbyAdapter },
 ];
 
-function getImportAdapterForDomain(domain) {
+function getImportAdapterForDomain(domain: string): WebsiteImportAdapter | null {
   return WEBSITE_IMPORT_ADAPTERS.find(adapter => adapter.domain === domain) || null;
 }
 
-function importWebsiteRecipeWithAdapters(markdown, url) {
+function importWebsiteRecipeWithAdapters(markdown: string, url: string): ImportPreviewRecipe {
   const domain = normalizeSourceDomain(url);
   const adapter = getImportAdapterForDomain(domain);
   if (adapter) return adapter.parse(markdown, url);
