@@ -273,11 +273,11 @@ function parseRicettePerBimbyAdapter(markdown: string, url: string): ImportPrevi
     .split('\n')
     .map(line => line.trim())
     .filter(line => line.startsWith('*'))
-    .map(line => line.replace(/^\*\s+/, '').trim())
-    .filter(Boolean);
+    .map(line => line.replace(/^\*\s+/, '').replace(/\*\*/g, '').trim())
+    .filter(text => text.length > 0 && text.length <= 150);  // skip prose/description lines
 
   const steps = [...md.slice(stepsStart).matchAll(/^\d+\.\s+(.*)$/gm)]
-    .map(match => stripImportLinksAndImages(match[1]))
+    .map(match => extractBimbyTaggedStep(stripImportLinksAndImages(match[1])))
     .filter(Boolean);
 
   if (!titleMatch || !ingredients.length || !steps.length) throw new Error('RPB_PARSE_INCOMPLETE');
@@ -319,8 +319,10 @@ function extractBimbyTaggedStep(stepText: string): string {
   const timeMatch = text.match(/(\d+\s*(?:sec(?:ondi?)?\.?|min(?:uti?)?\.?))/i);
   const speedMatch = text.match(/\bvel\.?\s*([0-9]+(?:\.[0-9]+)?)/i);
   const tempMatch = text.match(/(?:\btemp\.?\s*|\b)(\d{2,3})\s*°\s*[cf]?/i);
+  const varomaMatch = text.match(/\btemp(?:eratura)?\.?\s*Varoma\b/i);
 
   if (tempMatch) tags.push(`Temp. ${tempMatch[1]}°`);
+  else if (varomaMatch) tags.push('Varoma');
   if (speedMatch) tags.push(`Vel. ${speedMatch[1]}`);
   if (timeMatch) {
     const normalizedTime = timeMatch[1]
@@ -337,7 +339,9 @@ function extractBimbyTaggedStep(stepText: string): string {
     .replace(/(\d+\s*(?:sec(?:ondi?)?\.?|min(?:uti?)?\.?))/i, '')
     .replace(/\bvel\.?\s*[0-9]+(?:\.[0-9]+)?/i, '')
     .replace(/(?:\btemp\.?\s*|\b)\d{2,3}\s*°\s*[cf]?/i, '')
+    .replace(/\btemp(?:eratura)?\.?\s*Varoma\b/i, '')
     .replace(/^[,;:\-\s]+/, '')
+    .replace(/\s*[,;:]+\s*\.\s*$/, '.')  // clean trailing ": ." artifacts e.g. "emulsionare: ." → "emulsionare."
     .replace(/\s{2,}/g, ' ')
     .trim();
 
@@ -383,15 +387,22 @@ function parseRicetteBimbyNetAdapter(markdown: string, url: string): ImportPrevi
       }
       const stepMatch = line.match(/^\d+\.\s+(.*)$/);
       if (!stepMatch) return acc;
-      const cleaned = extractBimbyTaggedStep(stepMatch[1]);
+      // Strip leading step-counter digit that some sites embed in the step text itself
+      // e.g. markdown "1. 1 Mettere nel boccale..." → strip the inner "1 "
+      const rawStep = stepMatch[1].replace(/^\d{1,2}\s+(?=[A-Za-zÀ-ÿ(])/, '');
+      const cleaned = extractBimbyTaggedStep(rawStep);
       if (!cleaned) return acc;
-      if (cleaned.includes(' — ')) {
-        const [tagPart, textPart] = cleaned.split(' — ');
-        const textWithContext = currentSection ? `${currentSection}: ${textPart}` : textPart;
+      // "Preparazione" is the default main cooking section — prefix adds no value
+      const contextSection = currentSection && !/^preparazione$/i.test(currentSection) ? currentSection : '';
+      const dashIdx = cleaned.indexOf(' — ');
+      if (dashIdx !== -1) {
+        const tagPart = cleaned.slice(0, dashIdx);
+        const textPart = cleaned.slice(dashIdx + 3);
+        const textWithContext = contextSection ? `${contextSection}: ${textPart}` : textPart;
         acc.push(`${tagPart} — ${textWithContext}`.trim());
         return acc;
       }
-      acc.push(currentSection ? `${currentSection}: ${cleaned}` : cleaned);
+      acc.push(contextSection ? `${contextSection}: ${cleaned}` : cleaned);
       return acc;
     }, []);
 

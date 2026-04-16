@@ -93,6 +93,22 @@ In a deployed environment, if a static asset changes, old clients will keep serv
 
 In local dev (`npm run dev`), the SW is not active — Vite serves files directly. This is the expected behavior.
 
+### 7. GitHub Pages deployment
+
+The app is hosted at `https://paradix86.github.io/cucina-app/`.
+
+Deployment is fully automated via `.github/workflows/deploy.yml`:
+- triggers on every push to `main`
+- runs `npm ci && npm run build`
+- publishes `dist/` via the GitHub Pages Actions API (no branch commit needed)
+
+**Important alignment rules** — these three must stay in sync:
+- `base: '/cucina-app/'` in `vite.config.js` — controls asset URLs in the build
+- SW registration path: `${import.meta.env.BASE_URL}sw.js` in `useServiceWorker.js` — resolves to `/cucina-app/sw.js`
+- Static asset paths in `public/sw.js` — use `'./'`-relative URLs so they resolve correctly under any subpath
+
+If the repo is ever renamed or the Pages URL changes, update `base` in `vite.config.js` and verify the SW paths still work.
+
 ### 7. Touch UX
 
 The app is optimized for tablets and touchscreens. Avoid small tap targets or cramped layouts.

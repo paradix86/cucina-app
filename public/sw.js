@@ -1,10 +1,12 @@
 const CACHE_NAME = 'cucina-vue-v2';
 
+// Use relative URLs so paths resolve correctly regardless of subpath deployment
+// (e.g. GitHub Pages under /cucina-app/)
 const STATIC_ASSETS = [
-  '/',
-  '/manifest.json',
-  '/icons/icon-192.svg',
-  '/icons/icon-512.svg',
+  './',
+  './manifest.json',
+  './icons/icon-192.svg',
+  './icons/icon-512.svg',
 ];
 
 self.addEventListener('install', event => {
@@ -45,7 +47,7 @@ self.addEventListener('fetch', event => {
         .catch(async () => {
           const cached = await caches.match(event.request);
           if (cached) return cached;
-          return caches.match('/');
+          return caches.match('./');
         })
     );
     return;
