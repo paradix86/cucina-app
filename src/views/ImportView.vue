@@ -4,15 +4,34 @@ import { useImportFlow } from '../composables/useImportFlow';
 import { getSourceDomainLabel, joinMetaParts } from '../lib/recipes.js';
 import { t } from '../lib/i18n.js';
 import { useRecipeBookStore } from '../stores/recipeBook';
+import { DUEMME_RECIPE_PACK } from '../lib/duemmePack';
 
 const emit = defineEmits(['toast', 'go-home']);
 const { url, loading, status, diagnostic, previewRecipe, importRecipeFromUrl, updatePreparationType, savePreviewedRecipe, discardPreview, removeTag, addTag } = useImportFlow();
 const recipeBookStore = useRecipeBookStore();
 
 const prepOptions = ['classic', 'bimby', 'airfryer'];
-const importMode = ref('url');
+const showManualForm = ref(false);
+const showCollectionBrowser = ref(false);
+const selectedCollectionIds = ref([]);
+const selectedCollectionId = ref('');
 const previewIngredients = computed(() => Array.isArray(previewRecipe.value?.ingredients) ? previewRecipe.value.ingredients : []);
 const previewSteps = computed(() => Array.isArray(previewRecipe.value?.steps) ? previewRecipe.value.steps : []);
+const collectionRecipes = computed(() => DUEMME_RECIPE_PACK);
+const collectionSelectedCount = computed(() => selectedCollectionIds.value.length);
+const selectedCollectionRecipe = computed(() => {
+  if (!selectedCollectionId.value) return collectionRecipes.value[0] || null;
+  return collectionRecipes.value.find(recipe => recipe.id === selectedCollectionId.value) || null;
+});
+const collectionPreviewMeta = computed(() => {
+  if (!selectedCollectionRecipe.value) return '';
+  return joinMetaParts([
+    selectedCollectionRecipe.value.category,
+    selectedCollectionRecipe.value.time,
+    selectedCollectionRecipe.value.servings ? `${selectedCollectionRecipe.value.servings} ${t('detail_servings').toLowerCase()}` : '',
+    selectedCollectionRecipe.value.difficolta,
+  ]);
+});
 const previewMeta = computed(() => {
   if (!previewRecipe.value) return '';
   return joinMetaParts([
@@ -43,8 +62,53 @@ async function submit() {
   await importRecipeFromUrl();
 }
 
-function switchImportMode(mode) {
-  importMode.value = mode;
+function openManualForm() {
+  showManualForm.value = true;
+}
+
+function closeManualForm() {
+  showManualForm.value = false;
+}
+
+function openCollectionBrowser() {
+  showCollectionBrowser.value = true;
+  if (!selectedCollectionId.value && collectionRecipes.value.length) {
+    selectedCollectionId.value = collectionRecipes.value[0].id;
+  }
+}
+
+function closeCollectionBrowser() {
+  showCollectionBrowser.value = false;
+}
+
+function toggleCollectionSelection(recipeId) {
+  if (selectedCollectionIds.value.includes(recipeId)) {
+    selectedCollectionIds.value = selectedCollectionIds.value.filter(id => id !== recipeId);
+    return;
+  }
+  selectedCollectionIds.value = [...selectedCollectionIds.value, recipeId];
+}
+
+function selectAllCollectionRecipes() {
+  selectedCollectionIds.value = collectionRecipes.value.map(recipe => recipe.id);
+}
+
+function clearCollectionSelection() {
+  selectedCollectionIds.value = [];
+}
+
+function importSelectedCollectionRecipes() {
+  if (!selectedCollectionIds.value.length) return;
+  let added = 0;
+  selectedCollectionIds.value.forEach(recipeId => {
+    const recipe = collectionRecipes.value.find(item => item.id === recipeId);
+    if (recipeBookStore.add(recipe)) added += 1;
+  });
+  emit('toast', added ? t('guide_pack_import_ok', { n: added }) : t('guide_pack_import_none'), added ? 'success' : 'info');
+  if (added) {
+    selectedCollectionIds.value = [];
+    emit('go-home');
+  }
 }
 
 function addIngredientField() {
@@ -119,6 +183,7 @@ function saveManualRecipe() {
   }
   emit('toast', t('manual_saved_ok'), 'success');
   manualForm.value = buildManualForm();
+  showManualForm.value = false;
   emit('go-home');
 }
 
@@ -133,39 +198,45 @@ function savePreview() {
 
 <template>
   <section class="panel active">
-    <div class="import-box card">
-      <h2>{{ t('import_title') }}</h2>
-      <p class="muted-label" style="margin-bottom:12px">{{ t('import_desc') }}</p>
-      <div class="import-mode-switch">
-        <button class="type-pill import-mode-pill" :class="{ active: importMode === 'url' }" @click="switchImportMode('url')">{{ t('import_mode_url') }}</button>
-        <button class="type-pill import-mode-pill" :class="{ active: importMode === 'manual' }" @click="switchImportMode('manual')">{{ t('import_mode_manual') }}</button>
+    <div class="import-shell">
+      <div class="import-box card">
+        <h2>{{ t('import_section_link_title') }}</h2>
+        <p class="muted-label import-section-subtitle">{{ t('import_section_link_desc') }}</p>
+        <div class="source-pills source-pills-static">
+          <span class="src-pill web">ricetteperbimby.it</span>
+          <span class="src-pill web">giallozafferano.it</span>
+          <span class="src-pill web">{{ t('source_web') }}</span>
+        </div>
+        <div class="url-row">
+          <input v-model="url" type="url" :placeholder="t('import_placeholder')" />
+          <button class="btn-primary" id="btn-import-go" :disabled="loading" @click="submit">{{ t('import_btn') }}</button>
+        </div>
+        <div class="status-msg" :class="status.type">{{ status.message }}</div>
+        <div v-if="diagnostic" class="import-diagnostics" style="display:block" aria-live="polite">
+          <div class="import-diagnostics-title">{{ t('import_diag_title') }}</div>
+          <div class="import-diagnostics-item"><span class="import-diagnostics-label">{{ t('import_diag_domain') }}:</span> <span class="import-diagnostics-value">{{ diagnostic.domain }}</span></div>
+          <div class="import-diagnostics-item"><span class="import-diagnostics-label">{{ t('import_diag_adapter') }}:</span> <span class="import-diagnostics-value">{{ diagnostic.adapter }}</span></div>
+          <div class="import-diagnostics-item"><span class="import-diagnostics-label">{{ t('import_diag_stage') }}:</span> <span class="import-diagnostics-value">{{ diagnostic.stage }}</span></div>
+          <div class="import-diagnostics-item"><span class="import-diagnostics-label">{{ t('import_diag_reason') }}:</span> <span class="import-diagnostics-value">{{ diagnostic.reason }}</span></div>
+          <details v-if="diagnostic.hint" class="import-diagnostics-hint">
+            <summary>{{ t('import_diag_hint') }}</summary>
+            <div class="import-diagnostics-hint-body">{{ diagnostic.hint }}</div>
+          </details>
+        </div>
       </div>
-      <template v-if="importMode === 'url'">
-      <div class="source-pills">
-        <span class="src-pill yt">YouTube</span>
-        <span class="src-pill tt">TikTok</span>
-        <span class="src-pill ig">Instagram</span>
-        <span class="src-pill web">Web</span>
-      </div>
-      <div class="url-row">
-        <input v-model="url" type="url" :placeholder="t('import_placeholder')" />
-        <button class="btn-primary" id="btn-import-go" :disabled="loading" @click="submit">{{ t('import_btn') }}</button>
-      </div>
-      <div class="status-msg" :class="status.type">{{ status.message }}</div>
-      <div v-if="diagnostic" class="import-diagnostics" style="display:block" aria-live="polite">
-        <div class="import-diagnostics-title">{{ t('import_diag_title') }}</div>
-        <div class="import-diagnostics-item"><span class="import-diagnostics-label">{{ t('import_diag_domain') }}:</span> <span class="import-diagnostics-value">{{ diagnostic.domain }}</span></div>
-        <div class="import-diagnostics-item"><span class="import-diagnostics-label">{{ t('import_diag_adapter') }}:</span> <span class="import-diagnostics-value">{{ diagnostic.adapter }}</span></div>
-        <div class="import-diagnostics-item"><span class="import-diagnostics-label">{{ t('import_diag_stage') }}:</span> <span class="import-diagnostics-value">{{ diagnostic.stage }}</span></div>
-        <div class="import-diagnostics-item"><span class="import-diagnostics-label">{{ t('import_diag_reason') }}:</span> <span class="import-diagnostics-value">{{ diagnostic.reason }}</span></div>
-        <details v-if="diagnostic.hint" class="import-diagnostics-hint">
-          <summary>{{ t('import_diag_hint') }}</summary>
-          <div class="import-diagnostics-hint-body">{{ diagnostic.hint }}</div>
-        </details>
-      </div>
-      </template>
-      <template v-else>
-        <div class="manual-form-wrap">
+
+      <div class="card import-flow-card">
+        <div class="import-flow-head">
+          <div>
+            <h2>{{ t('import_section_manual_title') }}</h2>
+            <p class="muted-label import-section-subtitle">{{ t('import_section_manual_desc') }}</p>
+          </div>
+          <button class="btn-secondary" id="manual-open" @click="openManualForm">{{ t('import_section_manual_btn') }}</button>
+        </div>
+        <div v-if="showManualForm" class="manual-form-wrap">
+          <div class="manual-form-top-actions">
+            <button class="btn-ghost" id="manual-close" @click="closeManualForm">{{ t('import_section_manual_close') }}</button>
+          </div>
           <h3 class="manual-form-title">{{ t('manual_title') }}</h3>
           <p class="muted-label" style="margin-bottom:12px">{{ t('manual_desc') }}</p>
           <div class="manual-grid">
@@ -236,10 +307,77 @@ function savePreview() {
             <button id="manual-save" class="btn-primary" @click="saveManualRecipe">{{ t('manual_save') }}</button>
           </div>
         </div>
-      </template>
+      </div>
+
+      <div class="card import-flow-card">
+        <div class="import-flow-head">
+          <div>
+            <h2>{{ t('import_section_collections_title') }}</h2>
+            <p class="muted-label import-section-subtitle">{{ t('import_section_collections_desc') }}</p>
+          </div>
+          <button class="btn-secondary" id="collection-open" @click="openCollectionBrowser">{{ t('import_section_collections_browse') }}</button>
+        </div>
+      </div>
     </div>
 
-    <div v-if="previewRecipe && importMode === 'url'" class="preview-box card" style="display:block">
+    <div v-if="showCollectionBrowser" class="card collection-browser">
+      <div class="collection-browser-top">
+        <div>
+          <h3>{{ t('import_collection_title') }}</h3>
+          <p class="muted-label">{{ t('import_collection_desc') }}</p>
+        </div>
+        <button class="btn-ghost" @click="closeCollectionBrowser">{{ t('import_collection_close') }}</button>
+      </div>
+      <div class="collection-browser-grid">
+        <div class="collection-list">
+          <div class="collection-list-actions">
+            <button class="btn-ghost" @click="selectAllCollectionRecipes">{{ t('import_collection_select_all') }}</button>
+            <button class="btn-ghost" @click="clearCollectionSelection">{{ t('import_collection_clear') }}</button>
+          </div>
+          <div class="collection-list-items">
+            <label
+              v-for="recipe in collectionRecipes"
+              :key="recipe.id"
+              class="collection-item"
+              :class="{ active: selectedCollectionId === recipe.id }"
+            >
+              <input
+                type="checkbox"
+                :checked="selectedCollectionIds.includes(recipe.id)"
+                @change="toggleCollectionSelection(recipe.id)"
+              />
+              <button class="collection-item-main" @click="selectedCollectionId = recipe.id">
+                <span class="collection-item-name">{{ recipe.name }}</span>
+                <span class="collection-item-meta">{{ joinMetaParts([recipe.category, recipe.time]) }}</span>
+              </button>
+            </label>
+          </div>
+        </div>
+        <div v-if="selectedCollectionRecipe" class="collection-preview">
+          <h4>{{ selectedCollectionRecipe.emoji || '🍴' }} {{ selectedCollectionRecipe.name }}</h4>
+          <p class="muted-label">{{ collectionPreviewMeta }}</p>
+          <div class="sec-label">{{ t('detail_ingredients') }}</div>
+          <ul class="ing-list collection-preview-list">
+            <li v-for="ingredient in selectedCollectionRecipe.ingredients" :key="ingredient">{{ ingredient }}</li>
+          </ul>
+          <div class="sec-label" style="margin-top:1rem">{{ t('detail_steps') }}</div>
+          <div class="collection-preview-steps">
+            <div v-for="(step, index) in selectedCollectionRecipe.steps" :key="`${selectedCollectionRecipe.id}-${index}`" class="step-row">
+              <span class="step-n">{{ index + 1 }}</span>
+              <p class="step-txt">{{ step }}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="collection-browser-bottom">
+        <span class="muted-label">{{ t('import_collection_selected', { n: collectionSelectedCount }) }}</span>
+        <div class="collection-browser-actions">
+          <button class="btn-primary" :disabled="!collectionSelectedCount" @click="importSelectedCollectionRecipes">{{ t('import_collection_import') }}</button>
+        </div>
+      </div>
+    </div>
+
+    <div v-if="previewRecipe" class="preview-box card" style="display:block">
       <h3 id="preview-title">{{ previewRecipe.emoji || '🍴' }} {{ previewRecipe.name }}</h3>
       <p id="preview-meta" class="muted-label" style="margin-bottom:12px">{{ previewMeta }}</p>
       <div class="preview-metadata">

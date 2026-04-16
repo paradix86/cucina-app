@@ -27,7 +27,8 @@ function stripMarkdown(value: string | null | undefined): string {
 
 function parseBlock(markdown: string, title: string): string {
   const escaped = title.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const match = markdown.match(new RegExp(`^##\\s+${escaped}\\s*\\n([\\s\\S]*?)(?:\\n##\\s+|$)`, 'im'));
+  // Accept headings such as "## Ingredienti (Porzione Singola)" and capture until next level-2 section.
+  const match = markdown.match(new RegExp(`(?:^|\\n)##\\s+${escaped}(?:[^\\n]*)\\n([\\s\\S]*?)(?=\\n##\\s+|$)`, 'i'));
   return match ? match[1].trim() : '';
 }
 
@@ -35,8 +36,8 @@ function extractListLines(block: string): string[] {
   return String(block || '')
     .split('\n')
     .map(line => line.trim())
-    .filter(line => line.startsWith('- '))
-    .map(line => stripMarkdown(line.replace(/^- /, '')))
+    .filter(line => line.startsWith('- ') || line.startsWith('* '))
+    .map(line => stripMarkdown(line.replace(/^[-*] /, '')))
     .filter(Boolean);
 }
 
@@ -79,7 +80,7 @@ function normalizeBimbyStep(step: string): string {
 }
 
 function buildDuemmeRecipe(filePath: string, markdown: string): Recipe | null {
-  const pathMatch = filePath.match(/ricette\/([^/]+)\/([^/]+)\.md$/);
+  const pathMatch = filePath.match(/ricette\/([^/]+)\/([^/]+)\.md(?:\?.*)?$/);
   if (!pathMatch) return null;
   const folder = pathMatch[1];
   const slug = pathMatch[2];

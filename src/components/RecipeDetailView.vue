@@ -176,13 +176,15 @@ function onShoppingAction() {
     <button class="detail-back" @click="emit('back')">{{ backLabel || t('detail_back') }}</button>
     <div v-if="!isEditing" class="detail-wrap">
       <h2 class="detail-title">{{ recipe.emoji || '🍴' }} {{ recipe.name }}</h2>
-      <p class="detail-meta">{{ joinMetaParts([recipe.category, recipe.time, recipe.difficolta]) }}</p>
-      <p class="detail-method"><span class="sec-label-inline">{{ t('detail_method') }}:</span> {{ prepInfo.txt }}</p>
-      <p v-if="recipe.sourceDomain || recipe.url" class="detail-origin">
-        <span class="sec-label-inline">{{ t('detail_source_site') }}:</span>
-        <a v-if="recipe.url" :href="recipe.url" target="_blank" rel="noopener">{{ getSourceDomainLabel(recipe.sourceDomain) || recipe.url }}</a>
-        <span v-else>{{ getSourceDomainLabel(recipe.sourceDomain) }}</span>
-      </p>
+      <div class="detail-meta-grid">
+        <p class="detail-meta">{{ joinMetaParts([recipe.category, recipe.time, recipe.difficolta]) }}</p>
+        <p class="detail-method"><span class="sec-label-inline">{{ t('detail_method') }}:</span> {{ prepInfo.txt }}</p>
+        <p v-if="recipe.sourceDomain || recipe.url" class="detail-origin">
+          <span class="sec-label-inline">{{ t('detail_source_site') }}:</span>
+          <a v-if="recipe.url" :href="recipe.url" target="_blank" rel="noopener">{{ getSourceDomainLabel(recipe.sourceDomain) || recipe.url }}</a>
+          <span v-else>{{ getSourceDomainLabel(recipe.sourceDomain) }}</span>
+        </p>
+      </div>
 
       <div class="servings-ctrl">
         <span class="sec-label">{{ t('detail_servings') }}</span>
@@ -218,8 +220,10 @@ function onShoppingAction() {
         </div>
       </template>
 
-      <button class="btn-cooking" @click="emit('start-cooking', recipe)">{{ t('cooking_start') }}</button>
-      <div class="detail-actions">
+      <div class="detail-primary-action">
+        <button class="btn-cooking" @click="emit('start-cooking', recipe)">{{ t('cooking_start') }}</button>
+      </div>
+      <div class="detail-actions detail-actions-secondary">
         <button v-if="recipe.timerMinutes > 0" class="btn-primary" @click="emit('start-recipe-timer', recipe)">
           {{ t('detail_timer_btn', { t: formatTimerLabel(recipe.timerMinutes) }) }}
         </button>
