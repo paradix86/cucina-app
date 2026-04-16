@@ -2,7 +2,8 @@
   "name": "Cucina App",
   "short_name": "Cucina",
   "description": "Ricette, Bimby TM5 e Timer da cucina",
-  "start_url": "./",
+  "start_url": "/cucina-app/",
+  "scope": "/cucina-app/",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#1D9E75",
@@ -11,13 +12,13 @@
   "categories": ["food", "lifestyle"],
   "icons": [
     {
-      "src": "icons/icon-192.svg",
+      "src": "/cucina-app/icons/icon-192.svg",
       "sizes": "192x192",
       "type": "image/svg+xml",
       "purpose": "any"
     },
     {
-      "src": "icons/icon-512.svg",
+      "src": "/cucina-app/icons/icon-512.svg",
       "sizes": "512x512",
       "type": "image/svg+xml",
       "purpose": "any maskable"
