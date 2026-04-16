@@ -4,6 +4,7 @@ import ImportView from '../views/ImportView.vue';
 import BuiltinRecipesView from '../views/BuiltinRecipesView.vue';
 import ShoppingListView from '../views/ShoppingListView.vue';
 import TimerView from '../views/TimerView.vue';
+import GuidesView from '../views/GuidesView.vue';
 
 const routes = [
   { path: '/', redirect: '/recipe-book' },
@@ -14,6 +15,7 @@ const routes = [
   { path: '/recipes/:id', name: 'recipes-detail', component: BuiltinRecipesView, props: true },
   { path: '/shopping-list',name: 'shopping-list', component: ShoppingListView },
   { path: '/timer',        name: 'timer',         component: TimerView },
+  { path: '/guides',       name: 'guides',        component: GuidesView },
   // Catch-all: redirect unknown paths to recipe book
   { path: '/:pathMatch(.*)*', redirect: '/recipe-book' },
 ];

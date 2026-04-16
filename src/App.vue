@@ -28,6 +28,7 @@ const tabs = computed(() => [
   { path: '/recipes',     label: t('nav_recipes') },
   { path: '/shopping-list', label: t('nav_shopping') },
   { path: '/timer',       label: t('nav_timer') },
+  { path: '/guides',      label: t('nav_guides') },
 ]);
 
 function goHome() {

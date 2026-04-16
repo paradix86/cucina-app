@@ -178,7 +178,11 @@ function onShoppingAction() {
       <h2 class="detail-title">{{ recipe.emoji || '🍴' }} {{ recipe.name }}</h2>
       <p class="detail-meta">{{ joinMetaParts([recipe.category, recipe.time, recipe.difficolta]) }}</p>
       <p class="detail-method"><span class="sec-label-inline">{{ t('detail_method') }}:</span> {{ prepInfo.txt }}</p>
-      <p v-if="recipe.sourceDomain" class="detail-origin"><span class="sec-label-inline">{{ t('detail_source_site') }}:</span> {{ getSourceDomainLabel(recipe.sourceDomain) }}</p>
+      <p v-if="recipe.sourceDomain || recipe.url" class="detail-origin">
+        <span class="sec-label-inline">{{ t('detail_source_site') }}:</span>
+        <a v-if="recipe.url" :href="recipe.url" target="_blank" rel="noopener">{{ getSourceDomainLabel(recipe.sourceDomain) || recipe.url }}</a>
+        <span v-else>{{ getSourceDomainLabel(recipe.sourceDomain) }}</span>
+      </p>
 
       <div class="servings-ctrl">
         <span class="sec-label">{{ t('detail_servings') }}</span>
@@ -215,7 +219,6 @@ function onShoppingAction() {
       </template>
 
       <button class="btn-cooking" @click="emit('start-cooking', recipe)">{{ t('cooking_start') }}</button>
-      <a v-if="recipe.url" :href="recipe.url" class="orig-link" target="_blank" rel="noopener">{{ t('detail_open_source') }}</a>
       <div class="detail-actions">
         <button v-if="recipe.timerMinutes > 0" class="btn-primary" @click="emit('start-recipe-timer', recipe)">
           {{ t('detail_timer_btn', { t: formatTimerLabel(recipe.timerMinutes) }) }}
