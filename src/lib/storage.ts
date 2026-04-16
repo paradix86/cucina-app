@@ -64,7 +64,20 @@ function parseJson<T>(value: string, fallback: T): T {
 }
 
 function asStringArray(value: unknown): string[] {
-  return Array.isArray(value) ? value.map(item => String(item)).filter(Boolean) : [];
+  return Array.isArray(value)
+    ? value.map(item => {
+        if (typeof item === 'string') return item.trim();
+        if (item && typeof item === 'object') {
+          const record = item as Record<string, unknown>;
+          if (typeof record.text === 'string') return record.text.trim();
+          return Object.values(record)
+            .filter(v => typeof v === 'string')
+            .join(' ')
+            .trim();
+        }
+        return '';
+      }).filter(Boolean)
+    : [];
 }
 
 function asNumber(value: unknown, fallback = 0): number {
@@ -79,14 +92,14 @@ function asString(value: unknown, fallback = ''): string {
 function isShoppingItem(value: unknown): value is ShoppingItem {
   return Boolean(
     value
-      && typeof value === 'object'
-      && typeof (value as ShoppingItem).id === 'string'
-      && typeof (value as ShoppingItem).text === 'string',
+    && typeof value === 'object'
+    && typeof (value as ShoppingItem).id === 'string'
+    && typeof (value as ShoppingItem).text === 'string',
   );
 }
 
 export function normalizePreparationTypeValue(value: unknown): PreparationType | '' {
-  return ['classic', 'bimby', 'airfryer'].includes(String(value)) ? (value as PreparationType) : '';
+  return [ 'classic', 'bimby', 'airfryer' ].includes(String(value)) ? (value as PreparationType) : '';
 }
 
 export function getPreparationType(recipe: Partial<RecipeInput> | null | undefined): PreparationType {
@@ -100,6 +113,11 @@ function normalizeStoredRecipe(recipe: RecipeInput): Recipe {
   const preparationType = getPreparationType(recipe);
   const id = asString(recipe.id);
   const name = asString(recipe.name ?? recipe.nome);
+
+  // Normalize meal occasion to only valid values
+  const validMealOccasions = [ 'Colazione', 'Pranzo', 'Cena', 'Spuntino' ];
+  const mealOccasion = asStringArray(recipe?.mealOccasion).filter(m => validMealOccasions.includes(m));
+
   return {
     ...recipe,
     id,
@@ -120,6 +138,7 @@ function normalizeStoredRecipe(recipe: RecipeInput): Recipe {
     favorite: Boolean(recipe?.favorite),
     lastViewedAt: recipe?.lastViewedAt || undefined,
     tags: asStringArray(recipe?.tags),
+    mealOccasion: mealOccasion.length > 0 ? mealOccasion : undefined,
   };
 }
 
@@ -190,10 +209,10 @@ export function updateRecipe(id: string, updates: Partial<Recipe>): boolean {
   const idx = arr.findIndex(recipe => recipe.id === id);
   if (idx === -1) return false;
 
-  arr[idx] = normalizeStoredRecipe({
-    ...arr[idx],
+  arr[ idx ] = normalizeStoredRecipe({
+    ...arr[ idx ],
     ...updates,
-    id: arr[idx].id,
+    id: arr[ idx ].id,
   });
   saveRecipeBook(arr);
   return true;
@@ -203,7 +222,7 @@ export function updateRecipeNotes(id: string, notes: string): boolean {
   const arr = loadRecipeBook();
   const idx = arr.findIndex(recipe => recipe.id === id);
   if (idx === -1) return false;
-  arr[idx] = { ...arr[idx], notes: notes || '' };
+  arr[ idx ] = { ...arr[ idx ], notes: notes || '' };
   saveRecipeBook(arr);
   return true;
 }
@@ -212,7 +231,7 @@ export function toggleRecipeFavorite(id: string): boolean {
   const arr = loadRecipeBook();
   const idx = arr.findIndex(recipe => recipe.id === id);
   if (idx === -1) return false;
-  arr[idx].favorite = !arr[idx].favorite;
+  arr[ idx ].favorite = !arr[ idx ].favorite;
   saveRecipeBook(arr);
   return true;
 }
@@ -221,14 +240,14 @@ export function markRecipeViewed(id: string): boolean {
   const arr = loadRecipeBook();
   const idx = arr.findIndex(recipe => recipe.id === id);
   if (idx === -1) return false;
-  arr[idx].lastViewedAt = Date.now();
+  arr[ idx ].lastViewedAt = Date.now();
   saveRecipeBook(arr);
   return true;
 }
 
 export function exportRecipeBook(): number {
   const arr = loadRecipeBook();
-  const blob = new Blob([JSON.stringify(arr, null, 2)], { type: 'application/json' });
+  const blob = new Blob([ JSON.stringify(arr, null, 2) ], { type: 'application/json' });
   const a = document.createElement('a');
   const url = URL.createObjectURL(blob);
   a.href = url;
@@ -247,7 +266,7 @@ export function importRecipeBook(file: File): Promise<number> {
         if (!Array.isArray(arr)) throw new Error('Invalid format');
         const incoming = arr.map(normalizeStoredRecipe);
         const existing = loadRecipeBook();
-        const merged = [...incoming, ...existing.filter(r => !incoming.find(a => a.id === r.id))];
+        const merged = [ ...incoming, ...existing.filter(r => !incoming.find(a => a.id === r.id)) ];
         saveRecipeBook(merged);
         resolve(merged.length);
       } catch (err) {
@@ -295,7 +314,7 @@ export function addShoppingListItems(items: string[], recipeMeta: RecipeMeta = {
     }))
     .filter(item => item.text) as ShoppingItem[];
 
-  const next = [...existing, ...additions];
+  const next = [ ...existing, ...additions ];
   saveShoppingList(next);
   return additions.length;
 }
@@ -315,7 +334,7 @@ function normalizeShoppingIngredientText(text: string): string {
   // Normalize common parenthetical quantity note layout
   const parenQty = cleaned.match(/^(\d+(?:[.,]\d+)?)\s*\(([^)]+)\)\s+(.+)$/i);
   if (parenQty) {
-    return `${parenQty[1]} ${parenQty[3]} (${parenQty[2]})`.replace(/\s+/g, ' ').trim();
+    return `${parenQty[ 1 ]} ${parenQty[ 3 ]} (${parenQty[ 2 ]})`.replace(/\s+/g, ' ').trim();
   }
   return cleaned;
 }
@@ -369,7 +388,7 @@ export function addShoppingListItemsWithScale(items: string[], recipeMeta: Recip
     }))
     .filter(item => item.text) as ShoppingItem[];
 
-  const next = [...existing, ...additions];
+  const next = [ ...existing, ...additions ];
   saveShoppingList(next);
   return additions.length;
 }
@@ -387,7 +406,7 @@ export function toggleShoppingListItem(id: string): boolean {
   const items = loadShoppingList();
   const idx = items.findIndex(item => item.id === id);
   if (idx === -1) return false;
-  items[idx].checked = !items[idx].checked;
+  items[ idx ].checked = !items[ idx ].checked;
   saveShoppingList(items);
   return true;
 }
@@ -440,9 +459,9 @@ export function parseIngredient(text: string): ParsedIngredient {
   // e.g., "500 g chicken" or "2 eggs"
   const match = trimmed.match(/^(\d+(?:[.,]\d+)?)\s*([a-zA-Z°º]+)\s+(.+)$/);
   if (match) {
-    const qtyStr = match[1].replace(',', '.');
-    const unitRaw = match[2].toLowerCase();
-    const nameRaw = match[3].trim();
+    const qtyStr = match[ 1 ].replace(',', '.');
+    const unitRaw = match[ 2 ].toLowerCase();
+    const nameRaw = match[ 3 ].trim();
 
     const qty = parseFloat(qtyStr);
     if (!isNaN(qty) && qty > 0) {
@@ -460,8 +479,8 @@ export function parseIngredient(text: string): ParsedIngredient {
   // Fallback: quantity + name (without explicit unit), only for clear countables
   const noUnitMatch = trimmed.match(/^(\d+(?:[.,]\d+)?)\s+(.+)$/);
   if (noUnitMatch) {
-    const qty = parseFloat(noUnitMatch[1].replace(',', '.'));
-    const nameRaw = normalizeName(noUnitMatch[2]);
+    const qty = parseFloat(noUnitMatch[ 1 ].replace(',', '.'));
+    const nameRaw = normalizeName(noUnitMatch[ 2 ]);
     if (!isNaN(qty) && qty > 0 && /^(uov|egg|limon|patat|cipoll|spicch|clove|banana|mela|arancia|pera|carota|zucchin)/i.test(nameRaw)) {
       result.parsedQty = qty;
       result.parsedUnit = 'pieces';
@@ -484,16 +503,16 @@ function normalizeUnit(unit: string): ParsedIngredientUnit | null {
   const u = String(unit).toLowerCase().trim();
 
   // Weight
-  if (['g', 'gr', 'gram', 'grams', 'grammi'].includes(u)) return 'g';
-  if (['kg', 'chilogrammi', 'kilogram', 'kilograms'].includes(u)) return 'kg';
+  if ([ 'g', 'gr', 'gram', 'grams', 'grammi' ].includes(u)) return 'g';
+  if ([ 'kg', 'chilogrammi', 'kilogram', 'kilograms' ].includes(u)) return 'kg';
 
   // Volume
-  if (['ml', 'millilitre', 'milliliter', 'millilitri'].includes(u)) return 'ml';
-  if (['l', 'litre', 'liter', 'litri'].includes(u)) return 'l';
+  if ([ 'ml', 'millilitre', 'milliliter', 'millilitri' ].includes(u)) return 'ml';
+  if ([ 'l', 'litre', 'liter', 'litri' ].includes(u)) return 'l';
 
   // Countable
-  if (['uova', 'egg', 'eggs', 'uove'].includes(u)) return 'eggs';
-  if (['pezzo', 'pezzi', 'piece', 'pieces'].includes(u)) return 'pieces';
+  if ([ 'uova', 'egg', 'eggs', 'uove' ].includes(u)) return 'eggs';
+  if ([ 'pezzo', 'pezzi', 'piece', 'pieces' ].includes(u)) return 'pieces';
 
   return null;
 }
@@ -659,7 +678,7 @@ export function assignSection(ingredientName: string): ShoppingSectionId {
 
   const normalized = String(ingredientName).toLowerCase().trim();
 
-  for (const [section, keywords] of Object.entries(SECTION_KEYWORDS) as Array<[ShoppingSectionId, string[]]>) {
+  for (const [ section, keywords ] of Object.entries(SECTION_KEYWORDS) as Array<[ ShoppingSectionId, string[] ]>) {
     for (const keyword of keywords) {
       if (_keywordMatches(normalized, keyword)) return section;
     }
@@ -680,7 +699,7 @@ export function getSectionI18nKey(sectionId: ShoppingSectionId): string {
     'fats_oils_spices': 'section_fats_oils_spices',
     'other': 'section_other',
   };
-  return keys[sectionId] || 'section_other';
+  return keys[ sectionId ] || 'section_other';
 }
 export function groupShoppingItems(items: ShoppingItem[]): GroupedShoppingItemsResult {
   if (!Array.isArray(items)) return { grouped: [], ungrouped: [] };
@@ -714,8 +733,8 @@ export function groupShoppingItems(items: ShoppingItem[]): GroupedShoppingItemsR
     const parsed = item.parsed;
     if (parsed.confidence === 'high' && parsed.parsedName && parsed.parsedUnit) {
       const key = `${parsed.parsedName}__${parsed.parsedUnit}`;
-      if (!numericGroups[key]) {
-        numericGroups[key] = {
+      if (!numericGroups[ key ]) {
+        numericGroups[ key ] = {
           groupType: 'numeric',
           groupKey: key,
           name: parsed.parsedName,
@@ -725,16 +744,16 @@ export function groupShoppingItems(items: ShoppingItem[]): GroupedShoppingItemsR
         };
       }
       const baseQty = toBaseUnits(parsed.parsedQty, parsed.parsedUnit) || 0;
-      numericGroups[key].baseTotal += baseQty;
-      numericGroups[key].items.push(item);
+      numericGroups[ key ].baseTotal += baseQty;
+      numericGroups[ key ].items.push(item);
     } else {
       const exactKey = normalizeName(item.text);
       if (!exactKey) {
         ungrouped.push(item);
         return;
       }
-      if (!exactGroups[exactKey]) {
-        exactGroups[exactKey] = {
+      if (!exactGroups[ exactKey ]) {
+        exactGroups[ exactKey ] = {
           groupType: 'exact',
           groupKey: `exact__${exactKey}`,
           baseName: exactKey,
@@ -742,7 +761,7 @@ export function groupShoppingItems(items: ShoppingItem[]): GroupedShoppingItemsR
           items: [],
         };
       }
-      exactGroups[exactKey].items.push(item);
+      exactGroups[ exactKey ].items.push(item);
     }
   });
 
@@ -775,7 +794,7 @@ export function groupShoppingItems(items: ShoppingItem[]): GroupedShoppingItemsR
         items: group.items,
       });
     } else {
-      ungrouped.push(group.items[0]);
+      ungrouped.push(group.items[ 0 ]);
     }
   });
 

@@ -32,6 +32,7 @@ const noteDraft = ref(props.recipe.notes || '');
 const isEditing = ref(false);
 const editError = ref('');
 const prepOptions = ['classic', 'bimby', 'airfryer'];
+const mealOccasionOptions = ['Colazione', 'Pranzo', 'Cena', 'Spuntino'];
 const editDraft = ref(buildEditDraft(props.recipe));
 
 watch(() => props.recipe, recipe => {
@@ -55,7 +56,39 @@ function changeServings(delta) {
   servings.value = Math.max(1, Math.min(20, servings.value + delta));
 }
 
+/**
+ * Suggest meal occasions based on recipe title, category, and metadata
+ */
+function suggestMealOccasions(recipe) {
+  const name = (recipe.name || '').toLowerCase();
+  const category = (recipe.category || '').toLowerCase();
+  const suggestions = new Set();
+
+  // Breakfast/colazione keywords
+  if (/pancakes|colazione|colazione|breakfast|omelette|frittata|yogurt|porridge|uova|toast|shakshuka/.test(name + category)) {
+    suggestions.add('Colazione');
+  }
+
+  // Snack/spuntino keywords
+  if (/snack|spuntino|ball|energy|appetizer|dip|hummus|nibble|quick/.test(name + category)) {
+    suggestions.add('Spuntino');
+  }
+
+  // Lunch/pranzo - main dishes
+  if (/pasta|risotto|pizza|burger|sandwich|insalata|salad|bowl/.test(name + category)) {
+    suggestions.add('Pranzo');
+  }
+
+  // Dinner/cena - often heavier dishes
+  if (/pollo|chicken|salmone|salmon|carne|meat|steak|merluzzo|verdure|vegetables/.test(name + category)) {
+    suggestions.add('Cena');
+  }
+
+  return Array.from(suggestions);
+}
+
 function buildEditDraft(recipe) {
+  const suggested = suggestMealOccasions(recipe);
   return {
     name: recipe.name || '',
     category: recipe.category || '',
@@ -66,6 +99,8 @@ function buildEditDraft(recipe) {
     timerMinutes: recipe.timerMinutes > 0 ? String(recipe.timerMinutes) : '',
     ingredients: Array.isArray(recipe.ingredients) && recipe.ingredients.length ? [...recipe.ingredients] : [''],
     steps: Array.isArray(recipe.steps) && recipe.steps.length ? [...recipe.steps] : [''],
+    mealOccasion: Array.isArray(recipe.mealOccasion) ? [...recipe.mealOccasion] : [],
+    suggestedMealOccasions: suggested.length > 0 ? suggested : null,
   };
 }
 
@@ -115,6 +150,18 @@ function moveDraftStep(index, direction) {
   editDraft.value.steps = next;
 }
 
+function toggleMealOccasion(occasion) {
+  if (!editDraft.value.mealOccasion) {
+    editDraft.value.mealOccasion = [];
+  }
+  const idx = editDraft.value.mealOccasion.indexOf(occasion);
+  if (idx < 0) {
+    editDraft.value.mealOccasion.push(occasion);
+  } else {
+    editDraft.value.mealOccasion.splice(idx, 1);
+  }
+}
+
 function submitEdit() {
   const name = editDraft.value.name.trim();
   const ingredients = editDraft.value.ingredients.map(item => item.trim()).filter(Boolean);
@@ -144,6 +191,7 @@ function submitEdit() {
     timerMinutes: Number.isFinite(timerMinutes) && timerMinutes > 0 ? timerMinutes : 0,
     ingredients,
     steps,
+    mealOccasion: editDraft.value.mealOccasion && editDraft.value.mealOccasion.length > 0 ? editDraft.value.mealOccasion : undefined,
   };
 
   emit('save-recipe-edit', {
@@ -184,127 +232,159 @@ function onShoppingAction() {
           <a v-if="recipe.url" :href="recipe.url" target="_blank" rel="noopener">{{ getSourceDomainLabel(recipe.sourceDomain) || recipe.url }}</a>
           <span v-else>{{ getSourceDomainLabel(recipe.sourceDomain) }}</span>
         </p>
+        <div v-if="recipe.mealOccasion && recipe.mealOccasion.length" class="detail-meal-occasion">
+          <span class="sec-label-inline">{{ t('meal_occasion_label') }}:</span>
+          <div class="meal-occasion-badges">
+            <span v-for="occasion in recipe.mealOccasion" :key="occasion" class="meal-badge">{{ t(`meal_occasion_${occasion.toLowerCase()}`) }}</span>
+          </div>
+        </div>
       </div>
 
       <div class="servings-ctrl">
         <span class="sec-label">{{ t('detail_servings') }}</span>
         <div class="servings-row">
-          <button class="servings-btn" aria-label="−" @click="changeServings(-1)">−</button>
+          <button @click="changeServings(-1)" class="servings-btn" type="button">−</button>
           <span id="servings-val">{{ servings }}</span>
-          <button class="servings-btn" aria-label="+" @click="changeServings(1)">+</button>
+          <button @click="changeServings(1)" class="servings-btn" type="button">+</button>
         </div>
       </div>
 
-      <div class="sec-label" style="margin-top:1rem">{{ t('detail_ingredients') }}</div>
-      <ul class="ing-list">
-        <li v-for="ingredient in scaledIngredients" :key="ingredient">{{ ingredient }}</li>
-      </ul>
-      <div style="margin-top:0.8rem">
-        <button class="btn-shopping" @click="onShoppingAction">🛒 {{ shoppingActionLabel }}</button>
+      <div v-if="recipe.ingredients && recipe.ingredients.length" class="ing-wrap">
+        <p class="sec-label">{{ t('detail_ingredients') }}</p>
+        <ul class="ing-list">
+          <li v-for="ingredient in scaledIngredients" :key="ingredient">{{ ingredient }}</li>
+        </ul>
       </div>
 
-      <div class="sec-label" style="margin-top:1rem">{{ prepInfo.type === 'bimby' ? t('detail_steps_bimby') : t('detail_steps') }}</div>
-      <template v-for="step in steps" :key="`${step.index}-${step.text}`">
-        <div v-if="step.type === 'bimby'" class="bimby-step">
-          <span class="step-n">{{ step.index }}</span>
-          <div class="bimby-step-body">
-            <div class="bimby-step-tags">
-              <span v-for="tag in step.tags" :key="tag" class="bimby-tag">{{ tag }}</span>
-            </div>
-            <p class="step-txt">{{ step.text }}</p>
-          </div>
-        </div>
-        <div v-else class="step-row">
-          <span class="step-n">{{ step.index }}</span>
-          <p class="step-txt">{{ step.text }}</p>
-        </div>
-      </template>
-
-      <div class="detail-primary-action">
-        <button class="btn-cooking" @click="emit('start-cooking', recipe)">{{ t('cooking_start') }}</button>
+      <div v-if="steps" class="steps-wrap">
+        <p class="sec-label">{{ t('detail_steps' + (prepInfo.type === 'bimby' ? '_bimby' : '')) }}</p>
+        <div class="steps-list" v-html="steps"></div>
       </div>
-      <div class="detail-actions detail-actions-secondary">
-        <button v-if="recipe.timerMinutes > 0" class="btn-primary" @click="emit('start-recipe-timer', recipe)">
+
+      <div class="detail-actions">
+        <button class="btn-shopping" @click="onShoppingAction">{{ shoppingActionLabel }}</button>
+        <button v-if="recipe.timerMinutes" class="btn-primary" @click="emit('start-recipe-timer', recipe)">
           {{ t('detail_timer_btn', { t: formatTimerLabel(recipe.timerMinutes) }) }}
         </button>
+        <button class="btn-primary" @click="emit('start-cooking', recipe)">{{ t('cooking_start') }}</button>
         <button v-if="canSaveBuiltin" class="btn-primary" @click="emit('save-builtin', recipe)">{{ t('builtin_save') }}</button>
-        <button v-if="savedMode" class="btn-secondary" @click="emit('toggle-favorite', recipe)">
+        <button
+          v-if="savedMode"
+          class="btn-secondary btn-favorite"
+          :class="{ active: recipe.favorite }"
+          @click="emit('toggle-favorite', recipe)"
+          type="button"
+        >
+          <span class="button-icon">★</span>
           {{ recipe.favorite ? t('favorite_remove') : t('favorite_add') }}
         </button>
-        <button v-if="savedMode" class="btn-secondary" @click="emit('duplicate-recipe', recipe)">
+        <button v-if="savedMode" class="btn-secondary btn-secondary-icon" @click="emit('duplicate-recipe', recipe)" type="button">
+          <span class="button-icon">⎘</span>
           {{ t('recipe_duplicate') }}
         </button>
-        <button v-if="savedMode" class="btn-secondary" @click="startEdit">
+        <button v-if="savedMode" class="btn-secondary btn-secondary-icon" @click="startEdit" type="button">
+          <span class="button-icon">✎</span>
           {{ t('recipe_edit') }}
         </button>
       </div>
     </div>
     <div v-else-if="savedMode" class="notes-box card recipe-edit-box">
       <div class="sec-label">{{ t('recipe_edit_title') }}</div>
-      <div class="manual-grid">
-        <div class="manual-field">
-          <label for="edit-name">{{ t('manual_name_label') }}</label>
-          <input id="edit-name" v-model="editDraft.name" type="text" :placeholder="t('manual_name_placeholder')" />
-        </div>
-        <div class="manual-field">
-          <label for="edit-category">{{ t('manual_category_label') }}</label>
-          <input id="edit-category" v-model="editDraft.category" type="text" :placeholder="t('manual_category_placeholder')" />
-        </div>
-        <div class="manual-field">
-          <label for="edit-servings">{{ t('manual_servings_label') }}</label>
-          <input id="edit-servings" v-model="editDraft.servings" type="number" min="1" max="20" />
-        </div>
-        <div class="manual-field">
-          <label for="edit-time">{{ t('manual_time_label') }}</label>
-          <input id="edit-time" v-model="editDraft.time" type="text" :placeholder="t('manual_time_placeholder')" />
-        </div>
-        <div class="manual-field">
-          <label for="edit-emoji">{{ t('manual_emoji_label') }}</label>
-          <input id="edit-emoji" v-model="editDraft.emoji" type="text" maxlength="4" :placeholder="t('manual_emoji_placeholder')" />
-        </div>
-        <div class="manual-field">
-          <label for="edit-preparation">{{ t('manual_prep_label') }}</label>
-          <select id="edit-preparation" v-model="editDraft.preparationType">
-            <option v-for="prep in prepOptions" :key="prep" :value="prep">{{ t(`prep_${prep}`) }}</option>
-          </select>
-        </div>
-        <div class="manual-field">
-          <label for="edit-timer">{{ t('manual_timer_label') }}</label>
-          <input id="edit-timer" v-model="editDraft.timerMinutes" type="number" min="0" step="1" :placeholder="t('manual_timer_placeholder')" />
-        </div>
-      </div>
-      <div class="manual-list-wrap">
-        <div class="manual-list-header">
-          <span class="sec-label">{{ t('detail_ingredients') }}</span>
-          <button class="btn-ghost" @click="addDraftIngredient">{{ t('manual_add_ingredient') }}</button>
-        </div>
-        <div class="manual-list-items">
-          <div v-for="(ingredient, index) in editDraft.ingredients" :key="`edit-ingredient-${index}`" class="manual-list-item">
-            <input v-model="editDraft.ingredients[index]" type="text" :placeholder="t('manual_ingredient_placeholder', { n: index + 1 })" />
-            <div class="manual-item-actions">
-              <button class="btn-ghost btn-reorder" :title="t('manual_move_up')" :disabled="index === 0" @click="moveDraftIngredient(index, -1)">↑</button>
-              <button class="btn-ghost btn-reorder" :title="t('manual_move_down')" :disabled="index === editDraft.ingredients.length - 1" @click="moveDraftIngredient(index, 1)">↓</button>
-              <button class="btn-danger" :disabled="editDraft.ingredients.length <= 1" @click="removeDraftIngredient(index)">{{ t('manual_remove_item') }}</button>
-            </div>
+      <div class="edit-section edit-metadata">
+        <div class="manual-grid">
+          <div class="manual-field">
+            <label for="edit-name">{{ t('manual_name_label') }}</label>
+            <input id="edit-name" v-model="editDraft.name" type="text" :placeholder="t('manual_name_placeholder')" />
+          </div>
+          <div class="manual-field">
+            <label for="edit-category">{{ t('manual_category_label') }}</label>
+            <input id="edit-category" v-model="editDraft.category" type="text" :placeholder="t('manual_category_placeholder')" />
+          </div>
+          <div class="manual-field">
+            <label for="edit-servings">{{ t('manual_servings_label') }}</label>
+            <input id="edit-servings" v-model="editDraft.servings" type="number" min="1" max="20" />
+          </div>
+          <div class="manual-field">
+            <label for="edit-time">{{ t('manual_time_label') }}</label>
+            <input id="edit-time" v-model="editDraft.time" type="text" :placeholder="t('manual_time_placeholder')" />
+          </div>
+          <div class="manual-field">
+            <label for="edit-emoji">{{ t('manual_emoji_label') }}</label>
+            <input id="edit-emoji" v-model="editDraft.emoji" type="text" maxlength="4" :placeholder="t('manual_emoji_placeholder')" />
+          </div>
+          <div class="manual-field">
+            <label for="edit-preparation">{{ t('manual_prep_label') }}</label>
+            <select id="edit-preparation" v-model="editDraft.preparationType">
+              <option v-for="prep in prepOptions" :key="prep" :value="prep">{{ t(`prep_${prep}`) }}</option>
+            </select>
+          </div>
+          <div class="manual-field">
+            <label for="edit-timer">{{ t('manual_timer_label') }}</label>
+            <input id="edit-timer" v-model="editDraft.timerMinutes" type="number" min="0" step="1" :placeholder="t('manual_timer_placeholder')" />
           </div>
         </div>
       </div>
-      <div class="manual-list-wrap">
-        <div class="manual-list-header">
-          <span class="sec-label">{{ t('detail_steps') }}</span>
-          <button class="btn-ghost" @click="addDraftStep">{{ t('manual_add_step') }}</button>
+
+      <div class="edit-section edit-meal-occasion">
+        <label class="sec-label">{{ t('meal_occasion_label') }}</label>
+        <div v-if="editDraft.suggestedMealOccasions && editDraft.suggestedMealOccasions.length" class="meal-suggestions">
+          <small class="meal-suggestions-hint">{{ t('meal_occasion_suggested', { suggestions: editDraft.suggestedMealOccasions.map(o => t(`meal_occasion_${o.toLowerCase()}`)).join(', ') }) }}</small>
         </div>
-        <div class="manual-list-items">
-          <div v-for="(step, index) in editDraft.steps" :key="`edit-step-${index}`" class="manual-list-item">
-            <textarea v-model="editDraft.steps[index]" rows="2" :placeholder="t('manual_step_placeholder', { n: index + 1 })"></textarea>
-            <div class="manual-item-actions">
-              <button class="btn-ghost btn-reorder" :title="t('manual_move_up')" :disabled="index === 0" @click="moveDraftStep(index, -1)">↑</button>
-              <button class="btn-ghost btn-reorder" :title="t('manual_move_down')" :disabled="index === editDraft.steps.length - 1" @click="moveDraftStep(index, 1)">↓</button>
-              <button class="btn-danger" :disabled="editDraft.steps.length <= 1" @click="removeDraftStep(index)">{{ t('manual_remove_item') }}</button>
+        <div class="meal-occasion-chips">
+          <button
+            v-for="occasion in mealOccasionOptions"
+            :key="occasion"
+            class="meal-chip"
+            :class="{ active: editDraft.mealOccasion && editDraft.mealOccasion.includes(occasion) }"
+            @click="toggleMealOccasion(occasion)"
+          >
+            {{ t(`meal_occasion_${occasion.toLowerCase()}`) }}
+          </button>
+        </div>
+      </div>
+
+      <div class="edit-section edit-ingredients">
+        <div class="manual-list-wrap">
+          <div class="manual-list-header">
+            <span class="sec-label">{{ t('detail_ingredients') }}</span>
+          </div>
+          <div class="manual-list-items">
+            <div v-for="(ingredient, index) in editDraft.ingredients" :key="`edit-ingredient-${index}`" class="manual-list-item">
+              <input v-model="editDraft.ingredients[index]" type="text" :placeholder="t('manual_ingredient_placeholder', { n: index + 1 })" />
+              <div class="manual-item-actions">
+                <button class="btn-move" :title="t('manual_move_up')" :disabled="index === 0" @click="moveDraftIngredient(index, -1)">↑</button>
+                <button class="btn-move" :title="t('manual_move_down')" :disabled="index === editDraft.ingredients.length - 1" @click="moveDraftIngredient(index, 1)">↓</button>
+                <button class="btn-remove" :disabled="editDraft.ingredients.length <= 1" @click="removeDraftIngredient(index)" :title="t('manual_remove_item')">🗑</button>
+              </div>
             </div>
+          </div>
+          <div class="manual-list-footer">
+            <button class="btn-add" @click="addDraftIngredient">+ {{ t('manual_add_ingredient') }}</button>
           </div>
         </div>
       </div>
+
+      <div class="edit-section edit-steps">
+        <div class="manual-list-wrap">
+          <div class="manual-list-header">
+            <span class="sec-label">{{ t('detail_steps') }}</span>
+          </div>
+          <div class="manual-list-items">
+            <div v-for="(step, index) in editDraft.steps" :key="`edit-step-${index}`" class="manual-list-item manual-list-item-step">
+              <textarea v-model="editDraft.steps[index]" rows="2" :placeholder="t('manual_step_placeholder', { n: index + 1 })"></textarea>
+              <div class="manual-item-actions">
+                <button class="btn-move" :title="t('manual_move_up')" :disabled="index === 0" @click="moveDraftStep(index, -1)">↑</button>
+                <button class="btn-move" :title="t('manual_move_down')" :disabled="index === editDraft.steps.length - 1" @click="moveDraftStep(index, 1)">↓</button>
+                <button class="btn-remove" :disabled="editDraft.steps.length <= 1" @click="removeDraftStep(index)" :title="t('manual_remove_item')">🗑</button>
+              </div>
+            </div>
+          </div>
+          <div class="manual-list-footer">
+            <button class="btn-add" @click="addDraftStep">+ {{ t('manual_add_step') }}</button>
+          </div>
+        </div>
+      </div>
+
       <p v-if="editError" class="status-msg err">{{ editError }}</p>
       <div class="notes-actions recipe-edit-actions">
         <button class="btn-primary" @click="submitEdit">{{ t('recipe_edit_save') }}</button>

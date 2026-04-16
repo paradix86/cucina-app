@@ -183,6 +183,7 @@ defineExpose({
       <div v-if="!recipes.length" class="ricette-grid" id="saved-grid">
         <div class="empty-state-shell">
           <p class="empty">{{ t('recipebook_empty') }}<br />{{ t('recipebook_empty_hint') }}</p>
+          <p class="empty-next muted-label">{{ t('recipebook_empty_next') }}</p>
           <div class="empty-state-actions">
             <button class="btn-primary" @click="router.push('/import')">{{ t('empty_cta_import') }}</button>
             <button class="btn-secondary" @click="router.push('/recipes')">{{ t('empty_cta_browse') }}</button>

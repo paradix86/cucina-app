@@ -116,4 +116,4 @@ If hosting under a subpath, set `base` in `vite.config.js` accordingly.
 
 ## License
 
-MIT
+CC BY-NC 4.0 

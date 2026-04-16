@@ -48,6 +48,29 @@ export function useImportFlow() {
     diagnostic.value = null;
   }
 
+  function normalizePreviewRecipe(recipe: ImportPreviewRecipe): ImportPreviewRecipe {
+    const normalizeArray = (value: unknown) => Array.isArray(value)
+      ? value.map(item => {
+          if (typeof item === 'string') return item;
+          if (item && typeof item === 'object') {
+            if (typeof (item as Record<string, unknown>).text === 'string') {
+              return (item as Record<string, unknown>).text;
+            }
+            return Object.values(item).filter(v => typeof v === 'string').join(' ');
+          }
+          return '';
+        }).map(item => item.trim()).filter(Boolean)
+      : [];
+
+    return {
+      ...recipe,
+      ingredients: normalizeArray(recipe.ingredients),
+      steps: normalizeArray(recipe.steps),
+      tags: normalizeArray(recipe.tags),
+      mealOccasion: normalizeArray(recipe.mealOccasion),
+    } as ImportPreviewRecipe;
+  }
+
   function addTag(): void {
     const input = document.getElementById('preview-tag-input-vue') as HTMLInputElement | null;
     if (!input || !previewRecipe.value) return;
@@ -98,7 +121,7 @@ export function useImportFlow() {
             recipe.name,
           );
         }
-        previewRecipe.value = recipe;
+        previewRecipe.value = normalizePreviewRecipe(recipe);
         setStatus(t('import_success'), 'ok');
         return true;
       }
@@ -148,7 +171,7 @@ Rispondi SOLO con un oggetto JSON valido, senza backtick, senza testo aggiuntivo
       const recipe = JSON.parse(clean) as Partial<ImportPreviewRecipe>;
       const prepType = normalizePreparationTypeValue(recipe.preparationType) || 'classic';
 
-      previewRecipe.value = {
+      previewRecipe.value = normalizePreviewRecipe({
         ...recipe,
         id: `imp_${Date.now()}`,
         source,
@@ -158,7 +181,7 @@ Rispondi SOLO con un oggetto JSON valido, senza backtick, senza testo aggiuntivo
         name: recipe.name || '',
         ingredients: Array.isArray(recipe.ingredients) ? recipe.ingredients : [],
         steps: Array.isArray(recipe.steps) ? recipe.steps : [],
-      } as ImportPreviewRecipe;
+      } as ImportPreviewRecipe);
       setStatus(t('import_success'), 'ok');
       return true;
     } catch (error: unknown) {
@@ -195,7 +218,8 @@ Rispondi SOLO con un oggetto JSON valido, senza backtick, senza testo aggiuntivo
 
   function savePreviewedRecipe(): boolean {
     if (!previewRecipe.value) return false;
-    const ok = recipeBook.add(previewRecipe.value);
+    const normalized = normalizePreviewRecipe(previewRecipe.value);
+    const ok = recipeBook.add(normalized);
     if (ok) {
       url.value = '';
       clearPreview();

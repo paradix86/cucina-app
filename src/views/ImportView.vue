@@ -15,8 +15,61 @@ const showManualForm = ref(false);
 const showCollectionBrowser = ref(false);
 const selectedCollectionIds = ref([]);
 const selectedCollectionId = ref('');
-const previewIngredients = computed(() => Array.isArray(previewRecipe.value?.ingredients) ? previewRecipe.value.ingredients : []);
-const previewSteps = computed(() => Array.isArray(previewRecipe.value?.steps) ? previewRecipe.value.steps : []);
+function normalizeStringArray(value) {
+  return Array.isArray(value)
+    ? value.map(item => {
+        if (typeof item === 'string') return item;
+        if (item && typeof item === 'object') {
+          if (typeof item.text === 'string') return item.text;
+          return Object.values(item)
+            .filter(v => typeof v === 'string')
+            .join(' ');
+        }
+        return '';
+      }).map(item => item.trim()).filter(Boolean)
+    : [];
+}
+
+function suggestMealOccasions(recipe) {
+  const name = (recipe.name || '').toLowerCase();
+  const category = (recipe.category || '').toLowerCase();
+  const suggestions = new Set();
+
+  if (/pancakes|colazione|breakfast|omelette|yogurt|porridge|uova|toast|shakshuka/.test(name + category)) {
+    suggestions.add('Colazione');
+  }
+  if (/snack|spuntino|ball|energy|appetizer|dip|nibble|quick/.test(name + category)) {
+    suggestions.add('Spuntino');
+  }
+  if (/pasta|risotto|pizza|burger|sandwich|insalata|salad|bowl/.test(name + category)) {
+    suggestions.add('Pranzo');
+  }
+  if (/pollo|chicken|salmone|salmon|carne|meat|steak|merluzzo|verdure|vegetables/.test(name + category)) {
+    suggestions.add('Cena');
+  }
+
+  return Array.from(suggestions);
+}
+
+function toggleManualMealOccasion(occasion) {
+  if (!manualForm.value.mealOccasion) {
+    manualForm.value.mealOccasion = [];
+  }
+  const idx = manualForm.value.mealOccasion.indexOf(occasion);
+  if (idx < 0) {
+    manualForm.value.mealOccasion.push(occasion);
+  } else {
+    manualForm.value.mealOccasion.splice(idx, 1);
+  }
+}
+
+const previewIngredients = computed(() => normalizeStringArray(previewRecipe.value?.ingredients));
+const previewSteps = computed(() => normalizeStringArray(previewRecipe.value?.steps));
+const mealOccasionOptions = ['Colazione', 'Pranzo', 'Cena', 'Spuntino'];
+const manualMealOccasionSuggestions = computed(() => suggestMealOccasions({
+  name: manualForm.value.name,
+  category: manualForm.value.category,
+}));
 const collectionRecipes = computed(() => DUEMME_RECIPE_PACK);
 const collectionSelectedCount = computed(() => selectedCollectionIds.value.length);
 const selectedCollectionRecipe = computed(() => {
@@ -55,6 +108,7 @@ function buildManualForm() {
     timerMinutes: '',
     ingredients: [''],
     steps: [''],
+    mealOccasion: [],
   };
 }
 
@@ -175,6 +229,7 @@ function saveManualRecipe() {
     steps,
     timerMinutes: Number.isFinite(timerMinutes) && timerMinutes > 0 ? timerMinutes : 0,
     tags: [],
+    mealOccasion: normalizeStringArray(manualForm.value.mealOccasion),
   };
   const ok = recipeBookStore.add(recipe);
   if (!ok) {
@@ -239,67 +294,97 @@ function savePreview() {
           </div>
           <h3 class="manual-form-title">{{ t('manual_title') }}</h3>
           <p class="muted-label" style="margin-bottom:12px">{{ t('manual_desc') }}</p>
-          <div class="manual-grid">
-            <div class="manual-field">
-              <label for="manual-name">{{ t('manual_name_label') }}</label>
-              <input id="manual-name" v-model="manualForm.name" type="text" :placeholder="t('manual_name_placeholder')" />
-            </div>
-            <div class="manual-field">
-              <label for="manual-category">{{ t('manual_category_label') }}</label>
-              <input id="manual-category" v-model="manualForm.category" type="text" :placeholder="t('manual_category_placeholder')" />
-            </div>
-            <div class="manual-field">
-              <label for="manual-servings">{{ t('manual_servings_label') }}</label>
-              <input id="manual-servings" v-model="manualForm.servings" type="number" min="1" max="20" />
-            </div>
-            <div class="manual-field">
-              <label for="manual-time">{{ t('manual_time_label') }}</label>
-              <input id="manual-time" v-model="manualForm.time" type="text" :placeholder="t('manual_time_placeholder')" />
-            </div>
-            <div class="manual-field">
-              <label for="manual-emoji">{{ t('manual_emoji_label') }}</label>
-              <input id="manual-emoji" v-model="manualForm.emoji" type="text" maxlength="4" :placeholder="t('manual_emoji_placeholder')" />
-            </div>
-            <div class="manual-field">
-              <label for="manual-preparation">{{ t('manual_prep_label') }}</label>
-              <select id="manual-preparation" v-model="manualForm.preparationType">
-                <option v-for="prep in prepOptions" :key="prep" :value="prep">{{ t(`prep_${prep}`) }}</option>
-              </select>
-            </div>
-            <div class="manual-field">
-              <label for="manual-timer">{{ t('manual_timer_label') }}</label>
-              <input id="manual-timer" v-model="manualForm.timerMinutes" type="number" min="0" step="1" :placeholder="t('manual_timer_placeholder')" />
-            </div>
-          </div>
-          <div class="manual-list-wrap">
-            <div class="manual-list-header">
-              <span class="sec-label">{{ t('detail_ingredients') }}</span>
-              <button class="btn-ghost" id="manual-add-ingredient" @click="addIngredientField">{{ t('manual_add_ingredient') }}</button>
-            </div>
-            <div class="manual-list-items">
-              <div v-for="(ingredient, index) in manualForm.ingredients" :key="`ingredient-${index}`" class="manual-list-item">
-                <input v-model="manualForm.ingredients[index]" type="text" :placeholder="t('manual_ingredient_placeholder', { n: index + 1 })" />
-                <div class="manual-item-actions">
-                  <button class="btn-ghost btn-reorder" :title="t('manual_move_up')" :disabled="index === 0" @click="moveIngredientField(index, -1)">↑</button>
-                  <button class="btn-ghost btn-reorder" :title="t('manual_move_down')" :disabled="index === manualForm.ingredients.length - 1" @click="moveIngredientField(index, 1)">↓</button>
-                  <button class="btn-danger" :disabled="manualForm.ingredients.length <= 1" @click="removeIngredientField(index)">{{ t('manual_remove_item') }}</button>
-                </div>
+          <div class="edit-section edit-metadata">
+            <div class="manual-grid">
+              <div class="manual-field">
+                <label for="manual-name">{{ t('manual_name_label') }}</label>
+                <input id="manual-name" v-model="manualForm.name" type="text" :placeholder="t('manual_name_placeholder')" />
+              </div>
+              <div class="manual-field">
+                <label for="manual-category">{{ t('manual_category_label') }}</label>
+                <input id="manual-category" v-model="manualForm.category" type="text" :placeholder="t('manual_category_placeholder')" />
+              </div>
+              <div class="manual-field">
+                <label for="manual-servings">{{ t('manual_servings_label') }}</label>
+                <input id="manual-servings" v-model="manualForm.servings" type="number" min="1" max="20" />
+              </div>
+              <div class="manual-field">
+                <label for="manual-time">{{ t('manual_time_label') }}</label>
+                <input id="manual-time" v-model="manualForm.time" type="text" :placeholder="t('manual_time_placeholder')" />
+              </div>
+              <div class="manual-field">
+                <label for="manual-emoji">{{ t('manual_emoji_label') }}</label>
+                <input id="manual-emoji" v-model="manualForm.emoji" type="text" maxlength="4" :placeholder="t('manual_emoji_placeholder')" />
+              </div>
+              <div class="manual-field">
+                <label for="manual-preparation">{{ t('manual_prep_label') }}</label>
+                <select id="manual-preparation" v-model="manualForm.preparationType">
+                  <option v-for="prep in prepOptions" :key="prep" :value="prep">{{ t(`prep_${prep}`) }}</option>
+                </select>
+              </div>
+              <div class="manual-field">
+                <label for="manual-timer">{{ t('manual_timer_label') }}</label>
+                <input id="manual-timer" v-model="manualForm.timerMinutes" type="number" min="0" step="1" :placeholder="t('manual_timer_placeholder')" />
               </div>
             </div>
           </div>
-          <div class="manual-list-wrap">
-            <div class="manual-list-header">
-              <span class="sec-label">{{ t('detail_steps') }}</span>
-              <button class="btn-ghost" id="manual-add-step" @click="addStepField">{{ t('manual_add_step') }}</button>
+          <div class="edit-section edit-meal-occasion">
+            <label class="sec-label">{{ t('meal_occasion_label') }}</label>
+            <div class="meal-suggestions" v-if="manualMealOccasionSuggestions.length">
+              <small class="meal-suggestions-hint">
+                {{ t('meal_occasion_suggested', { suggestions: manualMealOccasionSuggestions.map(o => t(`meal_occasion_${o.toLowerCase()}`)).join(', ') }) }}
+              </small>
             </div>
-            <div class="manual-list-items">
-              <div v-for="(step, index) in manualForm.steps" :key="`step-${index}`" class="manual-list-item">
-                <textarea v-model="manualForm.steps[index]" rows="2" :placeholder="t('manual_step_placeholder', { n: index + 1 })"></textarea>
-                <div class="manual-item-actions">
-                  <button class="btn-ghost btn-reorder" :title="t('manual_move_up')" :disabled="index === 0" @click="moveStepField(index, -1)">↑</button>
-                  <button class="btn-ghost btn-reorder" :title="t('manual_move_down')" :disabled="index === manualForm.steps.length - 1" @click="moveStepField(index, 1)">↓</button>
-                  <button class="btn-danger" :disabled="manualForm.steps.length <= 1" @click="removeStepField(index)">{{ t('manual_remove_item') }}</button>
+            <div class="meal-occasion-chips">
+              <button
+                v-for="occasion in mealOccasionOptions"
+                :key="occasion"
+                type="button"
+                class="meal-chip"
+                :class="{ active: manualForm.mealOccasion.includes(occasion) }"
+                @click="toggleManualMealOccasion(occasion)"
+              >
+                {{ t(`meal_occasion_${occasion.toLowerCase()}`) }}
+              </button>
+            </div>
+          </div>
+          <div class="edit-section edit-ingredients">
+            <div class="manual-list-wrap">
+              <div class="manual-list-header">
+                <span class="sec-label">{{ t('detail_ingredients') }}</span>
+              </div>
+              <div class="manual-list-items">
+                <div v-for="(ingredient, index) in manualForm.ingredients" :key="`ingredient-${index}`" class="manual-list-item">
+                  <input v-model="manualForm.ingredients[index]" type="text" :placeholder="t('manual_ingredient_placeholder', { n: index + 1 })" />
+                  <div class="manual-item-actions">
+                    <button class="btn-ghost btn-reorder" :title="t('manual_move_up')" :disabled="index === 0" @click="moveIngredientField(index, -1)">↑</button>
+                    <button class="btn-ghost btn-reorder" :title="t('manual_move_down')" :disabled="index === manualForm.ingredients.length - 1" @click="moveIngredientField(index, 1)">↓</button>
+                    <button class="btn-danger" :disabled="manualForm.ingredients.length <= 1" @click="removeIngredientField(index)">{{ t('manual_remove_item') }}</button>
+                  </div>
                 </div>
+              </div>
+              <div class="manual-list-footer">
+                <button class="btn-add" @click="addIngredientField">+ {{ t('manual_add_ingredient') }}</button>
+              </div>
+            </div>
+          </div>
+          <div class="edit-section edit-steps">
+            <div class="manual-list-wrap">
+              <div class="manual-list-header">
+                <span class="sec-label">{{ t('detail_steps') }}</span>
+              </div>
+              <div class="manual-list-items">
+                <div v-for="(step, index) in manualForm.steps" :key="`step-${index}`" class="manual-list-item">
+                  <textarea v-model="manualForm.steps[index]" rows="2" :placeholder="t('manual_step_placeholder', { n: index + 1 })"></textarea>
+                  <div class="manual-item-actions">
+                    <button class="btn-ghost btn-reorder" :title="t('manual_move_up')" :disabled="index === 0" @click="moveStepField(index, -1)">↑</button>
+                    <button class="btn-ghost btn-reorder" :title="t('manual_move_down')" :disabled="index === manualForm.steps.length - 1" @click="moveStepField(index, 1)">↓</button>
+                    <button class="btn-danger" :disabled="manualForm.steps.length <= 1" @click="removeStepField(index)">{{ t('manual_remove_item') }}</button>
+                  </div>
+                </div>
+              </div>
+              <div class="manual-list-footer">
+                <button class="btn-add" @click="addStepField">+ {{ t('manual_add_step') }}</button>
               </div>
             </div>
           </div>

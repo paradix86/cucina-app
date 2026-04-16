@@ -20,6 +20,7 @@ export interface Recipe {
   lastViewedAt?: number;
   notes?: string;
   tags?: string[];
+  mealOccasion?: string[];
 }
 
 export interface ShoppingItem {

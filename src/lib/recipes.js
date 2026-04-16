@@ -84,23 +84,40 @@ export function scaleIngredients(ingredients, base, target) {
   });
 }
 
+function escapeHtml(value) {
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
 export function buildStepsHtml(steps, preparationType) {
-  return (steps || []).map((s, i) => {
+  const normalizedSteps = (steps || []).map(s => (typeof s === 'string' ? s : String(s)));
+  return normalizedSteps.map((step, i) => {
     if (preparationType === 'bimby') {
-      const sep = s.indexOf(' — ');
+      const sep = step.indexOf(' — ');
       if (sep !== -1) {
-        const tags = s.slice(0, sep).split('·').map(tag => tag.trim()).filter(Boolean);
-        const text = s.slice(sep + 3);
-        return {
-          type: 'bimby',
-          index: i + 1,
-          tags,
-          text,
-        };
+        const tags = step.slice(0, sep).split('·').map(tag => tag.trim()).filter(Boolean);
+        const text = step.slice(sep + 3);
+        const tagsHtml = tags.map(tag => `<span class="step-tag">${escapeHtml(tag)}</span>`).join('');
+        return `
+          <div class="step-row step-row-bimby">
+            <span class="step-n">${i + 1}</span>
+            <div class="step-detail">
+              ${tagsHtml ? `<div class="step-tags">${tagsHtml}</div>` : ''}
+              <p class="step-txt">${escapeHtml(text)}</p>
+            </div>
+          </div>
+        `;
       }
     }
-    return { type: 'classic', index: i + 1, text: s };
-  });
+    return `
+      <div class="step-row">
+        <span class="step-n">${i + 1}</span>
+        <p class="step-txt">${escapeHtml(step)}</p>
+      </div>
+    `;
+  }).join('');
 }
 
 export function extractStepSeconds(stepText) {
