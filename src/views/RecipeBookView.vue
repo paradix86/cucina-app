@@ -181,7 +181,13 @@ defineExpose({
       </div>
       <div id="saved-results-count" class="results-count">{{ resultsLabel }}</div>
       <div v-if="!recipes.length" class="ricette-grid" id="saved-grid">
-        <p class="empty">{{ t('recipebook_empty') }}<br />{{ t('recipebook_empty_hint') }}</p>
+        <div class="empty-state-shell">
+          <p class="empty">{{ t('recipebook_empty') }}<br />{{ t('recipebook_empty_hint') }}</p>
+          <div class="empty-state-actions">
+            <button class="btn-primary" @click="router.push('/import')">{{ t('empty_cta_import') }}</button>
+            <button class="btn-secondary" @click="router.push('/recipes')">{{ t('empty_cta_browse') }}</button>
+          </div>
+        </div>
       </div>
       <div v-else-if="!filteredRecipes.length" class="ricette-grid" id="saved-grid">
         <p class="empty">{{ t('recipebook_notfound') }}</p>
