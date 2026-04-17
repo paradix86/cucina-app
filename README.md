@@ -41,7 +41,32 @@ The dev server URL is printed by Vite (default is usually `http://localhost:5173
 ```bash
 npm run build
 npm run preview
+npm run test:unit     # run unit tests once (CI mode)
+npm run test:watch    # run tests in watch mode (development)
 ```
+
+## Testing
+
+Unit tests protect high-value logic (`storage`, ingredient parsing, import adapters, domain normalization) using Vitest:
+
+```bash
+# Run tests once (CI-friendly)
+npm run test:unit
+
+# Run tests in watch mode (development)
+npm run test:watch
+
+# View test UI (optional)
+npm run test:unit -- --ui
+```
+
+**Test coverage areas:**
+- **storage.ts** — recipe normalization, ingredient parsing (quantity/unit/name), shopping list grouping
+- **import/adapters.ts** — adapter selection, URL pattern matching, text normalization
+- **import/core.ts** — domain extraction, source detection (YouTube/TikTok/Instagram)
+- **import/duemmePack.ts** — markdown parsing, recipe extraction
+
+See `TESTING.md` for full test inventory and design decisions.
 
 ## Project Layout (high level)
 
