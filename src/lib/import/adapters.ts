@@ -1,4 +1,5 @@
 import { normalizeSourceDomain } from './core';
+import { fetchHtmlForJsonLd } from './web';
 import type { ImportPreviewRecipe, PreparationType, WebsiteImportAdapter } from '../../types';
 
 type AppCategory = '' | 'Primi' | 'Secondi' | 'Dolci' | 'Antipasti' | 'Zuppe' | 'Sughi' | 'Bevande';
@@ -461,29 +462,258 @@ function parseGenericReadableRecipe(markdown: string, url: string): ImportPrevie
 }
 
 const WEBSITE_IMPORT_ADAPTERS: WebsiteImportAdapter[] = [
-  { domain: 'giallozafferano.it', parse: parseGialloZafferanoAdapter },
+  {
+    domain: 'giallozafferano.it',
+    // Also handle giallozafferano.com (international/mirror domain)
+    canHandle: (url: string) => /giallozafferano\.com\//i.test(url),
+    parse: parseGialloZafferanoAdapter,
+  },
   { domain: 'ricetteperbimby.it', parse: parseRicettePerBimbyAdapter },
   { domain: 'ricette-bimby.net', parse: parseRicetteBimbyNetAdapter },
 ];
 
+/** Exact domain-string match. Kept for backward compatibility and diagnostics labels. */
 function getImportAdapterForDomain(domain: string): WebsiteImportAdapter | null {
   return WEBSITE_IMPORT_ADAPTERS.find(adapter => adapter.domain === domain) || null;
 }
 
-function importWebsiteRecipeWithAdapters(markdown: string, url: string): ImportPreviewRecipe {
+/**
+ * Full adapter lookup: tries exact domain match first, then falls back to
+ * canHandle(url) for adapters that declare URL-pattern support.
+ */
+function getImportAdapterForUrl(url: string): WebsiteImportAdapter | null {
   const domain = normalizeSourceDomain(url);
-  const adapter = getImportAdapterForDomain(domain);
+  const exact = WEBSITE_IMPORT_ADAPTERS.find(adapter => adapter.domain === domain);
+  if (exact) return exact;
+  return WEBSITE_IMPORT_ADAPTERS.find(adapter => adapter.canHandle?.(url)) || null;
+}
+
+// ─── JSON-LD / Schema.org structured data fallback ───────────────────────────
+
+/**
+ * Convert an ISO 8601 duration (PT30M, PT1H30M, PT2H) to a human-readable
+ * Italian-style time string (e.g. "30 min", "1h 30 min", "2h").
+ */
+function parseDurationIso(iso: string | undefined | null): string {
+  if (!iso) return '';
+  const h = parseInt((String(iso).match(/(\d+)H/i) || [])[1] || '0', 10);
+  const m = parseInt((String(iso).match(/(\d+)M/i) || [])[1] || '0', 10);
+  if (!h && !m) return '';
+  if (h && m) return `${h}h ${m} min`;
+  if (h) return `${h}h`;
+  return `${m} min`;
+}
+
+function parseDurationIsoMinutes(iso: string | undefined | null): number {
+  if (!iso) return 0;
+  const h = parseInt((String(iso).match(/(\d+)H/i) || [])[1] || '0', 10);
+  const m = parseInt((String(iso).match(/(\d+)M/i) || [])[1] || '0', 10);
+  return h * 60 + m;
+}
+
+function normalizeJsonLdServings(raw: unknown): string {
+  if (raw == null) return '';
+  const val = Array.isArray(raw) ? raw[0] : raw;
+  return normalizeImportText(String(val))
+    .replace(/\s*persone?\b|\s*persona\b|\s*servings?\b|\s*portions?\b/gi, '')
+    .trim();
+}
+
+/**
+ * Extract plain-text instruction steps from the JSON-LD recipeInstructions value.
+ * Handles: plain string, string[], HowToStep[], HowToSection[] (with nested itemListElement).
+ */
+function extractJsonLdInstructionSteps(raw: unknown): string[] {
+  if (!raw) return [];
+
+  if (typeof raw === 'string') {
+    return raw.split(/\n+/)
+      .map(line => normalizeImportText(line.replace(/^\d+[\.\)]\s*/, '')))
+      .filter(Boolean);
+  }
+
+  if (!Array.isArray(raw)) return [];
+
+  const steps: string[] = [];
+  for (const item of raw) {
+    if (typeof item === 'string') {
+      const s = normalizeImportText(item);
+      if (s) steps.push(s);
+      continue;
+    }
+    if (!item || typeof item !== 'object') continue;
+
+    const obj = item as Record<string, unknown>;
+    const type = String(obj['@type'] || '');
+
+    if (type === 'HowToSection' || (Array.isArray(obj.itemListElement) && !obj.text)) {
+      // Recurse into section items
+      steps.push(...extractJsonLdInstructionSteps(obj.itemListElement));
+      continue;
+    }
+
+    // HowToStep, or plain object with text/name
+    const text = String(obj.text || obj.name || '').trim();
+    const s = normalizeImportText(text);
+    if (s) steps.push(s);
+  }
+  return steps;
+}
+
+/**
+ * Walk a parsed JSON-LD node (or @graph array) looking for a Recipe @type.
+ */
+function findRecipeInJsonLdNode(node: unknown): Record<string, unknown> | null {
+  if (!node || typeof node !== 'object') return null;
+  const obj = node as Record<string, unknown>;
+
+  const type = obj['@type'];
+  const isRecipe = Array.isArray(type)
+    ? type.some(t => /recipe/i.test(String(t)))
+    : /recipe/i.test(String(type || ''));
+  if (isRecipe) return obj;
+
+  // @graph pattern: {"@context":"...","@graph":[...nodes...]}
+  if (Array.isArray(obj['@graph'])) {
+    for (const child of obj['@graph'] as unknown[]) {
+      const found = findRecipeInJsonLdNode(child);
+      if (found) return found;
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Scan HTML for all <script type="application/ld+json"> blocks and return
+ * the first Recipe node found, or null if none.
+ */
+function findJsonLdRecipeNode(html: string): Record<string, unknown> | null {
+  const re = /<script[^>]*type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi;
+  let match: RegExpExecArray | null;
+  while ((match = re.exec(html)) !== null) {
+    try {
+      const parsed: unknown = JSON.parse(match[1].trim());
+      const nodes = Array.isArray(parsed) ? parsed : [parsed];
+      for (const n of nodes) {
+        const recipe = findRecipeInJsonLdNode(n);
+        if (recipe) return recipe;
+      }
+    } catch {
+      // malformed JSON-LD block — skip
+    }
+  }
+  return null;
+}
+
+/**
+ * Convert a validated JSON-LD Recipe node into an ImportPreviewRecipe.
+ * Throws with a JSONLD_ prefixed code if required fields are missing.
+ */
+function parseJsonLdRecipeNode(node: Record<string, unknown>, url: string): ImportPreviewRecipe {
+  const name = normalizeImportText(String(node.name || '')).trim();
+  if (!name) throw new Error('JSONLD_NO_NAME');
+
+  const rawIngredients = Array.isArray(node.recipeIngredient) ? node.recipeIngredient : [];
+  const ingredients = rawIngredients
+    .map(i => normalizeImportText(String(i || '')))
+    .filter(Boolean);
+  if (!ingredients.length) throw new Error('JSONLD_NO_INGREDIENTS');
+
+  const steps = extractJsonLdInstructionSteps(node.recipeInstructions);
+  if (!steps.length) throw new Error('JSONLD_NO_STEPS');
+
+  const timeIso = String(node.totalTime || node.cookTime || node.prepTime || '');
+  const time = parseDurationIso(timeIso) || 'n.d.';
+  const timerMinutes = parseDurationIsoMinutes(timeIso);
+
+  const servings = normalizeJsonLdServings(node.recipeYield) || '4';
+
+  const rawCat = Array.isArray(node.recipeCategory)
+    ? String(node.recipeCategory[0] || '')
+    : String(node.recipeCategory || '');
+  const category = normalizeImportCategory(
+    mapCategorySignalToAppCategory(rawCat) || inferImportCategoryFromTitleAndText(name),
+  );
+
+  const domain = normalizeSourceDomain(url);
+  const fullText = ingredients.join(' ') + ' ' + steps.join(' ');
+  const preparationType = inferImportPreparationType(fullText, domain);
+
+  return buildImportedRecipe(url, {
+    name,
+    category,
+    emoji: inferImportEmoji(category),
+    time,
+    servings,
+    ingredients,
+    steps,
+    timerMinutes,
+    preparationType,
+    tags: suggestImportTags(domain, preparationType, category, name),
+  });
+}
+
+/**
+ * Given raw HTML, find and parse the first Recipe JSON-LD node.
+ * Returns null if no usable structured data is found (graceful non-throw).
+ */
+function parseJsonLdRecipeFromHtml(html: string, url: string): ImportPreviewRecipe | null {
+  const node = findJsonLdRecipeNode(html);
+  if (!node) return null;
+  try {
+    return parseJsonLdRecipeNode(node, url);
+  } catch {
+    return null;
+  }
+}
+
+// ─── Adapter dispatch ─────────────────────────────────────────────────────────
+
+/** Synchronous adapter dispatch (named adapters + generic markdown fallback). */
+function importWebsiteRecipeWithAdapters(markdown: string, url: string): ImportPreviewRecipe {
+  const adapter = getImportAdapterForUrl(url);
   if (adapter) return adapter.parse(markdown, url);
   const genericRecipe = parseGenericReadableRecipe(markdown, url);
   if (genericRecipe) return genericRecipe;
   throw new Error('UNSUPPORTED_WEB_IMPORT');
 }
 
+/**
+ * Full async import with JSON-LD fallback.
+ *
+ * Dispatch order:
+ *   1. Named adapter (domain match or canHandle)
+ *   2. Generic markdown heading-scanner
+ *   3. JSON-LD / Schema.org structured data (secondary Jina HTML fetch)
+ *   4. Throw UNSUPPORTED_WEB_IMPORT
+ *
+ * The JSON-LD fallback only fires when steps 1 and 2 both fail, so it adds
+ * no latency for sites that already have a named adapter.
+ */
+async function importWebsiteRecipeWithFallbacks(markdown: string, url: string): Promise<ImportPreviewRecipe> {
+  const adapter = getImportAdapterForUrl(url);
+  if (adapter) return adapter.parse(markdown, url);
+
+  const genericRecipe = parseGenericReadableRecipe(markdown, url);
+  if (genericRecipe) return genericRecipe;
+
+  // JSON-LD fallback: fetch raw HTML via Jina and look for Schema.org Recipe
+  const html = await fetchHtmlForJsonLd(url);
+  const jsonLdRecipe = parseJsonLdRecipeFromHtml(html, url);
+  if (jsonLdRecipe) return jsonLdRecipe;
+
+  throw new Error('UNSUPPORTED_WEB_IMPORT');
+}
+
 export {
   getImportAdapterForDomain,
+  getImportAdapterForUrl,
   importWebsiteRecipeWithAdapters,
+  importWebsiteRecipeWithFallbacks,
   suggestImportTags,
   normalizeImportText,
   stripImportLinksAndImages,
   stripImportMarkdownNoise,
+  parseJsonLdRecipeFromHtml,
 };

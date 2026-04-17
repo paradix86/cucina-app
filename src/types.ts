@@ -100,5 +100,7 @@ export type ImportFailureStage = 'normalize-url' | 'fetch-readable-page' | 'sele
 
 export interface WebsiteImportAdapter {
   domain: string;
+  /** Optional: return true if this adapter can handle a URL that did not match by domain string alone. */
+  canHandle?: (url: string) => boolean;
   parse: (markdown: string, url: string) => ImportPreviewRecipe;
 }

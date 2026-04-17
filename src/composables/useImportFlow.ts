@@ -11,8 +11,8 @@ import {
   inferImportFailureStage,
 } from '../lib/import/web';
 import {
-  getImportAdapterForDomain,
-  importWebsiteRecipeWithAdapters,
+  getImportAdapterForUrl,
+  importWebsiteRecipeWithFallbacks,
   suggestImportTags,
 } from '../lib/import/adapters';
 import { normalizePreparationTypeValue } from '../lib/storage';
@@ -100,8 +100,9 @@ export function useImportFlow() {
 
     const source = detectSource(nextUrl);
     const domain = normalizeSourceDomain(nextUrl);
-    const adapterObj = getImportAdapterForDomain(domain);
-    const adapterLabel = adapterObj ? adapterObj.domain : 'generic fallback';
+    // getImportAdapterForUrl checks domain match first, then canHandle fallback
+    const adapterObj = getImportAdapterForUrl(nextUrl);
+    const adapterLabel = adapterObj ? adapterObj.domain : 'generic / json-ld fallback';
 
     loading.value = true;
     clearPreview();
@@ -112,7 +113,7 @@ export function useImportFlow() {
     try {
       if (source === 'web') {
         fetchedMarkdown = await fetchReadableImportPage(nextUrl);
-        const recipe = importWebsiteRecipeWithAdapters(fetchedMarkdown, nextUrl);
+        const recipe = await importWebsiteRecipeWithFallbacks(fetchedMarkdown, nextUrl);
         if (!recipe.tags || !recipe.tags.length) {
           recipe.tags = suggestImportTags(
             recipe.sourceDomain,
