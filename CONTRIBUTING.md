@@ -156,20 +156,45 @@ All styles are in `css/style.css`, organized with commented sections. Reuse exis
 
 ## Testing
 
-At minimum, for any non-trivial change:
+### Unit tests
+
+Before pushing, run unit tests locally:
+
+```bash
+# Run tests once
+npm run test:unit
+
+# Run tests in watch mode (rerun on file changes)
+npm run test:watch
+```
+
+Unit tests protect high-value logic:
+- Ingredient parsing (quantity/unit/name extraction)
+- Shopping list grouping and merging
+- Import adapter selection and URL routing
+- Domain normalization and source detection
+- Recipe markdown parsing
+
+See `TESTING.md` for full test coverage details.
+
+### Manual testing checklist
+
+For any non-trivial change:
 
 1. `npm run dev` and exercise the affected flow
 2. Check browser console for errors
 3. If the change involves import, shopping list, or recipe persistence: test save → reload → verify data survived
 4. If the change is UI/flow related, run a targeted Playwright validation
 5. `npx vue-tsc --noEmit` — confirm TS checks pass
-6. `npm run build` — confirm the build passes cleanly
+6. `npm run test:unit` — confirm unit tests pass
+7. `npm run build` — confirm the build passes cleanly
 
 **Stale SW caveat (deployed environments only):** if testing a deployed version and behavior seems wrong, clear service workers and caches, then reload. In local dev this does not apply.
 
 ## Pull request checklist
 
 - [ ] feature or fix works locally with `npm run dev`
+- [ ] `npm run test:unit` passes
 - [ ] `npx vue-tsc --noEmit` passes
 - [ ] `npm run build` passes with no errors
 - [ ] no console errors introduced
