@@ -43,13 +43,13 @@ function parseImportMinutes(value: string | null | undefined): number {
   const text = String(value || '');
   const hour = text.match(/(\d+)\s*h/i);
   const min = text.match(/(\d+)\s*min/i);
-  const hours = hour ? parseInt(hour[1], 10) : 0;
-  const minutes = min ? parseInt(min[1], 10) : 0;
+  const hours = hour ? parseInt(hour[ 1 ], 10) : 0;
+  const minutes = min ? parseInt(min[ 1 ], 10) : 0;
   return hours * 60 + minutes;
 }
 
 function normalizeImportCategory(category: string): AppCategory {
-  return ['Primi', 'Secondi', 'Dolci', 'Antipasti', 'Zuppe', 'Sughi', 'Bevande'].includes(category)
+  return [ 'Primi', 'Secondi', 'Dolci', 'Antipasti', 'Zuppe', 'Sughi', 'Bevande' ].includes(category)
     ? (category as AppCategory)
     : '';
 }
@@ -99,7 +99,7 @@ function extractNearbyCategorySignal(markdown: string, title: string): AppCatego
     .filter(line => line && !/^men[uù]$/i.test(line));
 
   for (let i = nearby.length - 1; i >= 0; i -= 1) {
-    const mapped = mapCategorySignalToAppCategory(nearby[i]);
+    const mapped = mapCategorySignalToAppCategory(nearby[ i ]);
     if (mapped) return mapped;
   }
   return '';
@@ -152,7 +152,7 @@ function suggestImportTags(
   name: string | undefined,
 ): string[] {
   const tags: string[] = [];
-  const domainTag = domain ? DOMAIN_TAG_MAP[domain] : '';
+  const domainTag = domain ? DOMAIN_TAG_MAP[ domain ] : '';
   if (domainTag) tags.push(domainTag);
   if (preparationType === 'bimby') tags.push('Bimby');
   if (preparationType === 'airfryer') tags.push('Air Fryer');
@@ -199,8 +199,8 @@ function parseGialloZafferanoIngredients(block: string): string[] {
     .map(chunk => {
       const match = chunk.match(/^\[([^\]]+)\]\([^)]*\)\s*(.*)$/s);
       if (!match) return null;
-      const name = match[1].trim();
-      const rest = normalizeImportText(match[2]).replace(/\s*!+\s*/g, ' ').replace(/\s{2,}/g, ' ').trim();
+      const name = match[ 1 ].trim();
+      const rest = normalizeImportText(match[ 2 ]).replace(/\s*!+\s*/g, ' ').replace(/\s{2,}/g, ' ').trim();
       return rest ? `${name} ${rest}`.trim() : name;
     })
     .filter((v): v is string => Boolean(v));
@@ -231,20 +231,20 @@ function parseGialloZafferanoAdapter(markdown: string, url: string): ImportPrevi
 
   if (!titleMatch || !ingredients.length || !steps.length) throw new Error('GZ_PARSE_INCOMPLETE');
 
-  const prep = prepMatch ? prepMatch[1].trim() : '';
-  const cook = cookMatch ? cookMatch[1].trim() : '';
-  const cleanTitle = cleanGialloZafferanoTitle(titleMatch[1]).replace(/:.*$/, '').trim();
+  const prep = prepMatch ? prepMatch[ 1 ].trim() : '';
+  const cook = cookMatch ? cookMatch[ 1 ].trim() : '';
+  const cleanTitle = cleanGialloZafferanoTitle(titleMatch[ 1 ]).replace(/:.*$/, '').trim();
   const localCategory = extractNearbyCategorySignal(md, cleanTitle);
-  const presentationSection = (md.match(/## PRESENTAZIONE\s*\n([\s\S]*?)(?:\n##\s*|$)/i) || [])[1] || '';
+  const presentationSection = (md.match(/## PRESENTAZIONE\s*\n([\s\S]*?)(?:\n##\s*|$)/i) || [])[ 1 ] || '';
   const category = normalizeImportCategory(localCategory || inferImportCategoryFromTitleAndText(cleanTitle, presentationSection));
 
   return buildImportedRecipe(url, {
     name: cleanTitle,
     category,
     emoji: inferImportEmoji(category),
-    time: [prep, cook].filter(Boolean).join(' + ') || 'n.d.',
-    servings: servingsMatch ? normalizeImportedServings(servingsMatch[1], '4') : '4',
-    difficolta: difficultyMatch ? difficultyMatch[1].trim() : '',
+    time: [ prep, cook ].filter(Boolean).join(' + ') || 'n.d.',
+    servings: servingsMatch ? normalizeImportedServings(servingsMatch[ 1 ], '4') : '4',
+    difficolta: difficultyMatch ? difficultyMatch[ 1 ].trim() : '',
     ingredients,
     steps,
     timerMinutes: parseImportMinutes(cook),
@@ -277,15 +277,15 @@ function parseRicettePerBimbyAdapter(markdown: string, url: string): ImportPrevi
     .map(line => line.replace(/^\*\s+/, '').replace(/\*\*/g, '').trim())
     .filter(text => text.length > 0 && text.length <= 150);  // skip prose/description lines
 
-  const steps = [...md.slice(stepsStart).matchAll(/^\d+\.\s+(.*)$/gm)]
-    .map(match => extractBimbyTaggedStep(stripImportLinksAndImages(match[1])))
+  const steps = [ ...md.slice(stepsStart).matchAll(/^\d+\.\s+(.*)$/gm) ]
+    .map(match => extractBimbyTaggedStep(stripImportLinksAndImages(match[ 1 ])))
     .filter(Boolean);
 
   if (!titleMatch || !ingredients.length || !steps.length) throw new Error('RPB_PARSE_INCOMPLETE');
 
-  const prep = prepTimeMatch ? prepTimeMatch[1].trim() : '';
-  const total = totalTimeMatch ? totalTimeMatch[1].trim() : '';
-  const cleanTitle = cleanRicettePerBimbyTitle(titleMatch[1]);
+  const prep = prepTimeMatch ? prepTimeMatch[ 1 ].trim() : '';
+  const total = totalTimeMatch ? totalTimeMatch[ 1 ].trim() : '';
+  const cleanTitle = cleanRicettePerBimbyTitle(titleMatch[ 1 ]);
   const localCategory = extractNearbyCategorySignal(md, cleanTitle);
   const category = normalizeImportCategory(localCategory || inferImportCategoryFromTitleAndText(cleanTitle));
 
@@ -293,9 +293,9 @@ function parseRicettePerBimbyAdapter(markdown: string, url: string): ImportPrevi
     name: cleanTitle,
     category,
     emoji: inferImportEmoji(category),
-    time: [prep, total && total !== prep ? total : ''].filter(Boolean).join(' + ') || 'n.d.',
-    servings: servingsMatch ? normalizeImportedServings(servingsMatch[1], '1') : '1',
-    difficolta: difficultyMatch ? difficultyMatch[1].trim() : '',
+    time: [ prep, total && total !== prep ? total : '' ].filter(Boolean).join(' + ') || 'n.d.',
+    servings: servingsMatch ? normalizeImportedServings(servingsMatch[ 1 ], '1') : '1',
+    difficolta: difficultyMatch ? difficultyMatch[ 1 ].trim() : '',
     ingredients,
     steps,
     timerMinutes: parseImportMinutes(total || prep),
@@ -322,11 +322,11 @@ function extractBimbyTaggedStep(stepText: string): string {
   const tempMatch = text.match(/(?:\btemp\.?\s*|\b)(\d{2,3})\s*°\s*[cf]?/i);
   const varomaMatch = text.match(/\btemp(?:eratura)?\.?\s*Varoma\b/i);
 
-  if (tempMatch) tags.push(`Temp. ${tempMatch[1]}°`);
+  if (tempMatch) tags.push(`Temp. ${tempMatch[ 1 ]}°`);
   else if (varomaMatch) tags.push('Varoma');
-  if (speedMatch) tags.push(`Vel. ${speedMatch[1]}`);
+  if (speedMatch) tags.push(`Vel. ${speedMatch[ 1 ]}`);
   if (timeMatch) {
-    const normalizedTime = timeMatch[1]
+    const normalizedTime = timeMatch[ 1 ]
       .replace(/sec(?:ondi?)?\.?/i, 'sec')
       .replace(/min(?:uti?)?\.?/i, 'min')
       .replace(/\s+/g, ' ')
@@ -383,14 +383,14 @@ function parseRicetteBimbyNetAdapter(markdown: string, url: string): ImportPrevi
       const line = decodeImportEntities(rawLine);
       const sectionMatch = line.match(/^###\s+(.*)/);
       if (sectionMatch) {
-        currentSection = stripImportLinksAndImages(sectionMatch[1]).replace(/:$/, '').trim();
+        currentSection = stripImportLinksAndImages(sectionMatch[ 1 ]).replace(/:$/, '').trim();
         return acc;
       }
       const stepMatch = line.match(/^\d+\.\s+(.*)$/);
       if (!stepMatch) return acc;
       // Strip leading step-counter digit that some sites embed in the step text itself
       // e.g. markdown "1. 1 Mettere nel boccale..." → strip the inner "1 "
-      const rawStep = stepMatch[1].replace(/^\d{1,2}\s+(?=[A-Za-zÀ-ÿ(])/, '');
+      const rawStep = stepMatch[ 1 ].replace(/^\d{1,2}\s+(?=[A-Za-zÀ-ÿ(])/, '');
       const cleaned = extractBimbyTaggedStep(rawStep);
       if (!cleaned) return acc;
       // "Preparazione" is the default main cooking section — prefix adds no value
@@ -409,21 +409,144 @@ function parseRicetteBimbyNetAdapter(markdown: string, url: string): ImportPrevi
 
   if (!titleMatch || !ingredients.length || !steps.length) throw new Error('RBN_PARSE_INCOMPLETE');
 
-  const cleanTitle = cleanRicetteBimbyNetTitle(titleMatch[1]);
+  const cleanTitle = cleanRicetteBimbyNetTitle(titleMatch[ 1 ]);
   const localCategory = extractNearbyCategorySignal(md, cleanTitle);
   const category = normalizeImportCategory(localCategory || inferImportCategoryFromTitleAndText(cleanTitle, prepBlock));
-  const total = totalTimeMatch ? stripImportLinksAndImages(totalTimeMatch[1]).trim() : '';
+  const total = totalTimeMatch ? stripImportLinksAndImages(totalTimeMatch[ 1 ]).trim() : '';
 
   return buildImportedRecipe(url, {
     name: cleanTitle,
     category,
     emoji: inferImportEmoji(category),
     time: total || 'n.d.',
-    servings: servingsMatch ? normalizeImportedServings(servingsMatch[1], '1') : '1',
+    servings: servingsMatch ? normalizeImportedServings(servingsMatch[ 1 ], '1') : '1',
     ingredients,
     steps,
     timerMinutes: parseImportMinutes(total),
     preparationType: 'bimby',
+  });
+}
+
+function cleanVegolosititle(title: string): string {
+  return stripImportMarkdownNoise(title)
+    .replace(/\s*-\s*Ricetta(?:e)?\s+(?:vegan|vegane)\s*-?.*$/i, '')
+    .replace(/\s*-\s*Vegolosi\.it\s*$/i, '')
+    .trim();
+}
+
+function parseVegolositAdapter(markdown: string, url: string): ImportPreviewRecipe {
+  const md = normalizeImportText(markdown);
+  const titleMatch = md.match(/^#\s+(.+)$/m);
+  const servingsMatch = md.match(/\*\*Dosi per:\*\*\s*([^\n]+person[ae]?)/i);
+  const ingredientsStart = md.search(/^###\s+Ingredienti\b/m);
+  const stepsStart = md.search(/^###\s+Si cucina\b/m);
+  const conservStart = md.search(/^###\s+Conservazione\b/m);
+  if (!titleMatch || ingredientsStart === -1 || stepsStart === -1) {
+    throw new Error('VEGOLOSI_PARSE_INCOMPLETE');
+  }
+
+  const ingredientsEnd = stepsStart;
+  const stepsEnd = conservStart >= 0 ? conservStart : md.length;
+  const ingredients = md
+    .slice(ingredientsStart, ingredientsEnd)
+    .split('\n')
+    .map(line => line.trim())
+    .filter(line => line.startsWith('*'))
+    .map(line => {
+      const raw = stripImportLinksAndImages(line.replace(/^\*\s+/, '').trim());
+      // Fix spacing between numbers and ingredient names (e.g., "1peperone" → "1 peperone")
+      return raw.replace(/^(\d+)([A-Za-zÀ-ÿ])/, '$1 $2');
+    })
+    .filter(Boolean);
+
+  // Extract steps: handle two formats:
+  // Format 1: **Step N** markers followed by text
+  // Format 2: **Section header** followed by paragraph text (ribollita style)
+  const stepsRaw = md.slice(stepsStart, stepsEnd);
+  const lines = stepsRaw.split('\n');
+  const steps: string[] = [];
+  let currentStep = '';
+  let currentSectionHeader = '';
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim();
+
+    // Skip empty lines between paragraphs
+    if (!line) {
+      if (currentStep) {
+        const cleaned = stripImportLinksAndImages(currentStep);
+        if (cleaned) steps.push(cleaned);
+        currentStep = '';
+        currentSectionHeader = '';
+      }
+      continue;
+    }
+
+    // Skip headers and image markers
+    if (line.startsWith('##') || line.startsWith('#### ') || line.startsWith('Image ')) {
+      if (currentStep) {
+        const cleaned = stripImportLinksAndImages(currentStep);
+        if (cleaned) steps.push(cleaned);
+        currentStep = '';
+      }
+      currentSectionHeader = '';
+      continue;
+    }
+
+    // Detect **Step N** marker and start collecting next step
+    if (/^\*\*Step\s+\d+\*\*/.test(line)) {
+      if (currentStep) {
+        const cleaned = stripImportLinksAndImages(currentStep);
+        if (cleaned) steps.push(cleaned);
+      }
+      currentStep = '';
+      currentSectionHeader = '';
+      continue;
+    }
+
+    // Detect **Section header** (bold text) - store but don't add as step yet
+    if (/^\*\*[^*]+\*\*$/.test(line)) {
+      if (currentStep) {
+        // Store previous step if any
+        const cleaned = stripImportLinksAndImages(currentStep);
+        if (cleaned) steps.push(cleaned);
+      }
+      // Extract section title to prepend to next paragraph
+      currentSectionHeader = stripImportMarkdownNoise(line.replace(/\*\*/g, '')).trim();
+      currentStep = '';
+      continue;
+    }
+
+    // Collect paragraph text, prepending section header if present
+    if (currentSectionHeader && !currentStep) {
+      currentStep = currentSectionHeader + ': ' + line;
+      currentSectionHeader = '';
+    } else {
+      currentStep += (currentStep ? ' ' : '') + line;
+    }
+  }
+
+  // Add final step
+  if (currentStep) {
+    const cleaned = stripImportLinksAndImages(currentStep);
+    if (cleaned) steps.push(cleaned);
+  }
+
+  if (!ingredients.length || !steps.length) throw new Error('VEGOLOSI_PARSE_INCOMPLETE');
+
+  const cleanTitle = cleanVegolosititle(titleMatch[ 1 ]);
+  const localCategory = extractNearbyCategorySignal(md, cleanTitle);
+  const category = normalizeImportCategory(localCategory || inferImportCategoryFromTitleAndText(cleanTitle, stepsRaw));
+  const servings = servingsMatch ? normalizeImportedServings(servingsMatch[ 1 ], '4') : '4';
+
+  return buildImportedRecipe(url, {
+    name: cleanTitle,
+    category,
+    emoji: inferImportEmoji(category),
+    ingredients,
+    steps,
+    servings,
+    preparationType: 'classic',
   });
 }
 
@@ -434,14 +557,14 @@ function parseGenericReadableRecipe(markdown: string, url: string): ImportPrevie
   const stepsSection = md.match(/##\s*(?:Come preparare|Procedimento|Instructions|Preparazione|Metodo|Directions)\s*\n([\s\S]*?)(?:\n##\s*|$)/i);
   if (!titleMatch || !ingredientsMatch || !stepsSection) return null;
 
-  const ingredients = ingredientsMatch[1]
+  const ingredients = ingredientsMatch[ 1 ]
     .split('\n')
     .map(line => line.trim())
     .filter(line => /^[-*]/.test(line))
     .map(line => line.replace(/^[-*]\s+/, '').trim())
     .filter(Boolean);
-  const numberedSteps = [...stepsSection[1].matchAll(/^\d+\.\s+(.*)$/gm)].map(match => stripImportLinksAndImages(match[1]));
-  const bulletSteps = stepsSection[1]
+  const numberedSteps = [ ...stepsSection[ 1 ].matchAll(/^\d+\.\s+(.*)$/gm) ].map(match => stripImportLinksAndImages(match[ 1 ]));
+  const bulletSteps = stepsSection[ 1 ]
     .split('\n')
     .map(line => line.trim())
     .filter(line => /^[-*]/.test(line))
@@ -450,9 +573,9 @@ function parseGenericReadableRecipe(markdown: string, url: string): ImportPrevie
   if (!ingredients.length || !steps.length) return null;
 
   const domain = normalizeSourceDomain(url);
-  const category = normalizeImportCategory(inferImportCategoryFromTitleAndText(titleMatch[1], stepsSection[1]));
+  const category = normalizeImportCategory(inferImportCategoryFromTitleAndText(titleMatch[ 1 ], stepsSection[ 1 ]));
   return buildImportedRecipe(url, {
-    name: stripImportMarkdownNoise(titleMatch[1]).trim(),
+    name: stripImportMarkdownNoise(titleMatch[ 1 ]).trim(),
     category,
     emoji: inferImportEmoji(category),
     ingredients,
@@ -470,6 +593,7 @@ const WEBSITE_IMPORT_ADAPTERS: WebsiteImportAdapter[] = [
   },
   { domain: 'ricetteperbimby.it', parse: parseRicettePerBimbyAdapter },
   { domain: 'ricette-bimby.net', parse: parseRicetteBimbyNetAdapter },
+  { domain: 'vegolosi.it', parse: parseVegolositAdapter },
 ];
 
 /** Exact domain-string match. Kept for backward compatibility and diagnostics labels. */
@@ -496,8 +620,8 @@ function getImportAdapterForUrl(url: string): WebsiteImportAdapter | null {
  */
 function parseDurationIso(iso: string | undefined | null): string {
   if (!iso) return '';
-  const h = parseInt((String(iso).match(/(\d+)H/i) || [])[1] || '0', 10);
-  const m = parseInt((String(iso).match(/(\d+)M/i) || [])[1] || '0', 10);
+  const h = parseInt((String(iso).match(/(\d+)H/i) || [])[ 1 ] || '0', 10);
+  const m = parseInt((String(iso).match(/(\d+)M/i) || [])[ 1 ] || '0', 10);
   if (!h && !m) return '';
   if (h && m) return `${h}h ${m} min`;
   if (h) return `${h}h`;
@@ -506,14 +630,14 @@ function parseDurationIso(iso: string | undefined | null): string {
 
 function parseDurationIsoMinutes(iso: string | undefined | null): number {
   if (!iso) return 0;
-  const h = parseInt((String(iso).match(/(\d+)H/i) || [])[1] || '0', 10);
-  const m = parseInt((String(iso).match(/(\d+)M/i) || [])[1] || '0', 10);
+  const h = parseInt((String(iso).match(/(\d+)H/i) || [])[ 1 ] || '0', 10);
+  const m = parseInt((String(iso).match(/(\d+)M/i) || [])[ 1 ] || '0', 10);
   return h * 60 + m;
 }
 
 function normalizeJsonLdServings(raw: unknown): string {
   if (raw == null) return '';
-  const val = Array.isArray(raw) ? raw[0] : raw;
+  const val = Array.isArray(raw) ? raw[ 0 ] : raw;
   return normalizeImportText(String(val))
     .replace(/\s*persone?\b|\s*persona\b|\s*servings?\b|\s*portions?\b/gi, '')
     .trim();
@@ -544,7 +668,7 @@ function extractJsonLdInstructionSteps(raw: unknown): string[] {
     if (!item || typeof item !== 'object') continue;
 
     const obj = item as Record<string, unknown>;
-    const type = String(obj['@type'] || '');
+    const type = String(obj[ '@type' ] || '');
 
     if (type === 'HowToSection' || (Array.isArray(obj.itemListElement) && !obj.text)) {
       // Recurse into section items
@@ -567,15 +691,15 @@ function findRecipeInJsonLdNode(node: unknown): Record<string, unknown> | null {
   if (!node || typeof node !== 'object') return null;
   const obj = node as Record<string, unknown>;
 
-  const type = obj['@type'];
+  const type = obj[ '@type' ];
   const isRecipe = Array.isArray(type)
     ? type.some(t => /recipe/i.test(String(t)))
     : /recipe/i.test(String(type || ''));
   if (isRecipe) return obj;
 
   // @graph pattern: {"@context":"...","@graph":[...nodes...]}
-  if (Array.isArray(obj['@graph'])) {
-    for (const child of obj['@graph'] as unknown[]) {
+  if (Array.isArray(obj[ '@graph' ])) {
+    for (const child of obj[ '@graph' ] as unknown[]) {
       const found = findRecipeInJsonLdNode(child);
       if (found) return found;
     }
@@ -585,16 +709,44 @@ function findRecipeInJsonLdNode(node: unknown): Record<string, unknown> | null {
 }
 
 /**
+ * Sanitize a raw JSON-LD string by escaping literal control characters that
+ * appear inside string values (e.g. unescaped \n or \t inside a field value).
+ * This is technically invalid JSON but common in real-world CMS output.
+ * Characters outside of string values are left untouched.
+ */
+function sanitizeJsonLdText(json: string): string {
+  let inString = false;
+  let escape = false;
+  let out = '';
+  for (let i = 0; i < json.length; i++) {
+    const ch = json[ i ];
+    if (escape) { escape = false; out += ch; continue; }
+    if (ch === '\\') { escape = true; out += ch; continue; }
+    if (ch === '"') { inString = !inString; out += ch; continue; }
+    if (inString && ch.charCodeAt(0) < 0x20) {
+      if (ch === '\n') { out += '\\n'; continue; }
+      if (ch === '\r') { out += '\\r'; continue; }
+      if (ch === '\t') { out += '\\t'; continue; }
+      continue; // strip other control chars silently
+    }
+    out += ch;
+  }
+  return out;
+}
+
+/**
  * Scan HTML for all <script type="application/ld+json"> blocks and return
  * the first Recipe node found, or null if none.
+ * Applies JSON sanitization to handle sites that embed literal control chars
+ * inside string values (technically invalid but common in CMS output).
  */
 function findJsonLdRecipeNode(html: string): Record<string, unknown> | null {
   const re = /<script[^>]*type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi;
   let match: RegExpExecArray | null;
   while ((match = re.exec(html)) !== null) {
     try {
-      const parsed: unknown = JSON.parse(match[1].trim());
-      const nodes = Array.isArray(parsed) ? parsed : [parsed];
+      const parsed: unknown = JSON.parse(sanitizeJsonLdText(match[ 1 ].trim()));
+      const nodes = Array.isArray(parsed) ? parsed : [ parsed ];
       for (const n of nodes) {
         const recipe = findRecipeInJsonLdNode(n);
         if (recipe) return recipe;
@@ -631,7 +783,7 @@ function parseJsonLdRecipeNode(node: Record<string, unknown>, url: string, fallb
   const servings = normalizeJsonLdServings(node.recipeYield) || '4';
 
   const rawCat = Array.isArray(node.recipeCategory)
-    ? String(node.recipeCategory[0] || '')
+    ? String(node.recipeCategory[ 0 ] || '')
     : String(node.recipeCategory || '');
   const category = normalizeImportCategory(
     mapCategorySignalToAppCategory(rawCat) || inferImportCategoryFromTitleAndText(name),
@@ -688,7 +840,7 @@ function extractHtmlMetaFields(html: string): HtmlMetaFields {
   function firstMatch(patterns: RegExp[]): string | null {
     for (const re of patterns) {
       const m = html.match(re);
-      const val = m?.[1] ? normalizeImportText(decodeImportEntities(m[1])).trim() : null;
+      const val = m?.[ 1 ] ? normalizeImportText(decodeImportEntities(m[ 1 ])).trim() : null;
       if (val) return val;
     }
     return null;
@@ -723,7 +875,7 @@ function extractJsonObjectAt(text: string, start: number): string | null {
   let inString = false;
   let escape = false;
   for (let i = start; i < text.length; i++) {
-    const ch = text[i];
+    const ch = text[ i ];
     if (escape) { escape = false; continue; }
     if (ch === '\\' && inString) { escape = true; continue; }
     if (ch === '"') { inString = !inString; continue; }
@@ -758,7 +910,7 @@ function buildWprmRecipe(
     for (const ing of group as unknown[]) {
       if (!ing || typeof ing !== 'object') continue;
       const obj = ing as Record<string, unknown>;
-      const parts = [String(obj.amount || ''), String(obj.unit || ''), String(obj.name || '')]
+      const parts = [ String(obj.amount || ''), String(obj.unit || ''), String(obj.name || '') ]
         .map(s => s.trim()).filter(Boolean);
       const notes = String(obj.notes || '').trim();
       const line = parts.join(' ') + (notes ? ` (${notes})` : '');
@@ -821,7 +973,7 @@ function parseWprmRecipeFromHtml(
   const scriptRe = /<script\b[^>]*>([\s\S]*?)<\/script>/gi;
   let m: RegExpExecArray | null;
   while ((m = scriptRe.exec(html)) !== null) {
-    const content = m[1];
+    const content = m[ 1 ];
     if (!content.includes('"ingredients":[[') && !content.includes('"ingredients": [[')) continue;
 
     // Locate the wprm_public_js_data assignment and extract the JSON object
