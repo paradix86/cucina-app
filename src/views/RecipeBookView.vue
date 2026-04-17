@@ -5,7 +5,7 @@ import { useRouter } from 'vue-router';
 import { useDebounce } from '@vueuse/core';
 import RecipeDetailView from '../components/RecipeDetailView.vue';
 import { useRecipeBookStore } from '../stores/recipeBook';
-import { getPreparationInfo, getSourceDomainLabel, getMealOccasionLabel, highlight, joinMetaParts, recipeMatchesQuery } from '../lib/recipes.js';
+import { getPreparationInfo, getSourceDomainLabel, getMealOccasionLabel, highlight, joinMetaParts, recipeMatchesQuery, MEAL_OCCASION_OPTIONS } from '../lib/recipes.js';
 import { t } from '../lib/i18n.js';
 
 const emit = defineEmits(['start-recipe-timer', 'start-cooking', 'add-to-shopping', 'toast']);
@@ -21,6 +21,7 @@ const debouncedSearch = useDebounce(search, 180);
 const sourceFilter = ref('all');
 const filterType = ref('all');
 const siteFilter = ref('all');
+const mealFilter = ref('all');
 
 const sourceOptions = [
   ['all', () => t('filter_all')],
@@ -49,7 +50,8 @@ const filteredRecipes = computed(() => {
       || (filterType.value === 'favorites' && recipe.favorite)
       || (filterType.value === 'recent' && recipe.lastViewedAt);
     const matchSite = siteFilter.value === 'all' || recipe.sourceDomain === siteFilter.value;
-    return matchQuery && matchSource && matchType && matchSite;
+    const matchMeal = mealFilter.value === 'all' || (recipe.mealOccasion || []).includes(mealFilter.value);
+    return matchQuery && matchSource && matchType && matchSite && matchMeal;
   });
   if (filterType.value === 'recent') {
     list.sort((a, b) => (b.lastViewedAt || 0) - (a.lastViewedAt || 0));
@@ -147,18 +149,18 @@ defineExpose({
 <template>
   <section class="panel active">
     <div v-if="!selectedRecipe" id="saved-list-view">
-      <div class="saved-header">
+      <div v-if="recipes.length" class="saved-header">
         <input v-model="search" type="text" :placeholder="t('recipebook_search')" />
         <span id="saved-count" class="muted-label">{{ savedCountLabel }}</span>
       </div>
-      <div class="backup-actions">
+      <div v-if="recipes.length" class="backup-actions">
         <button class="btn-ghost" @click="store.exportBackup(); emit('toast', t('backup_export_ok'), 'success')">{{ t('backup_export') }}</button>
         <label class="btn-ghost" style="display:inline-flex;align-items:center;justify-content:center;cursor:pointer">
           {{ t('backup_import') }}
           <input hidden type="file" accept="application/json,.json" @change="onImportBackup" />
         </label>
       </div>
-      <div id="saved-source-filter">
+      <div v-if="recipes.length" id="saved-source-filter">
         <div class="saved-filter-group">
           <div class="filter-row">
             <button v-for="[value, label] in sourceOptions" :key="value" class="src-pill" :class="{ active: sourceFilter === value }" @click="sourceFilter = value">{{ label() }}</button>
@@ -171,6 +173,13 @@ defineExpose({
             <button class="type-pill" :class="{ active: filterType === 'recent' }" @click="filterType = 'recent'">{{ t('filter_recent') }}</button>
           </div>
         </div>
+        <div class="saved-filter-group">
+          <span class="filter-group-label">{{ t('filter_meal_occasion') }}:</span>
+          <div class="filter-row">
+            <button class="type-pill" :class="{ active: mealFilter === 'all' }" @click="mealFilter = 'all'">{{ t('filter_all') }}</button>
+            <button v-for="occ in MEAL_OCCASION_OPTIONS" :key="occ" class="type-pill" :class="{ active: mealFilter === occ }" @click="mealFilter = occ">{{ getMealOccasionLabel(occ) }}</button>
+          </div>
+        </div>
         <div v-if="sortedDomains.length" class="saved-filter-group">
           <span class="filter-group-label">{{ t('filter_site') }}:</span>
           <div class="filter-row">
@@ -179,14 +188,17 @@ defineExpose({
           </div>
         </div>
       </div>
-      <div id="saved-results-count" class="results-count">{{ resultsLabel }}</div>
+      <div v-if="recipes.length" id="saved-results-count" class="results-count">{{ resultsLabel }}</div>
       <div v-if="!recipes.length" class="ricette-grid" id="saved-grid">
         <div class="empty-state-shell">
-          <p class="empty">{{ t('recipebook_empty') }}<br />{{ t('recipebook_empty_hint') }}</p>
+          <span class="empty-kicker">{{ t('recipebook_empty_kicker') }}</span>
+          <p class="empty">{{ t('recipebook_empty') }}</p>
+          <p class="empty-next muted-label">{{ t('recipebook_empty_hint') }}</p>
           <p class="empty-next muted-label">{{ t('recipebook_empty_next') }}</p>
           <div class="empty-state-actions">
-            <button class="btn-primary" @click="router.push('/import')">{{ t('empty_cta_import') }}</button>
-            <button class="btn-secondary" @click="router.push('/recipes')">{{ t('empty_cta_browse') }}</button>
+            <button class="btn-primary" @click="router.push({ name: 'import' })">{{ t('empty_cta_import') }}</button>
+            <button class="btn-secondary" @click="router.push({ name: 'import', query: { start: 'manual' } })">{{ t('empty_cta_manual') }}</button>
+            <button class="btn-secondary" @click="router.push({ name: 'recipes' })">{{ t('empty_cta_browse') }}</button>
           </div>
         </div>
       </div>
@@ -204,10 +216,6 @@ defineExpose({
               <span class="card-row-icon" aria-hidden="true">⏱</span>
               <span>{{ recipe.time }}</span>
             </div>
-            <div v-if="recipe.category" class="card-row card-row--cat">
-              <span class="card-row-icon" aria-hidden="true">◈</span>
-              <span>{{ recipe.category }}</span>
-            </div>
             <div v-if="recipe.mealOccasion && recipe.mealOccasion.length" class="card-row card-row--meal">
               <span class="card-row-icon" aria-hidden="true">◑</span>
               <span class="card-chips">
@@ -217,6 +225,10 @@ defineExpose({
             <div v-if="recipe.sourceDomain" class="card-row card-row--source">
               <span class="card-row-icon" aria-hidden="true">↗</span>
               <span>{{ getSourceDomainLabel(recipe.sourceDomain) }}</span>
+            </div>
+            <div v-if="recipe.category" class="card-row card-row--cat">
+              <span class="card-row-icon" aria-hidden="true">◈</span>
+              <span>{{ recipe.category }}</span>
             </div>
             <div v-if="recipe.tags && recipe.tags.length" class="card-row card-row--tags">
               <span v-for="tag in recipe.tags.slice(0, 3)" :key="tag" class="card-chip card-chip--tag">{{ tag }}</span>

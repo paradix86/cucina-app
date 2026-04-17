@@ -111,6 +111,15 @@ onMounted(() => {
 <template>
   <section class="panel active">
     <article class="card guide-article">
+      <div class="guide-entry-intro">
+        <h2>{{ t('guide_entry_title') }}</h2>
+        <p class="muted-label guide-entry-desc">{{ t('guide_entry_desc') }}</p>
+        <div class="guide-entry-tags">
+          <span class="guide-entry-tag">{{ t('guide_entry_tag_prep') }}</span>
+          <span class="guide-entry-tag">{{ t('guide_entry_tag_reference') }}</span>
+          <span class="guide-entry-tag">{{ t('guide_entry_tag_guidance') }}</span>
+        </div>
+      </div>
       <h3>{{ t('guide_meal_prep_title') }}</h3>
       <p class="muted-label guide-source">{{ t('guide_meal_prep_source') }}</p>
       <div

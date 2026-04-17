@@ -1,13 +1,15 @@
 <script setup>
-import { computed, ref } from 'vue';
+import { computed, nextTick, ref, watch } from 'vue';
+import { useRoute } from 'vue-router';
 import { useImportFlow } from '../composables/useImportFlow';
-import { getSourceDomainLabel, joinMetaParts } from '../lib/recipes.js';
+import { getSourceDomainLabel, joinMetaParts, suggestMealOccasions, MEAL_OCCASION_OPTIONS } from '../lib/recipes.js';
 import { t } from '../lib/i18n.js';
 import { useRecipeBookStore } from '../stores/recipeBook';
 import { DUEMME_RECIPE_PACK } from '../lib/duemmePack';
 
 const emit = defineEmits(['toast', 'go-home']);
-const { url, loading, status, diagnostic, previewRecipe, importRecipeFromUrl, updatePreparationType, savePreviewedRecipe, discardPreview, removeTag, addTag } = useImportFlow();
+const route = useRoute();
+const { url, loading, status, diagnostic, previewRecipe, importRecipeFromUrl, updatePreparationType, togglePreviewMealOccasion, savePreviewedRecipe, discardPreview, removeTag, addTag } = useImportFlow();
 const recipeBookStore = useRecipeBookStore();
 
 const prepOptions = ['classic', 'bimby', 'airfryer'];
@@ -15,6 +17,7 @@ const showManualForm = ref(false);
 const showCollectionBrowser = ref(false);
 const selectedCollectionIds = ref([]);
 const selectedCollectionId = ref('');
+const urlInputRef = ref(null);
 function normalizeStringArray(value) {
   return Array.isArray(value)
     ? value.map(item => {
@@ -28,27 +31,6 @@ function normalizeStringArray(value) {
         return '';
       }).map(item => item.trim()).filter(Boolean)
     : [];
-}
-
-function suggestMealOccasions(recipe) {
-  const name = (recipe.name || '').toLowerCase();
-  const category = (recipe.category || '').toLowerCase();
-  const suggestions = new Set();
-
-  if (/pancakes|colazione|breakfast|omelette|yogurt|porridge|uova|toast|shakshuka/.test(name + category)) {
-    suggestions.add('Colazione');
-  }
-  if (/snack|spuntino|ball|energy|appetizer|dip|nibble|quick/.test(name + category)) {
-    suggestions.add('Spuntino');
-  }
-  if (/pasta|risotto|pizza|burger|sandwich|insalata|salad|bowl/.test(name + category)) {
-    suggestions.add('Pranzo');
-  }
-  if (/pollo|chicken|salmone|salmon|carne|meat|steak|merluzzo|verdure|vegetables/.test(name + category)) {
-    suggestions.add('Cena');
-  }
-
-  return Array.from(suggestions);
 }
 
 function toggleManualMealOccasion(occasion) {
@@ -65,11 +47,12 @@ function toggleManualMealOccasion(occasion) {
 
 const previewIngredients = computed(() => normalizeStringArray(previewRecipe.value?.ingredients));
 const previewSteps = computed(() => normalizeStringArray(previewRecipe.value?.steps));
-const mealOccasionOptions = ['Colazione', 'Pranzo', 'Cena', 'Spuntino'];
+const mealOccasionOptions = MEAL_OCCASION_OPTIONS;
 const manualMealOccasionSuggestions = computed(() => suggestMealOccasions({
   name: manualForm.value.name,
   category: manualForm.value.category,
 }));
+const previewMealOccasionSuggestions = computed(() => previewRecipe.value ? suggestMealOccasions(previewRecipe.value) : []);
 const collectionRecipes = computed(() => DUEMME_RECIPE_PACK);
 const collectionSelectedCount = computed(() => selectedCollectionIds.value.length);
 const selectedCollectionRecipe = computed(() => {
@@ -116,20 +99,64 @@ async function submit() {
   await importRecipeFromUrl();
 }
 
-function openManualForm() {
+function scrollToSection(id) {
+  nextTick(() => {
+    const target = document.getElementById(id);
+    if (!target) return;
+    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+}
+
+function startWithLink() {
+  showCollectionBrowser.value = false;
+  scrollToSection('import-link-card');
+  nextTick(() => {
+    if (urlInputRef.value && typeof urlInputRef.value.focus === 'function') {
+      urlInputRef.value.focus();
+    }
+  });
+}
+
+function openManualForm(options = {}) {
+  const { scroll = true } = options;
+  showCollectionBrowser.value = false;
   showManualForm.value = true;
+  if (scroll) {
+    scrollToSection('import-manual-card');
+  }
 }
 
 function closeManualForm() {
   showManualForm.value = false;
 }
 
-function openCollectionBrowser() {
+function openCollectionBrowser(options = {}) {
+  const { scroll = true } = options;
+  showManualForm.value = false;
   showCollectionBrowser.value = true;
   if (!selectedCollectionId.value && collectionRecipes.value.length) {
     selectedCollectionId.value = collectionRecipes.value[0].id;
   }
+  if (scroll) {
+    scrollToSection('import-collections-card');
+  }
 }
+
+watch(() => route.query.start, rawMode => {
+  const mode = Array.isArray(rawMode) ? rawMode[0] : rawMode;
+  if (!mode) return;
+  if (mode === 'manual') {
+    openManualForm({ scroll: true });
+    return;
+  }
+  if (mode === 'collections') {
+    openCollectionBrowser({ scroll: true });
+    return;
+  }
+  if (mode === 'link') {
+    startWithLink();
+  }
+}, { immediate: true });
 
 function closeCollectionBrowser() {
   showCollectionBrowser.value = false;
@@ -254,16 +281,27 @@ function savePreview() {
 <template>
   <section class="panel active">
     <div class="import-shell">
-      <div class="import-box card">
+      <div class="card import-start-card">
+        <h2>{{ t('import_start_title') }}</h2>
+        <p class="muted-label import-section-subtitle">{{ t('import_start_desc') }}</p>
+        <div class="import-start-actions">
+          <button class="btn-primary" @click="startWithLink">{{ t('import_start_link') }}</button>
+          <button class="btn-secondary" @click="openManualForm()">{{ t('import_start_manual') }}</button>
+          <button class="btn-secondary" @click="openCollectionBrowser()">{{ t('import_start_collections') }}</button>
+        </div>
+      </div>
+
+      <div id="import-link-card" class="import-box card">
         <h2>{{ t('import_section_link_title') }}</h2>
         <p class="muted-label import-section-subtitle">{{ t('import_section_link_desc') }}</p>
+        <p class="muted-label import-help-line">{{ t('import_section_link_helper') }}</p>
         <div class="source-pills source-pills-static">
           <span class="src-pill web">ricetteperbimby.it</span>
           <span class="src-pill web">giallozafferano.it</span>
           <span class="src-pill web">{{ t('source_web') }}</span>
         </div>
         <div class="url-row">
-          <input v-model="url" type="url" :placeholder="t('import_placeholder')" />
+          <input ref="urlInputRef" v-model="url" type="url" :placeholder="t('import_placeholder')" />
           <button class="btn-primary" id="btn-import-go" :disabled="loading" @click="submit">{{ t('import_btn') }}</button>
         </div>
         <div class="status-msg" :class="status.type">{{ status.message }}</div>
@@ -280,11 +318,12 @@ function savePreview() {
         </div>
       </div>
 
-      <div class="card import-flow-card">
+      <div id="import-manual-card" class="card import-flow-card">
         <div class="import-flow-head">
           <div>
             <h2>{{ t('import_section_manual_title') }}</h2>
             <p class="muted-label import-section-subtitle">{{ t('import_section_manual_desc') }}</p>
+            <p class="muted-label import-help-line">{{ t('import_section_manual_helper') }}</p>
           </div>
           <button class="btn-secondary" id="manual-open" @click="openManualForm">{{ t('import_section_manual_btn') }}</button>
         </div>
@@ -394,11 +433,12 @@ function savePreview() {
         </div>
       </div>
 
-      <div class="card import-flow-card">
+      <div id="import-collections-card" class="card import-flow-card">
         <div class="import-flow-head">
           <div>
             <h2>{{ t('import_section_collections_title') }}</h2>
             <p class="muted-label import-section-subtitle">{{ t('import_section_collections_desc') }}</p>
+            <p class="muted-label import-help-line">{{ t('import_section_collections_helper') }}</p>
           </div>
           <button class="btn-secondary" id="collection-open" @click="openCollectionBrowser">{{ t('import_section_collections_browse') }}</button>
         </div>
@@ -484,6 +524,26 @@ function savePreview() {
             </span>
             <input id="preview-tag-input-vue" class="tag-add-input" type="text" :placeholder="t('import_tag_add_placeholder')" @keydown.enter.prevent="addTag" />
             <button class="tag-add-btn" @click="addTag">+</button>
+          </div>
+        </div>
+        <div class="preview-meta-row preview-meta-row--meal">
+          <span class="preview-meta-label">{{ t('meal_occasion_label') }}:</span>
+          <div>
+            <div v-if="previewMealOccasionSuggestions.length" class="meal-suggestions">
+              <small class="meal-suggestions-hint">{{ t('meal_occasion_suggested', { suggestions: previewMealOccasionSuggestions.map(o => t(`meal_occasion_${o.toLowerCase()}`)).join(', ') }) }}</small>
+            </div>
+            <div class="meal-occasion-chips">
+              <button
+                v-for="occasion in mealOccasionOptions"
+                :key="occasion"
+                type="button"
+                class="meal-chip"
+                :class="{ active: (previewRecipe.mealOccasion || []).includes(occasion) }"
+                @click="togglePreviewMealOccasion(occasion)"
+              >
+                {{ t(`meal_occasion_${occasion.toLowerCase()}`) }}
+              </button>
+            </div>
           </div>
         </div>
       </div>

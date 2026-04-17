@@ -69,6 +69,26 @@ export function getMealOccasionLabel(key) {
   return map[String(key).toLowerCase()] || key;
 }
 
+export const MEAL_OCCASION_OPTIONS = ['Colazione', 'Pranzo', 'Cena', 'Spuntino'];
+
+export function suggestMealOccasions(recipe) {
+  const combined = ((recipe.name || '') + ' ' + (recipe.category || '')).toLowerCase();
+  const suggestions = new Set();
+  if (/pancakes|colazione|breakfast|omelette|frittata|yogurt|porridge|uova|toast|shakshuka/.test(combined)) {
+    suggestions.add('Colazione');
+  }
+  if (/snack|spuntino|ball|energy|appetizer|dip|hummus|nibble|quick/.test(combined)) {
+    suggestions.add('Spuntino');
+  }
+  if (/pasta|risotto|pizza|burger|sandwich|insalata|salad|bowl/.test(combined)) {
+    suggestions.add('Pranzo');
+  }
+  if (/pollo|chicken|salmone|salmon|carne|meat|steak|merluzzo|verdure|vegetables/.test(combined)) {
+    suggestions.add('Cena');
+  }
+  return Array.from(suggestions);
+}
+
 export function scaleIngredients(ingredients, base, target) {
   if (base === target) return ingredients;
   const factor = target / base;

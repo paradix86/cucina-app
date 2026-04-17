@@ -1,0 +1,39 @@
+name: Import smoke suite (weekly)
+
+# Runs automatically every Monday at 07:00 UTC.
+# Can also be triggered on demand from the Actions tab.
+#
+# This workflow is NOT a PR gate.
+# Live-site behaviour and Jina proxy availability can change independently
+# of the codebase — failures here indicate a site/adapter regression to
+# investigate, not a broken commit.
+
+on:
+  schedule:
+    - cron: '0 7 * * 1'
+  workflow_dispatch:
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    # Failures are informational, not blocking
+    continue-on-error: true
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run live import smoke suite
+        run: npm run test:smoke
+        env:
+          # Jina Reader does not require an API key for basic usage,
+          # but if a key is configured it can be injected here.
+          # JINA_API_KEY: ${{ secrets.JINA_API_KEY }}
+          CI: true

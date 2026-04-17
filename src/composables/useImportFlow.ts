@@ -217,6 +217,17 @@ Rispondi SOLO con un oggetto JSON valido, senza backtick, senza testo aggiuntivo
     };
   }
 
+  function togglePreviewMealOccasion(occasion: string): void {
+    if (!previewRecipe.value) return;
+    const valid = ['Colazione', 'Pranzo', 'Cena', 'Spuntino'];
+    if (!valid.includes(occasion)) return;
+    const current = previewRecipe.value.mealOccasion || [];
+    const updated = current.includes(occasion)
+      ? current.filter(o => o !== occasion)
+      : [...current, occasion];
+    previewRecipe.value = { ...previewRecipe.value, mealOccasion: updated };
+  }
+
   function savePreviewedRecipe(): boolean {
     if (!previewRecipe.value) return false;
     const normalized = normalizePreviewRecipe(previewRecipe.value);
@@ -241,6 +252,7 @@ Rispondi SOLO con un oggetto JSON valido, senza backtick, senza testo aggiuntivo
     removeTag,
     importRecipeFromUrl,
     updatePreparationType,
+    togglePreviewMealOccasion,
     savePreviewedRecipe,
     discardPreview: clearPreview,
     clearDiagnostics,

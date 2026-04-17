@@ -47,7 +47,7 @@ npm run test:watch    # run tests in watch mode (development)
 
 ## Testing
 
-Unit tests protect high-value logic (`storage`, ingredient parsing, import adapters, domain normalization) using Vitest:
+Unit tests protect high-value logic (`storage`, ingredient parsing, import adapters, domain normalization, JSON-LD / WPRM structured-data parsing) using Vitest:
 
 ```bash
 # Run tests once (CI-friendly)
@@ -62,8 +62,8 @@ npm run test:unit -- --ui
 
 **Test coverage areas:**
 - **storage.ts** — recipe normalization, ingredient parsing (quantity/unit/name), shopping list grouping
-- **import/adapters.ts** — adapter selection, URL pattern matching, text normalization
-- **import/core.ts** — domain extraction, source detection (YouTube/TikTok/Instagram)
+- **import/adapters.ts** — adapter selection, URL pattern matching, text normalization; JSON-LD / Schema.org structured data, WPRM extraction, malformed data handling
+- **import/core.ts** — domain extraction, source detection from URL
 - **import/duemmePack.ts** — markdown parsing, recipe extraction
 
 See `TESTING.md` for full test inventory and design decisions.

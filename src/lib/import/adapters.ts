@@ -437,96 +437,132 @@ function cleanVegolosititle(title: string): string {
 function parseVegolositAdapter(markdown: string, url: string): ImportPreviewRecipe {
   const md = normalizeImportText(markdown);
   const titleMatch = md.match(/^#\s+(.+)$/m);
-  const servingsMatch = md.match(/\*\*Dosi per:\*\*\s*([^\n]+person[ae]?)/i);
-  const ingredientsStart = md.search(/^###\s+Ingredienti\b/m);
-  const stepsStart = md.search(/^###\s+Si cucina\b/m);
-  const conservStart = md.search(/^###\s+Conservazione\b/m);
+
+  // Servings: old "**Dosi per: N persone**" or new "**Ingredienti per N persone:**"
+  const servingsMatch =
+    md.match(/\*\*Dosi per:\*\*\s*([^\n]+person[ae]?)/i) ||
+    md.match(/\*\*Ingredienti per\s+([^*\n]+?)(?:\s*person[ae]?)?\*\*/i);
+
+  // Section starts: support both old h3 headings and new bold-text markers
+  const ingredientsStart =
+    md.search(/^###\s+Ingredienti\b/m) >= 0
+      ? md.search(/^###\s+Ingredienti\b/m)
+      : md.search(/^\*\*Ingredienti\b[^*]*\*\*/m);
+
+  const stepsStart =
+    md.search(/^###\s+Si cucina\b/m) >= 0
+      ? md.search(/^###\s+Si cucina\b/m)
+      : md.search(/^###\s+Preparazione\b/m) >= 0
+        ? md.search(/^###\s+Preparazione\b/m)
+        : md.search(/^\*\*Preparazione\*\*/m);
+
   if (!titleMatch || ingredientsStart === -1 || stepsStart === -1) {
     throw new Error('VEGOLOSI_PARSE_INCOMPLETE');
   }
 
-  const ingredientsEnd = stepsStart;
-  const stepsEnd = conservStart >= 0 ? conservStart : md.length;
-  const ingredients = md
-    .slice(ingredientsStart, ingredientsEnd)
+  const conservStart = md.search(/^###\s+Conservazione\b/m);
+
+  // End of steps: use h3 boundary, or first noise marker, or end of string
+  const noiseMarkers = [
+    'Iscriviti alla newsletter',
+    'link di affiliazione',
+    'Tag: [',
+  ].map(m => md.indexOf(m, stepsStart)).filter(i => i >= 0);
+  const stepsEnd =
+    conservStart >= 0
+      ? conservStart
+      : noiseMarkers.length > 0
+        ? Math.min(...noiseMarkers)
+        : md.length;
+
+  const ingredientBlock = md.slice(ingredientsStart, stepsStart);
+
+  // Try bullet list first (old format), fall back to plain text lines (new format)
+  let ingredients = ingredientBlock
     .split('\n')
     .map(line => line.trim())
-    .filter(line => line.startsWith('*'))
+    .filter(line => line.startsWith('*') && !(/^\*\*[^*]+\*\*$/.test(line)))
     .map(line => {
       const raw = stripImportLinksAndImages(line.replace(/^\*\s+/, '').trim());
-      // Fix spacing between numbers and ingredient names (e.g., "1peperone" → "1 peperone")
       return raw.replace(/^(\d+)([A-Za-zÀ-ÿ])/, '$1 $2');
     })
     .filter(Boolean);
 
-  // Extract steps: handle two formats:
-  // Format 1: **Step N** markers followed by text
-  // Format 2: **Section header** followed by paragraph text (ribollita style)
+  if (!ingredients.length) {
+    // New format: plain text lines (skip bold headers and markdown headings)
+    ingredients = ingredientBlock
+      .split('\n')
+      .map(line => line.trim())
+      .filter(line =>
+        line.length > 0 &&
+        !line.startsWith('#') &&
+        !(/^\*\*[^*]+\*\*$/.test(line)),
+      )
+      .map(line => {
+        const raw = stripImportLinksAndImages(line.replace(/\*\*/g, '').trim());
+        return raw.replace(/^(\d+)([A-Za-zÀ-ÿ])/, '$1 $2');
+      })
+      .filter(Boolean);
+  }
+
+  // Step section names to skip as pseudo-headers (not real steps)
+  const STEP_SECTION_HEADERS = /^(Preparazione|Si cucina|Cottura)\s*:?\s*$/i;
+
   const stepsRaw = md.slice(stepsStart, stepsEnd);
   const lines = stepsRaw.split('\n');
   const steps: string[] = [];
   let currentStep = '';
-  let currentSectionHeader = '';
 
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i].trim();
+  for (const rawLine of lines) {
+    const line = rawLine.trim();
 
-    // Skip empty lines between paragraphs
     if (!line) {
       if (currentStep) {
         const cleaned = stripImportLinksAndImages(currentStep);
         if (cleaned) steps.push(cleaned);
         currentStep = '';
-        currentSectionHeader = '';
       }
       continue;
     }
 
-    // Skip headers and image markers
-    if (line.startsWith('##') || line.startsWith('#### ') || line.startsWith('Image ')) {
+    // Skip markdown headings and image markers
+    if (line.startsWith('#') || line.startsWith('Image ')) {
       if (currentStep) {
         const cleaned = stripImportLinksAndImages(currentStep);
         if (cleaned) steps.push(cleaned);
         currentStep = '';
       }
-      currentSectionHeader = '';
       continue;
     }
 
-    // Detect **Step N** marker and start collecting next step
+    // Skip **Step N** markers (just delimiters, not content)
     if (/^\*\*Step\s+\d+\*\*/.test(line)) {
       if (currentStep) {
         const cleaned = stripImportLinksAndImages(currentStep);
         if (cleaned) steps.push(cleaned);
+        currentStep = '';
       }
-      currentStep = '';
-      currentSectionHeader = '';
       continue;
     }
 
-    // Detect **Section header** (bold text) - store but don't add as step yet
+    // Skip section-name bold headers (Preparazione, Si cucina, Cottura)
     if (/^\*\*[^*]+\*\*$/.test(line)) {
-      if (currentStep) {
-        // Store previous step if any
-        const cleaned = stripImportLinksAndImages(currentStep);
-        if (cleaned) steps.push(cleaned);
+      const inner = line.replace(/\*\*/g, '').trim();
+      if (STEP_SECTION_HEADERS.test(inner)) {
+        if (currentStep) {
+          const cleaned = stripImportLinksAndImages(currentStep);
+          if (cleaned) steps.push(cleaned);
+          currentStep = '';
+        }
+        continue;
       }
-      // Extract section title to prepend to next paragraph
-      currentSectionHeader = stripImportMarkdownNoise(line.replace(/\*\*/g, '')).trim();
-      currentStep = '';
-      continue;
     }
 
-    // Collect paragraph text, prepending section header if present
-    if (currentSectionHeader && !currentStep) {
-      currentStep = currentSectionHeader + ': ' + line;
-      currentSectionHeader = '';
-    } else {
-      currentStep += (currentStep ? ' ' : '') + line;
-    }
+    // Accumulate paragraph text (strip stray ** bold markers)
+    const content = line.replace(/\*\*/g, '').trim();
+    currentStep += (currentStep ? ' ' : '') + content;
   }
 
-  // Add final step
   if (currentStep) {
     const cleaned = stripImportLinksAndImages(currentStep);
     if (cleaned) steps.push(cleaned);

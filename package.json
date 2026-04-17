@@ -9,7 +9,8 @@
     "preview": "vite preview",
     "test": "vitest",
     "test:unit": "vitest run",
-    "test:watch": "vitest --watch"
+    "test:watch": "vitest --watch",
+    "test:smoke": "vitest run --config vitest.smoke.config.ts"
   },
   "dependencies": {
     "@playwright/test": "^1.59.1",

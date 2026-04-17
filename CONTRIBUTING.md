@@ -177,6 +177,20 @@ Unit tests protect high-value logic:
 
 See `TESTING.md` for full test coverage details.
 
+### Live import smoke suite
+
+To check whether real Italian recipe sites still import correctly:
+
+```bash
+npm run test:smoke
+```
+
+This makes real network calls (Jina Reader proxy) and takes ~2–3 min.
+**Do not run this as part of a normal commit cycle** — it is too slow and network-dependent.
+Run it before/after touching the import pipeline, or when a site import regression is reported.
+
+See `TESTING.md` for full details on which sites are covered and how to interpret failures.
+
 ### Manual testing checklist
 
 For any non-trivial change:

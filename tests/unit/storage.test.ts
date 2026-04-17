@@ -7,6 +7,8 @@ import {
   formatQuantity,
   groupShoppingItems,
   getSectionI18nKey,
+  addRecipe,
+  loadRecipeBook,
 } from '../../src/lib/storage';
 import type { Recipe, ShoppingItem, ParsedIngredient } from '../../src/types';
 
@@ -326,5 +328,60 @@ describe('groupShoppingItems', () => {
     const result = groupShoppingItems(items);
     const names = result.grouped.map(g => g.baseName);
     expect(names).toEqual([ 'apple', 'butter', 'zucchini' ]);
+  });
+});
+
+// ─── meal occasion normalization ──────────────────────────────────────────────
+
+const BASE_RECIPE = {
+  id: 'test-mo-1',
+  name: 'Test Recipe',
+  ingredients: [ '100 g flour' ],
+  steps: [ 'Mix everything' ],
+  source: 'manual',
+  preparationType: 'classic' as const,
+};
+
+describe('meal occasion normalization', () => {
+  it('persists valid meal occasion values', () => {
+    addRecipe({ ...BASE_RECIPE, id: 'mo-1', mealOccasion: [ 'Colazione', 'Pranzo' ] });
+    const saved = loadRecipeBook().find(r => r.id === 'mo-1');
+    expect(saved?.mealOccasion).toEqual([ 'Colazione', 'Pranzo' ]);
+  });
+
+  it('filters out invalid meal occasion values', () => {
+    addRecipe({ ...BASE_RECIPE, id: 'mo-2', mealOccasion: [ 'Colazione', 'Brunch', 'InvalidValue' ] });
+    const saved = loadRecipeBook().find(r => r.id === 'mo-2');
+    expect(saved?.mealOccasion).toEqual([ 'Colazione' ]);
+  });
+
+  it('stores undefined when all values are invalid', () => {
+    addRecipe({ ...BASE_RECIPE, id: 'mo-3', mealOccasion: [ 'Brunch', 'Breakfast' ] });
+    const saved = loadRecipeBook().find(r => r.id === 'mo-3');
+    expect(saved?.mealOccasion).toBeUndefined();
+  });
+
+  it('stores undefined when mealOccasion is empty array', () => {
+    addRecipe({ ...BASE_RECIPE, id: 'mo-4', mealOccasion: [] });
+    const saved = loadRecipeBook().find(r => r.id === 'mo-4');
+    expect(saved?.mealOccasion).toBeUndefined();
+  });
+
+  it('stores undefined when mealOccasion is absent', () => {
+    addRecipe({ ...BASE_RECIPE, id: 'mo-5' });
+    const saved = loadRecipeBook().find(r => r.id === 'mo-5');
+    expect(saved?.mealOccasion).toBeUndefined();
+  });
+
+  it('accepts all four valid controlled values', () => {
+    addRecipe({ ...BASE_RECIPE, id: 'mo-6', mealOccasion: [ 'Colazione', 'Pranzo', 'Cena', 'Spuntino' ] });
+    const saved = loadRecipeBook().find(r => r.id === 'mo-6');
+    expect(saved?.mealOccasion).toEqual([ 'Colazione', 'Pranzo', 'Cena', 'Spuntino' ]);
+  });
+
+  it('rejects case-variant spellings (values are case-sensitive)', () => {
+    addRecipe({ ...BASE_RECIPE, id: 'mo-7', mealOccasion: [ 'colazione', 'PRANZO' ] });
+    const saved = loadRecipeBook().find(r => r.id === 'mo-7');
+    expect(saved?.mealOccasion).toBeUndefined();
   });
 });

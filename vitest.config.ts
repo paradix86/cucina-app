@@ -5,6 +5,7 @@ import { resolve } from 'path';
 export default defineConfig({
   plugins: [ vue() ],
   test: {
+    include: ['tests/unit/**/*.test.ts'],
     globals: true,
     environment: 'node',
     coverage: {

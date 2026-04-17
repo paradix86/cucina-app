@@ -1,7 +1,7 @@
 <script setup>
 import { computed, ref, watch } from 'vue';
 import { storeToRefs } from 'pinia';
-import { buildStepsHtml, formatTimerLabel, getPreparationInfo, getSourceDomainLabel, joinMetaParts, scaleIngredients } from '../lib/recipes.js';
+import { buildStepsHtml, formatTimerLabel, getPreparationInfo, getSourceDomainLabel, joinMetaParts, scaleIngredients, suggestMealOccasions } from '../lib/recipes.js';
 import { t } from '../lib/i18n.js';
 import { useShoppingListStore } from '../stores/shoppingList';
 
@@ -54,37 +54,6 @@ const shoppingActionLabel = computed(() => (hasShoppingContributions.value ? t('
 
 function changeServings(delta) {
   servings.value = Math.max(1, Math.min(20, servings.value + delta));
-}
-
-/**
- * Suggest meal occasions based on recipe title, category, and metadata
- */
-function suggestMealOccasions(recipe) {
-  const name = (recipe.name || '').toLowerCase();
-  const category = (recipe.category || '').toLowerCase();
-  const suggestions = new Set();
-
-  // Breakfast/colazione keywords
-  if (/pancakes|colazione|colazione|breakfast|omelette|frittata|yogurt|porridge|uova|toast|shakshuka/.test(name + category)) {
-    suggestions.add('Colazione');
-  }
-
-  // Snack/spuntino keywords
-  if (/snack|spuntino|ball|energy|appetizer|dip|hummus|nibble|quick/.test(name + category)) {
-    suggestions.add('Spuntino');
-  }
-
-  // Lunch/pranzo - main dishes
-  if (/pasta|risotto|pizza|burger|sandwich|insalata|salad|bowl/.test(name + category)) {
-    suggestions.add('Pranzo');
-  }
-
-  // Dinner/cena - often heavier dishes
-  if (/pollo|chicken|salmone|salmon|carne|meat|steak|merluzzo|verdure|vegetables/.test(name + category)) {
-    suggestions.add('Cena');
-  }
-
-  return Array.from(suggestions);
 }
 
 function buildEditDraft(recipe) {
@@ -223,19 +192,35 @@ function onShoppingAction() {
   <div>
     <button class="detail-back" @click="emit('back')">{{ backLabel || t('detail_back') }}</button>
     <div v-if="!isEditing" class="detail-wrap">
-      <h2 class="detail-title">{{ recipe.emoji || '🍴' }} {{ recipe.name }}</h2>
-      <div class="detail-meta-grid">
+      <div class="detail-head">
+        <h2 class="detail-title">{{ recipe.emoji || '🍴' }} {{ recipe.name }}</h2>
         <p class="detail-meta">{{ joinMetaParts([recipe.category, recipe.time, recipe.difficolta]) }}</p>
-        <p class="detail-method"><span class="sec-label-inline">{{ t('detail_method') }}:</span> {{ prepInfo.txt }}</p>
-        <p v-if="recipe.sourceDomain || recipe.url" class="detail-origin">
-          <span class="sec-label-inline">{{ t('detail_source_site') }}:</span>
-          <a v-if="recipe.url" :href="recipe.url" target="_blank" rel="noopener">{{ getSourceDomainLabel(recipe.sourceDomain) || recipe.url }}</a>
-          <span v-else>{{ getSourceDomainLabel(recipe.sourceDomain) }}</span>
-        </p>
-        <div v-if="recipe.mealOccasion && recipe.mealOccasion.length" class="detail-meal-occasion">
+      </div>
+
+      <div class="detail-meta-grid detail-meta-panel">
+        <div class="detail-meta-row">
+          <span class="sec-label-inline">{{ t('detail_method') }}:</span>
+          <span class="detail-meta-value">
+            <span class="card-src" :class="prepInfo.cls">{{ prepInfo.txt }}</span>
+          </span>
+        </div>
+        <div v-if="recipe.mealOccasion && recipe.mealOccasion.length" class="detail-meta-row detail-meta-row--chips">
           <span class="sec-label-inline">{{ t('meal_occasion_label') }}:</span>
           <div class="meal-occasion-badges">
             <span v-for="occasion in recipe.mealOccasion" :key="occasion" class="meal-badge">{{ t(`meal_occasion_${occasion.toLowerCase()}`) }}</span>
+          </div>
+        </div>
+        <div v-if="recipe.sourceDomain || recipe.url" class="detail-meta-row">
+          <span class="sec-label-inline">{{ t('detail_source_site') }}:</span>
+          <p class="detail-origin">
+            <a v-if="recipe.url" :href="recipe.url" target="_blank" rel="noopener">{{ getSourceDomainLabel(recipe.sourceDomain) || recipe.url }}</a>
+            <span v-else>{{ getSourceDomainLabel(recipe.sourceDomain) }}</span>
+          </p>
+        </div>
+        <div v-if="recipe.tags && recipe.tags.length" class="detail-meta-row detail-meta-row--chips">
+          <span class="sec-label-inline">{{ t('import_tags') }}:</span>
+          <div class="card-chips detail-tag-list">
+            <span v-for="tag in recipe.tags.slice(0, 5)" :key="tag" class="card-chip card-chip--tag">{{ tag }}</span>
           </div>
         </div>
       </div>
@@ -261,15 +246,17 @@ function onShoppingAction() {
         <div class="steps-list" v-html="steps"></div>
       </div>
 
-      <div class="detail-actions">
+      <div class="detail-actions detail-actions-primary">
         <button class="btn-shopping" @click="onShoppingAction">{{ shoppingActionLabel }}</button>
-        <button v-if="recipe.timerMinutes" class="btn-primary" @click="emit('start-recipe-timer', recipe)">
+        <button v-if="recipe.timerMinutes" class="btn-secondary" @click="emit('start-recipe-timer', recipe)">
           {{ t('detail_timer_btn', { t: formatTimerLabel(recipe.timerMinutes) }) }}
         </button>
         <button class="btn-primary" @click="emit('start-cooking', recipe)">{{ t('cooking_start') }}</button>
         <button v-if="canSaveBuiltin" class="btn-primary" @click="emit('save-builtin', recipe)">{{ t('builtin_save') }}</button>
+      </div>
+
+      <div v-if="savedMode" class="detail-actions detail-actions-secondary">
         <button
-          v-if="savedMode"
           class="btn-secondary btn-favorite"
           :class="{ active: recipe.favorite }"
           @click="emit('toggle-favorite', recipe)"
@@ -278,11 +265,11 @@ function onShoppingAction() {
           <span class="button-icon">★</span>
           {{ recipe.favorite ? t('favorite_remove') : t('favorite_add') }}
         </button>
-        <button v-if="savedMode" class="btn-secondary btn-secondary-icon" @click="emit('duplicate-recipe', recipe)" type="button">
+        <button class="btn-secondary btn-secondary-icon" @click="emit('duplicate-recipe', recipe)" type="button">
           <span class="button-icon">⎘</span>
           {{ t('recipe_duplicate') }}
         </button>
-        <button v-if="savedMode" class="btn-secondary btn-secondary-icon" @click="startEdit" type="button">
+        <button class="btn-secondary btn-secondary-icon" @click="startEdit" type="button">
           <span class="button-icon">✎</span>
           {{ t('recipe_edit') }}
         </button>

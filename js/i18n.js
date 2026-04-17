@@ -194,10 +194,10 @@ const TRANSLATIONS = {
     section_other: 'Other',
 
     import_title: 'Import a recipe from a link',
-    import_desc: 'Paste a YouTube, TikTok, Instagram or any recipe website link.',
+    import_desc: 'Paste any recipe website link.',
     import_placeholder: 'https://www.youtube.com/watch?v=…',
     import_btn: 'Import recipe',
-    import_loading: 'Analysing link with AI…',
+    import_loading: 'Analysing link...',
     import_success: 'Recipe extracted! Review and save.',
     import_error: 'Error analysing the link. Please try again.',
     import_error_web_blocked: 'This website cannot be imported reliably directly from the browser.',

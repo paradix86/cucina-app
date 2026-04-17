@@ -1,11 +1,13 @@
 <script setup>
 import { computed, ref } from 'vue';
 import { storeToRefs } from 'pinia';
+import { useRouter } from 'vue-router';
 import { parseIngredient, formatQuantity } from '../lib/storage';
 import { useShoppingListStore } from '../stores/shoppingList';
 import { t } from '../lib/i18n.js';
 
 const emit = defineEmits(['toast']);
+const router = useRouter();
 
 const store = useShoppingListStore();
 const { items, groupedSections } = storeToRefs(store);
@@ -72,7 +74,19 @@ function toggleGroupExpanded(group) {
       </div>
 
       <div v-if="!items.length" id="shopping-list">
-        <p class="empty">{{ t('shopping_empty') }}</p>
+        <div class="empty-state-shell shopping-empty-state">
+          <span class="empty-kicker">{{ t('shopping_empty_kicker') }}</span>
+          <p class="empty">{{ t('shopping_empty') }}</p>
+          <p class="empty-next muted-label">{{ t('shopping_empty_hint') }}</p>
+          <ol class="empty-steps">
+            <li>{{ t('shopping_empty_step_open') }}</li>
+            <li>{{ t('shopping_empty_step_add') }}</li>
+            <li>{{ t('shopping_empty_step_manage') }}</li>
+          </ol>
+          <div class="empty-state-actions">
+            <button class="btn-primary" @click="router.push({ name: 'recipe-book' })">{{ t('shopping_empty_cta') }}</button>
+          </div>
+        </div>
       </div>
       <div v-else id="shopping-list">
         <div class="shopping-list-rows">
