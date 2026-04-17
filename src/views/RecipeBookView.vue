@@ -5,7 +5,7 @@ import { useRouter } from 'vue-router';
 import { useDebounce } from '@vueuse/core';
 import RecipeDetailView from '../components/RecipeDetailView.vue';
 import { useRecipeBookStore } from '../stores/recipeBook';
-import { getPreparationInfo, getSourceDomainLabel, highlight, joinMetaParts, recipeMatchesQuery } from '../lib/recipes.js';
+import { getPreparationInfo, getSourceDomainLabel, getMealOccasionLabel, highlight, joinMetaParts, recipeMatchesQuery } from '../lib/recipes.js';
 import { t } from '../lib/i18n.js';
 
 const emit = defineEmits(['start-recipe-timer', 'start-cooking', 'add-to-shopping', 'toast']);
@@ -199,8 +199,29 @@ defineExpose({
           <button class="card-del btn-danger" @click.stop="confirmDelete(recipe.id)" title="✕">✕</button>
           <button class="card-fav" @click.stop="toggleFavorite(recipe.id)" :title="recipe.favorite ? t('favorite_remove') : t('favorite_add')">{{ recipe.favorite ? '★' : '☆' }}</button>
           <div class="card-name" v-html="highlight(recipe.name || '', debouncedSearch.trim())"></div>
-          <div class="card-meta">{{ joinMetaParts([recipe.category, recipe.time]) }}</div>
-          <div v-if="recipe.sourceDomain" class="card-origin">{{ getSourceDomainLabel(recipe.sourceDomain) }}</div>
+          <div class="card-body">
+            <div v-if="recipe.time && recipe.time !== 'n.d.'" class="card-row card-row--time">
+              <span class="card-row-icon" aria-hidden="true">⏱</span>
+              <span>{{ recipe.time }}</span>
+            </div>
+            <div v-if="recipe.category" class="card-row card-row--cat">
+              <span class="card-row-icon" aria-hidden="true">◈</span>
+              <span>{{ recipe.category }}</span>
+            </div>
+            <div v-if="recipe.mealOccasion && recipe.mealOccasion.length" class="card-row card-row--meal">
+              <span class="card-row-icon" aria-hidden="true">◑</span>
+              <span class="card-chips">
+                <span v-for="m in recipe.mealOccasion" :key="m" class="card-chip card-chip--meal">{{ getMealOccasionLabel(m) }}</span>
+              </span>
+            </div>
+            <div v-if="recipe.sourceDomain" class="card-row card-row--source">
+              <span class="card-row-icon" aria-hidden="true">↗</span>
+              <span>{{ getSourceDomainLabel(recipe.sourceDomain) }}</span>
+            </div>
+            <div v-if="recipe.tags && recipe.tags.length" class="card-row card-row--tags">
+              <span v-for="tag in recipe.tags.slice(0, 3)" :key="tag" class="card-chip card-chip--tag">{{ tag }}</span>
+            </div>
+          </div>
         </div>
       </div>
     </div>

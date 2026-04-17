@@ -59,6 +59,16 @@ export function joinMetaParts(parts) {
   return (parts || []).filter(Boolean).join(' · ');
 }
 
+export function getMealOccasionLabel(key) {
+  const map = {
+    colazione: t('meal_occasion_colazione'),
+    pranzo: t('meal_occasion_pranzo'),
+    cena: t('meal_occasion_cena'),
+    spuntino: t('meal_occasion_spuntino'),
+  };
+  return map[String(key).toLowerCase()] || key;
+}
+
 export function scaleIngredients(ingredients, base, target) {
   if (base === target) return ingredients;
   const factor = target / base;

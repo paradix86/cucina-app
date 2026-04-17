@@ -6,7 +6,7 @@ import RecipeDetailView from '../components/RecipeDetailView.vue';
 import { BUILTIN_RECIPES } from '../lib/builtinData.js';
 import { useRecipeBookStore } from '../stores/recipeBook';
 import { getPreparationType } from '../lib/storage';
-import { getPreparationInfo, highlight, parseRecipeTime, recipeMatchesQuery, joinMetaParts } from '../lib/recipes.js';
+import { getPreparationInfo, getMealOccasionLabel, highlight, parseRecipeTime, recipeMatchesQuery, joinMetaParts } from '../lib/recipes.js';
 import { t } from '../lib/i18n.js';
 
 const emit = defineEmits(['start-recipe-timer', 'start-cooking', 'add-to-shopping', 'toast', 'go-home']);
@@ -110,7 +110,25 @@ defineExpose({
         <div v-for="recipe in filteredRecipes" :key="recipe.id" class="ricetta-card" :class="getPreparationInfo(recipe).cardCls" @click="openBuiltinDetail(recipe)">
           <span class="card-src" :class="getPreparationInfo(recipe).cls">{{ getPreparationInfo(recipe).txt }}</span>
           <div class="card-name" v-html="highlight(recipe.name || '', debouncedSearch.trim())"></div>
-          <div class="card-meta">{{ joinMetaParts([recipe.category, recipe.time, `${recipe.servings} ${t('detail_servings').toLowerCase()}`]) }}</div>
+          <div class="card-body">
+            <div v-if="recipe.time && recipe.time !== 'n.d.'" class="card-row card-row--time">
+              <span class="card-row-icon" aria-hidden="true">⏱</span>
+              <span>{{ recipe.time }}</span>
+            </div>
+            <div v-if="recipe.category" class="card-row card-row--cat">
+              <span class="card-row-icon" aria-hidden="true">◈</span>
+              <span>{{ recipe.category }}</span>
+            </div>
+            <div v-if="recipe.mealOccasion && recipe.mealOccasion.length" class="card-row card-row--meal">
+              <span class="card-row-icon" aria-hidden="true">◑</span>
+              <span class="card-chips">
+                <span v-for="m in recipe.mealOccasion" :key="m" class="card-chip card-chip--meal">{{ getMealOccasionLabel(m) }}</span>
+              </span>
+            </div>
+            <div v-if="recipe.tags && recipe.tags.length" class="card-row card-row--tags">
+              <span v-for="tag in recipe.tags.slice(0, 3)" :key="tag" class="card-chip card-chip--tag">{{ tag }}</span>
+            </div>
+          </div>
         </div>
       </div>
     </div>
