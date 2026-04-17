@@ -609,9 +609,10 @@ function findJsonLdRecipeNode(html: string): Record<string, unknown> | null {
 /**
  * Convert a validated JSON-LD Recipe node into an ImportPreviewRecipe.
  * Throws with a JSONLD_ prefixed code if required fields are missing.
+ * `fallbackName` is used when the node's own name field is empty (e.g. supplied from OG title).
  */
-function parseJsonLdRecipeNode(node: Record<string, unknown>, url: string): ImportPreviewRecipe {
-  const name = normalizeImportText(String(node.name || '')).trim();
+function parseJsonLdRecipeNode(node: Record<string, unknown>, url: string, fallbackName?: string): ImportPreviewRecipe {
+  const name = normalizeImportText(String(node.name || '')).trim() || fallbackName || '';
   if (!name) throw new Error('JSONLD_NO_NAME');
 
   const rawIngredients = Array.isArray(node.recipeIngredient) ? node.recipeIngredient : [];
@@ -657,15 +658,192 @@ function parseJsonLdRecipeNode(node: Record<string, unknown>, url: string): Impo
 /**
  * Given raw HTML, find and parse the first Recipe JSON-LD node.
  * Returns null if no usable structured data is found (graceful non-throw).
+ * `fallbackName` is passed through to parseJsonLdRecipeNode for OG-title enrichment.
  */
-function parseJsonLdRecipeFromHtml(html: string, url: string): ImportPreviewRecipe | null {
+function parseJsonLdRecipeFromHtml(html: string, url: string, fallbackName?: string): ImportPreviewRecipe | null {
   const node = findJsonLdRecipeNode(html);
   if (!node) return null;
   try {
-    return parseJsonLdRecipeNode(node, url);
+    return parseJsonLdRecipeNode(node, url, fallbackName);
   } catch {
     return null;
   }
+}
+
+// ─── OpenGraph / HTML meta extraction ────────────────────────────────────────
+
+interface HtmlMetaFields {
+  title: string | null;
+  description: string | null;
+  image: string | null;
+}
+
+/**
+ * Extract OpenGraph and standard HTML meta fields from page HTML.
+ * Handles both attribute orderings (property before content and vice versa).
+ * Used to enrich recipe name when structured parsers find ingredients/steps
+ * but the name field is empty.
+ */
+function extractHtmlMetaFields(html: string): HtmlMetaFields {
+  function firstMatch(patterns: RegExp[]): string | null {
+    for (const re of patterns) {
+      const m = html.match(re);
+      const val = m?.[1] ? normalizeImportText(decodeImportEntities(m[1])).trim() : null;
+      if (val) return val;
+    }
+    return null;
+  }
+  return {
+    title: firstMatch([
+      /<meta\b[^>]*\bproperty=["']og:title["'][^>]*\bcontent=["']([^"'<>]+)["']/i,
+      /<meta\b[^>]*\bcontent=["']([^"'<>]+)["'][^>]*\bproperty=["']og:title["']/i,
+      /<meta\b[^>]*\bname=["']title["'][^>]*\bcontent=["']([^"'<>]+)["']/i,
+      /<title[^>]*>([^<]{3,120})<\/title>/i,
+    ]),
+    description: firstMatch([
+      /<meta\b[^>]*\bproperty=["']og:description["'][^>]*\bcontent=["']([^"'<>]+)["']/i,
+      /<meta\b[^>]*\bcontent=["']([^"'<>]+)["'][^>]*\bproperty=["']og:description["']/i,
+      /<meta\b[^>]*\bname=["']description["'][^>]*\bcontent=["']([^"'<>]+)["']/i,
+    ]),
+    image: firstMatch([
+      /<meta\b[^>]*\bproperty=["']og:image["'][^>]*\bcontent=["']([^"'<>]+)["']/i,
+      /<meta\b[^>]*\bcontent=["']([^"'<>]+)["'][^>]*\bproperty=["']og:image["']/i,
+    ]),
+  };
+}
+
+// ─── WPRM / embedded plugin JSON extraction ──────────────────────────────────
+
+/**
+ * Extract a balanced JSON object starting at index `start` in `text`.
+ * Returns the JSON string, or null if the object is not balanced.
+ */
+function extractJsonObjectAt(text: string, start: number): string | null {
+  let depth = 0;
+  let inString = false;
+  let escape = false;
+  for (let i = start; i < text.length; i++) {
+    const ch = text[i];
+    if (escape) { escape = false; continue; }
+    if (ch === '\\' && inString) { escape = true; continue; }
+    if (ch === '"') { inString = !inString; continue; }
+    if (inString) continue;
+    if (ch === '{') depth++;
+    else if (ch === '}') {
+      depth--;
+      if (depth === 0) return text.slice(start, i + 1);
+    }
+  }
+  return null;
+}
+
+/**
+ * Build an ImportPreviewRecipe from a WP Recipe Maker (WPRM) recipe object.
+ * WPRM uses nested arrays: ingredients = [[{amount,unit,name,notes},...], ...]
+ *                          instructions = [[{text,...},...], ...]
+ * Returns null if the data is insufficient for a usable recipe.
+ */
+function buildWprmRecipe(
+  recipe: Record<string, unknown>,
+  url: string,
+  metaTitle?: string,
+): ImportPreviewRecipe | null {
+  const name = normalizeImportText(String(recipe.name || metaTitle || '')).trim();
+  if (!name) return null;
+
+  const rawIngGroups = Array.isArray(recipe.ingredients) ? recipe.ingredients : [];
+  const ingredients: string[] = [];
+  for (const group of rawIngGroups as unknown[]) {
+    if (!Array.isArray(group)) continue;
+    for (const ing of group as unknown[]) {
+      if (!ing || typeof ing !== 'object') continue;
+      const obj = ing as Record<string, unknown>;
+      const parts = [String(obj.amount || ''), String(obj.unit || ''), String(obj.name || '')]
+        .map(s => s.trim()).filter(Boolean);
+      const notes = String(obj.notes || '').trim();
+      const line = parts.join(' ') + (notes ? ` (${notes})` : '');
+      if (line.trim()) ingredients.push(line.trim());
+    }
+  }
+
+  const rawInstrGroups = Array.isArray(recipe.instructions) ? recipe.instructions : [];
+  const steps: string[] = [];
+  for (const group of rawInstrGroups as unknown[]) {
+    if (!Array.isArray(group)) continue;
+    for (const step of group as unknown[]) {
+      if (!step || typeof step !== 'object') continue;
+      const text = normalizeImportText(String((step as Record<string, unknown>).text || '')).trim();
+      if (text) steps.push(text);
+    }
+  }
+
+  if (!ingredients.length || !steps.length) return null;
+
+  const totalTime = typeof recipe.total_time === 'number' ? recipe.total_time : 0;
+  const time = totalTime > 0 ? `${totalTime} min` : 'n.d.';
+  const servings = recipe.servings != null ? String(recipe.servings) : '4';
+  const rawCat = String(recipe.course || recipe.cuisine || '');
+  const category = normalizeImportCategory(
+    mapCategorySignalToAppCategory(rawCat) || inferImportCategoryFromTitleAndText(name),
+  );
+  const domain = normalizeSourceDomain(url);
+  const fullText = ingredients.join(' ') + ' ' + steps.join(' ');
+  const preparationType = inferImportPreparationType(fullText, domain);
+
+  return buildImportedRecipe(url, {
+    name,
+    category,
+    emoji: inferImportEmoji(category),
+    time,
+    servings,
+    ingredients,
+    steps,
+    timerMinutes: totalTime,
+    preparationType,
+    tags: suggestImportTags(domain, preparationType, category, name),
+  });
+}
+
+/**
+ * Scan page HTML for WP Recipe Maker (WPRM) embedded recipe JSON.
+ * WPRM inlines recipe data into `wprm_public_js_data` script variables with a
+ * distinctive nested ingredient/instruction array format.
+ * Returns a parsed recipe or null if no usable WPRM data is detected.
+ */
+function parseWprmRecipeFromHtml(
+  html: string,
+  url: string,
+  metaTitle?: string,
+): ImportPreviewRecipe | null {
+  // Pre-check: WPRM uses nested ingredient arrays — fast bail if not present
+  if (!html.includes('"ingredients":[[') && !html.includes('"ingredients": [[')) return null;
+
+  const scriptRe = /<script\b[^>]*>([\s\S]*?)<\/script>/gi;
+  let m: RegExpExecArray | null;
+  while ((m = scriptRe.exec(html)) !== null) {
+    const content = m[1];
+    if (!content.includes('"ingredients":[[') && !content.includes('"ingredients": [[')) continue;
+
+    // Locate the wprm_public_js_data assignment and extract the JSON object
+    const keyIdx = content.indexOf('wprm_public_js_data');
+    const eqIdx = keyIdx >= 0 ? content.indexOf('=', keyIdx) : -1;
+    const objStart = eqIdx >= 0 ? content.indexOf('{', eqIdx) : -1;
+    if (objStart === -1) continue;
+
+    const jsonStr = extractJsonObjectAt(content, objStart);
+    if (!jsonStr) continue;
+
+    try {
+      const parsed = JSON.parse(jsonStr) as Record<string, unknown>;
+      // wprm_public_js_data nests the recipe under a "recipe" key
+      const recipeData = (parsed?.recipe as Record<string, unknown> | undefined)
+        ?? (parsed?.ingredients && parsed?.instructions ? parsed : null);
+      if (!recipeData) continue;
+      const result = buildWprmRecipe(recipeData, url, metaTitle);
+      if (result) return result;
+    } catch { /* malformed JS — skip */ }
+  }
+  return null;
 }
 
 // ─── Adapter dispatch ─────────────────────────────────────────────────────────
@@ -680,16 +858,18 @@ function importWebsiteRecipeWithAdapters(markdown: string, url: string): ImportP
 }
 
 /**
- * Full async import with JSON-LD fallback.
+ * Full async import with structured-data fallbacks.
  *
  * Dispatch order:
  *   1. Named adapter (domain match or canHandle)
  *   2. Generic markdown heading-scanner
- *   3. JSON-LD / Schema.org structured data (secondary Jina HTML fetch)
- *   4. Throw UNSUPPORTED_WEB_IMPORT
+ *   3. Jina HTML fetch — extract OpenGraph / meta fields once for all HTML-path fallbacks
+ *   4. JSON-LD / Schema.org structured data (OG title used as name fallback when empty)
+ *   5. WPRM / embedded plugin JSON (wprm_public_js_data inline script)
+ *   6. Throw UNSUPPORTED_WEB_IMPORT
  *
- * The JSON-LD fallback only fires when steps 1 and 2 both fail, so it adds
- * no latency for sites that already have a named adapter.
+ * Steps 4 and 5 share the same HTML fetch (no extra round-trip).
+ * Named adapters and generic markdown are unaffected.
  */
 async function importWebsiteRecipeWithFallbacks(markdown: string, url: string): Promise<ImportPreviewRecipe> {
   const adapter = getImportAdapterForUrl(url);
@@ -698,10 +878,18 @@ async function importWebsiteRecipeWithFallbacks(markdown: string, url: string): 
   const genericRecipe = parseGenericReadableRecipe(markdown, url);
   if (genericRecipe) return genericRecipe;
 
-  // JSON-LD fallback: fetch raw HTML via Jina and look for Schema.org Recipe
+  // Fetch HTML once — shared by all remaining fallbacks
   const html = await fetchHtmlForJsonLd(url);
-  const jsonLdRecipe = parseJsonLdRecipeFromHtml(html, url);
+  const meta = extractHtmlMetaFields(html);
+  const ogTitle = meta.title ?? undefined;
+
+  // JSON-LD / Schema.org (OG title fills in when JSON-LD name is empty)
+  const jsonLdRecipe = parseJsonLdRecipeFromHtml(html, url, ogTitle);
   if (jsonLdRecipe) return jsonLdRecipe;
+
+  // WPRM / embedded plugin JSON (OG title fills in when plugin name is absent)
+  const wprmRecipe = parseWprmRecipeFromHtml(html, url, ogTitle);
+  if (wprmRecipe) return wprmRecipe;
 
   throw new Error('UNSUPPORTED_WEB_IMPORT');
 }
@@ -716,4 +904,6 @@ export {
   stripImportLinksAndImages,
   stripImportMarkdownNoise,
   parseJsonLdRecipeFromHtml,
+  parseWprmRecipeFromHtml,
+  extractHtmlMetaFields,
 };
