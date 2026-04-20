@@ -1624,7 +1624,7 @@ input[type="number"] {
   margin-bottom: 10px;
 }
 .bimby-step-body { flex: 1; min-width: 0; }
-.bimby-step-tags { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 6px; }
+.bimby-step-tags { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 6px; align-items: center; }
 .bimby-tag {
   font-size: 11px;
   font-weight: 700;
@@ -1637,16 +1637,16 @@ input[type="number"] {
   letter-spacing: .01em;
 }
 
-/* Bimby action icon */
+/* Bimby action icon — secondary visual helper, lives inline in the tags row */
 .bimby-action-icon {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 18px;
-  height: 18px;
+  width: 16px;
+  height: 16px;
   color: var(--orange);
   flex-shrink: 0;
-  margin-bottom: 6px;
+  opacity: 0.85;
 }
 
 .bimby-action-icon svg {
@@ -1658,10 +1658,10 @@ input[type="number"] {
   stroke-linejoin: round;
 }
 
-.bimby-action-row {
-  display: flex;
-  align-items: center;
-  margin-bottom: 6px;
+/* Cooking mode: slightly larger to match the bigger badge scale */
+.cooking-bimby-tags .bimby-action-icon {
+  width: 20px;
+  height: 20px;
 }
 
 .detail-origin a {
@@ -2646,17 +2646,12 @@ input[type="number"] {
   gap: 8px;
   flex-wrap: wrap;
   margin-bottom: 12px;
+  align-items: center;
 }
 .cooking-bimby-tag {
   font-size: 13px;
   padding: 5px 13px;
   font-weight: 700;
-}
-
-.cooking-bimby-action {
-  display: flex;
-  align-items: center;
-  margin-bottom: 10px;
 }
 .cooking-step-timer {
   text-align: center;
@@ -3417,4 +3412,5 @@ mark {
     border-radius: 2pt;
     letter-spacing: 0.01em;
   }
+  .bimby-action-icon { display: none !important; }
 }

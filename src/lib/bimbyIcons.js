@@ -5,11 +5,15 @@
  * Approved actions: reverse, knead, scissors, cup, open, lock
  * Anything outside this set is intentionally not supported.
  *
- * Policy freeze:
- * - This action set is intentionally CLOSED.
- * - False positives are worse than missing icons.
- * - Do not add/remove action keys without explicit product review + tests update.
+ * Freeze policy:
+ * - action set is intentionally closed
+ * - false positives are worse than missing icons
+ * - do not expand keys casually (e.g. simmer/tare)
  */
+
+/* ============================================================
+   APPROVED ACTION KEY SET — single frozen source of truth
+   ============================================================ */
 
 export const APPROVED_BIMBY_ACTION_KEYS = Object.freeze([
   'reverse',
@@ -50,7 +54,7 @@ export const BIMBY_ICONS = {
    Rules:
    - Each pattern must be high-confidence and Bimby-specific.
    - Generic cooking words (open, close, reverse) must NOT match
-     unless they are combined with Bimby-specific context terms
+     unless combined with Bimby-specific context terms
      (e.g. "coperchio", "misurino", "antiorario").
    - False positives are worse than missing icons.
    ============================================================ */
@@ -75,20 +79,19 @@ export const BIMBY_ACTION_PATTERNS = {
   lock: /chiud\w*\s+(?:il\s+)?coperchio|blocca\s+(?:il\s+)?coperchio|coperchio\s+chiuso|lock\s+(?:the\s+)?lid|close\s+(?:the\s+)?lid/i,
 };
 
-function toSortedKeys(record) {
-  return Object.keys(record).sort();
-}
-
-function assertClosedActionSet(mapName, record) {
-  const expected = [ ...APPROVED_BIMBY_ACTION_KEYS ].sort();
-  const actual = toSortedKeys(record);
-  if (expected.length !== actual.length || expected.some((key, index) => key !== actual[index])) {
-    throw new Error(`[bimbyIcons] ${mapName} keys must exactly match APPROVED_BIMBY_ACTION_KEYS. Expected ${expected.join(', ')}; got ${actual.join(', ')}`);
+function assertExactApprovedKeys(recordName, record) {
+  const expected = [...APPROVED_BIMBY_ACTION_KEYS].sort();
+  const actual = Object.keys(record).sort();
+  const sameLength = expected.length === actual.length;
+  const sameOrder = sameLength && expected.every((key, idx) => key === actual[idx]);
+  if (!sameOrder) {
+    throw new Error(`[bimbyIcons] ${recordName} keys must exactly match APPROVED_BIMBY_ACTION_KEYS. Expected: ${expected.join(', ')}. Actual: ${actual.join(', ')}`);
   }
 }
 
-assertClosedActionSet('BIMBY_ICONS', BIMBY_ICONS);
-assertClosedActionSet('BIMBY_ACTION_PATTERNS', BIMBY_ACTION_PATTERNS);
+// Fail fast if anyone adds/removes icon or detector keys without deliberate review.
+assertExactApprovedKeys('BIMBY_ICONS', BIMBY_ICONS);
+assertExactApprovedKeys('BIMBY_ACTION_PATTERNS', BIMBY_ACTION_PATTERNS);
 
 /**
  * Detect which approved Bimby action (if any) the step implies.

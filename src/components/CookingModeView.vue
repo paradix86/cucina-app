@@ -151,10 +151,8 @@ onBeforeUnmount(() => {
         <div class="cooking-step-number">{{ stepIndex + 1 }}</div>
         <div class="cooking-step-content">
           <template v-if="currentStepStructured.type === 'bimby'">
-            <div class="cooking-bimby-action">
-              <BimbyActionIcon :action="currentStepAction" />
-            </div>
             <div class="cooking-bimby-tags">
+              <BimbyActionIcon :action="currentStepAction" />
               <span v-for="tag in currentStepStructured.tags" :key="tag" class="bimby-tag cooking-bimby-tag">{{ tag }}</span>
             </div>
             <div class="cooking-step-text">{{ currentStepStructured.text }}</div>

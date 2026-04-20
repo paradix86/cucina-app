@@ -98,3 +98,16 @@ This file helps agents (Codex, Claude Code, etc.) work consistently inside this 
 - keep generic fallback behavior honest — do not over-claim coverage
 - persist `source`, `sourceDomain`, and `preparationType` consistently
 - do not break existing working adapters when adding new ones
+
+## Bimby icon policy freeze
+
+- Approved Bimby action keys are intentionally closed to:
+  - `reverse`
+  - `knead`
+  - `scissors`
+  - `cup`
+  - `open`
+  - `lock`
+- Do not casually add generic actions (for example `simmer`, `tare`) or broaden matching rules.
+- False positives are worse than missing icons.
+- Any action-set expansion requires explicit product review plus updates to `tests/unit/bimby-action-icons.test.ts`.
