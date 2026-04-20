@@ -342,14 +342,18 @@ function savePreview() {
         </div>
         <div class="status-msg" :class="status.type">{{ status.message }}</div>
         <div v-if="diagnostic" class="import-diagnostics" style="display:block" aria-live="polite">
-          <div class="import-diagnostics-title">{{ t('import_diag_title') }}</div>
-          <div class="import-diagnostics-item"><span class="import-diagnostics-label">{{ t('import_diag_domain') }}:</span> <span class="import-diagnostics-value">{{ diagnostic.domain }}</span></div>
-          <div class="import-diagnostics-item"><span class="import-diagnostics-label">{{ t('import_diag_adapter') }}:</span> <span class="import-diagnostics-value">{{ diagnostic.adapter }}</span></div>
-          <div class="import-diagnostics-item"><span class="import-diagnostics-label">{{ t('import_diag_stage') }}:</span> <span class="import-diagnostics-value">{{ diagnostic.stage }}</span></div>
-          <div class="import-diagnostics-item"><span class="import-diagnostics-label">{{ t('import_diag_reason') }}:</span> <span class="import-diagnostics-value">{{ diagnostic.reason }}</span></div>
-          <details v-if="diagnostic.hint" class="import-diagnostics-hint">
-            <summary>{{ t('import_diag_hint') }}</summary>
-            <div class="import-diagnostics-hint-body">{{ diagnostic.hint }}</div>
+          <div class="import-diagnostics-title">{{ t('import_diag_user_title') }}</div>
+          <p class="import-diagnostics-summary">{{ t('import_diag_user_desc') }}</p>
+          <details class="import-diagnostics-hint">
+            <summary>{{ t('import_diag_details_toggle') }}</summary>
+            <div class="import-diagnostics-item"><span class="import-diagnostics-label">{{ t('import_diag_domain') }}:</span> <span class="import-diagnostics-value">{{ diagnostic.domain }}</span></div>
+            <div class="import-diagnostics-item"><span class="import-diagnostics-label">{{ t('import_diag_adapter') }}:</span> <span class="import-diagnostics-value">{{ diagnostic.adapter }}</span></div>
+            <div class="import-diagnostics-item"><span class="import-diagnostics-label">{{ t('import_diag_stage') }}:</span> <span class="import-diagnostics-value">{{ diagnostic.stage }}</span></div>
+            <div class="import-diagnostics-item"><span class="import-diagnostics-label">{{ t('import_diag_reason') }}:</span> <span class="import-diagnostics-value">{{ diagnostic.reason }}</span></div>
+            <div v-if="diagnostic.hint" class="import-diagnostics-hint-body">
+              <strong>{{ t('import_diag_hint') }}:</strong>
+              <div>{{ diagnostic.hint }}</div>
+            </div>
           </details>
         </div>
       </div>
