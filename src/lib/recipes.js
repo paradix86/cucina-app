@@ -132,12 +132,12 @@ export function buildStepsHtml(steps, preparationType) {
         const text = step.slice(sep + 3);
         const tagsHtml = tags.map(tag => `<span class="bimby-tag">${escapeHtml(tag)}</span>`).join('');
         const actionIcon = renderBimbyActionIcon(detectBimbyAction(step));
+        const tagsRowContent = (actionIcon || tagsHtml) ? `<div class="bimby-step-tags">${actionIcon}${tagsHtml}</div>` : '';
         return `
           <div class="bimby-step">
             <span class="step-n">${i + 1}</span>
             <div class="bimby-step-body">
-              ${actionIcon ? `<div class="bimby-action-row">${actionIcon}</div>` : ''}
-              ${tagsHtml ? `<div class="bimby-step-tags">${tagsHtml}</div>` : ''}
+              ${tagsRowContent}
               <p class="step-txt">${escapeHtml(text)}</p>
             </div>
           </div>
