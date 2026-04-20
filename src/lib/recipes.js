@@ -1,5 +1,6 @@
 import { getPreparationType } from './storage';
 import { t } from './i18n.js';
+import { detectBimbyAction, renderBimbyActionIcon } from './bimbyIcons.js';
 
 export function recipeMatchesQuery(recipe, query) {
   if (!query) return true;
@@ -130,10 +131,12 @@ export function buildStepsHtml(steps, preparationType) {
         const tags = step.slice(0, sep).split('·').map(tag => tag.trim()).filter(Boolean);
         const text = step.slice(sep + 3);
         const tagsHtml = tags.map(tag => `<span class="bimby-tag">${escapeHtml(tag)}</span>`).join('');
+        const actionIcon = renderBimbyActionIcon(detectBimbyAction(step));
         return `
           <div class="bimby-step">
             <span class="step-n">${i + 1}</span>
             <div class="bimby-step-body">
+              ${actionIcon ? `<div class="bimby-action-row">${actionIcon}</div>` : ''}
               ${tagsHtml ? `<div class="bimby-step-tags">${tagsHtml}</div>` : ''}
               <p class="step-txt">${escapeHtml(text)}</p>
             </div>

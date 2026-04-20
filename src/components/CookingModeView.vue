@@ -2,8 +2,10 @@
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import { useWakeLock } from '@vueuse/core';
 import { extractStepSeconds, formatClock, getPreparationInfo } from '../lib/recipes.js';
+import { detectBimbyAction } from '../lib/bimbyIcons.js';
 import { t } from '../lib/i18n.js';
 import { useToasts } from '../composables/useToasts.js';
+import BimbyActionIcon from './BimbyActionIcon.vue';
 
 const props = defineProps({
   recipe: { type: Object, required: true },
@@ -39,6 +41,13 @@ const currentStepStructured = computed(() => {
     }
   }
   return { type: 'plain', text: step };
+});
+
+const currentStepAction = computed(() => {
+  if (prepInfo.value.type === 'bimby') {
+    return detectBimbyAction(currentStep.value);
+  }
+  return null;
 });
 
 function clearTimer() {
@@ -142,6 +151,9 @@ onBeforeUnmount(() => {
         <div class="cooking-step-number">{{ stepIndex + 1 }}</div>
         <div class="cooking-step-content">
           <template v-if="currentStepStructured.type === 'bimby'">
+            <div class="cooking-bimby-action">
+              <BimbyActionIcon :action="currentStepAction" />
+            </div>
             <div class="cooking-bimby-tags">
               <span v-for="tag in currentStepStructured.tags" :key="tag" class="bimby-tag cooking-bimby-tag">{{ tag }}</span>
             </div>

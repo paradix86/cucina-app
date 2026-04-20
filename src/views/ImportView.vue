@@ -5,7 +5,7 @@ import { useImportFlow } from '../composables/useImportFlow';
 import { getSourceDomainLabel, joinMetaParts, suggestMealOccasions, MEAL_OCCASION_OPTIONS } from '../lib/recipes.js';
 import { t } from '../lib/i18n.js';
 import { useRecipeBookStore } from '../stores/recipeBook';
-import { DUEMME_RECIPE_PACK } from '../lib/duemmePack';
+import { DUEMME_VETTED_RECIPE_PACK } from '../lib/duemmeVettedPack.js';
 
 const emit = defineEmits(['toast', 'go-home']);
 const route = useRoute();
@@ -54,7 +54,7 @@ const manualMealOccasionSuggestions = computed(() => suggestMealOccasions({
   category: manualForm.value.category,
 }));
 const previewMealOccasionSuggestions = computed(() => previewRecipe.value ? suggestMealOccasions(previewRecipe.value) : []);
-const collectionRecipes = computed(() => DUEMME_RECIPE_PACK);
+const collectionRecipes = computed(() => DUEMME_VETTED_RECIPE_PACK);
 const collectionSelectedCount = computed(() => selectedCollectionIds.value.length);
 const selectedCollectionRecipe = computed(() => {
   if (!selectedCollectionId.value) return collectionRecipes.value[0] || null;

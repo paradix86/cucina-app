@@ -1,0 +1,352 @@
+{
+  "summary": {
+    "generatedAt": "2026-04-20T09:19:07.039Z",
+    "sourceDir": "src/content/duemme/ricette",
+    "totalMarkdownFiles": 24,
+    "processedMarkdownFiles": 24,
+    "acceptedRecipes": 24,
+    "vettedSubsetCandidates": 23,
+    "skippedRecipes": 0,
+    "totalWarnings": 1,
+    "warningCounts": {
+      "DUEMME_FALLBACK_SECTION_USED": 1
+    }
+  },
+  "accepted": [
+    {
+      "id": "duemme-cene-chili_con_carne",
+      "name": "Chili con Carne e Fagioli",
+      "score": 100,
+      "sectionUsed": "bimby",
+      "warnings": [],
+      "filePath": "src/content/duemme/ricette/cene/chili_con_carne.md"
+    },
+    {
+      "id": "duemme-cene-frittata_verdure",
+      "name": "Frittata di Verdure con Patate",
+      "score": 100,
+      "sectionUsed": "classic",
+      "warnings": [],
+      "filePath": "src/content/duemme/ricette/cene/frittata_verdure.md"
+    },
+    {
+      "id": "duemme-cene-merluzzo_forno_verdure",
+      "name": "Merluzzo al Forno con Verdure Mediterranee",
+      "score": 100,
+      "sectionUsed": "classic",
+      "warnings": [],
+      "filePath": "src/content/duemme/ricette/cene/merluzzo_forno_verdure.md"
+    },
+    {
+      "id": "duemme-cene-pollo_teriyaki_verdure",
+      "name": "Pollo Teriyaki con Verdure Saltate",
+      "score": 100,
+      "sectionUsed": "classic",
+      "warnings": [],
+      "filePath": "src/content/duemme/ricette/cene/pollo_teriyaki_verdure.md"
+    },
+    {
+      "id": "duemme-cene-polpette_al_sugo",
+      "name": "Polpette di Tacchino al Sugo con Verdure",
+      "score": 100,
+      "sectionUsed": "bimby",
+      "warnings": [],
+      "filePath": "src/content/duemme/ricette/cene/polpette_al_sugo.md"
+    },
+    {
+      "id": "duemme-cene-salmone_forno_patate",
+      "name": "Salmone al Forno Speziato con Patate Dolci",
+      "score": 100,
+      "sectionUsed": "bimby",
+      "warnings": [],
+      "filePath": "src/content/duemme/ricette/cene/salmone_forno_patate.md"
+    },
+    {
+      "id": "duemme-cene-tacos_pollo",
+      "name": "Tacos di Pollo Speziato con Verdure",
+      "score": 100,
+      "sectionUsed": "bimby",
+      "warnings": [],
+      "filePath": "src/content/duemme/ricette/cene/tacos_pollo.md"
+    },
+    {
+      "id": "duemme-colazioni-pancakes_proteici",
+      "name": "Pancakes Proteici",
+      "score": 100,
+      "sectionUsed": "bimby",
+      "warnings": [],
+      "filePath": "src/content/duemme/ricette/colazioni/pancakes_proteici.md"
+    },
+    {
+      "id": "duemme-colazioni-porridge_proteico",
+      "name": "Porridge Proteico con Cannella e Frutta",
+      "score": 100,
+      "sectionUsed": "bimby",
+      "warnings": [],
+      "filePath": "src/content/duemme/ricette/colazioni/porridge_proteico.md"
+    },
+    {
+      "id": "duemme-colazioni-shakshuka_express",
+      "name": "Shakshuka Express",
+      "score": 100,
+      "sectionUsed": "bimby",
+      "warnings": [],
+      "filePath": "src/content/duemme/ricette/colazioni/shakshuka_express.md"
+    },
+    {
+      "id": "duemme-colazioni-toast_uova_avocado",
+      "name": "Toast Proteico con Uova Strapazzate e Avocado",
+      "score": 100,
+      "sectionUsed": "classic",
+      "warnings": [],
+      "filePath": "src/content/duemme/ricette/colazioni/toast_uova_avocado.md"
+    },
+    {
+      "id": "duemme-colazioni-yogurt_greco_bowl",
+      "name": "Yogurt Greco Bowl Proteico",
+      "score": 100,
+      "sectionUsed": "classic",
+      "warnings": [],
+      "filePath": "src/content/duemme/ricette/colazioni/yogurt_greco_bowl.md"
+    },
+    {
+      "id": "duemme-pranzi-buddha_bowl_ceci",
+      "name": "Buddha Bowl con Ceci Speziati e Quinoa",
+      "score": 100,
+      "sectionUsed": "bimby",
+      "warnings": [],
+      "filePath": "src/content/duemme/ricette/pranzi/buddha_bowl_ceci.md"
+    },
+    {
+      "id": "duemme-pranzi-burrito_bowl",
+      "name": "Burrito Bowl Proteica",
+      "score": 100,
+      "sectionUsed": "bimby",
+      "warnings": [],
+      "filePath": "src/content/duemme/ricette/pranzi/burrito_bowl.md"
+    },
+    {
+      "id": "duemme-pranzi-insalata_farro_tonno",
+      "name": "Insalata di Farro con Tonno e Verdure",
+      "score": 100,
+      "sectionUsed": "bimby",
+      "warnings": [],
+      "filePath": "src/content/duemme/ricette/pranzi/insalata_farro_tonno.md"
+    },
+    {
+      "id": "duemme-pranzi-pasta_pollo_pomodoro",
+      "name": "Pasta Integrale al Pomodoro con Pollo alla Paprika",
+      "score": 100,
+      "sectionUsed": "classic",
+      "warnings": [],
+      "filePath": "src/content/duemme/ricette/pranzi/pasta_pollo_pomodoro.md"
+    },
+    {
+      "id": "duemme-pranzi-poke_bowl_salmone",
+      "name": "Poké Bowl con Salmone",
+      "score": 100,
+      "sectionUsed": "bimby",
+      "warnings": [],
+      "filePath": "src/content/duemme/ricette/pranzi/poke_bowl_salmone.md"
+    },
+    {
+      "id": "duemme-pranzi-pollo_curry_riso",
+      "name": "Pollo al Curry con Riso Basmati",
+      "score": 100,
+      "sectionUsed": "bimby",
+      "warnings": [],
+      "filePath": "src/content/duemme/ricette/pranzi/pollo_curry_riso.md"
+    },
+    {
+      "id": "duemme-pranzi-risotto_funghi_porcini",
+      "name": "Risotto ai Funghi Porcini con Pollo",
+      "score": 100,
+      "sectionUsed": "bimby",
+      "warnings": [],
+      "filePath": "src/content/duemme/ricette/pranzi/risotto_funghi_porcini.md"
+    },
+    {
+      "id": "duemme-spuntini-energy_balls",
+      "name": "Energy Balls Proteiche",
+      "score": 100,
+      "sectionUsed": "bimby",
+      "warnings": [],
+      "filePath": "src/content/duemme/ricette/spuntini/energy_balls.md"
+    },
+    {
+      "id": "duemme-spuntini-frutta_fresca_secca",
+      "name": "Frutta Fresca con Frutta Secca",
+      "score": 100,
+      "sectionUsed": "classic",
+      "warnings": [],
+      "filePath": "src/content/duemme/ricette/spuntini/frutta_fresca_secca.md"
+    },
+    {
+      "id": "duemme-spuntini-hummus_homemade",
+      "name": "Hummus Homemade con Verdure",
+      "score": 92,
+      "sectionUsed": "full",
+      "warnings": [
+        "DUEMME_FALLBACK_SECTION_USED"
+      ],
+      "filePath": "src/content/duemme/ricette/spuntini/hummus_homemade.md"
+    },
+    {
+      "id": "duemme-spuntini-pane_burro_arachidi",
+      "name": "Pane Integrale con Burro di Arachidi e Banana",
+      "score": 100,
+      "sectionUsed": "classic",
+      "warnings": [],
+      "filePath": "src/content/duemme/ricette/spuntini/pane_burro_arachidi.md"
+    },
+    {
+      "id": "duemme-spuntini-smoothie_proteico",
+      "name": "Smoothie Proteico",
+      "score": 100,
+      "sectionUsed": "bimby",
+      "warnings": [],
+      "filePath": "src/content/duemme/ricette/spuntini/smoothie_proteico.md"
+    }
+  ],
+  "skipped": [],
+  "subsetCandidates": [
+    {
+      "id": "duemme-cene-chili_con_carne",
+      "name": "Chili con Carne e Fagioli",
+      "score": 100,
+      "filePath": "src/content/duemme/ricette/cene/chili_con_carne.md"
+    },
+    {
+      "id": "duemme-cene-frittata_verdure",
+      "name": "Frittata di Verdure con Patate",
+      "score": 100,
+      "filePath": "src/content/duemme/ricette/cene/frittata_verdure.md"
+    },
+    {
+      "id": "duemme-cene-merluzzo_forno_verdure",
+      "name": "Merluzzo al Forno con Verdure Mediterranee",
+      "score": 100,
+      "filePath": "src/content/duemme/ricette/cene/merluzzo_forno_verdure.md"
+    },
+    {
+      "id": "duemme-cene-pollo_teriyaki_verdure",
+      "name": "Pollo Teriyaki con Verdure Saltate",
+      "score": 100,
+      "filePath": "src/content/duemme/ricette/cene/pollo_teriyaki_verdure.md"
+    },
+    {
+      "id": "duemme-cene-polpette_al_sugo",
+      "name": "Polpette di Tacchino al Sugo con Verdure",
+      "score": 100,
+      "filePath": "src/content/duemme/ricette/cene/polpette_al_sugo.md"
+    },
+    {
+      "id": "duemme-cene-salmone_forno_patate",
+      "name": "Salmone al Forno Speziato con Patate Dolci",
+      "score": 100,
+      "filePath": "src/content/duemme/ricette/cene/salmone_forno_patate.md"
+    },
+    {
+      "id": "duemme-cene-tacos_pollo",
+      "name": "Tacos di Pollo Speziato con Verdure",
+      "score": 100,
+      "filePath": "src/content/duemme/ricette/cene/tacos_pollo.md"
+    },
+    {
+      "id": "duemme-colazioni-pancakes_proteici",
+      "name": "Pancakes Proteici",
+      "score": 100,
+      "filePath": "src/content/duemme/ricette/colazioni/pancakes_proteici.md"
+    },
+    {
+      "id": "duemme-colazioni-porridge_proteico",
+      "name": "Porridge Proteico con Cannella e Frutta",
+      "score": 100,
+      "filePath": "src/content/duemme/ricette/colazioni/porridge_proteico.md"
+    },
+    {
+      "id": "duemme-colazioni-shakshuka_express",
+      "name": "Shakshuka Express",
+      "score": 100,
+      "filePath": "src/content/duemme/ricette/colazioni/shakshuka_express.md"
+    },
+    {
+      "id": "duemme-colazioni-toast_uova_avocado",
+      "name": "Toast Proteico con Uova Strapazzate e Avocado",
+      "score": 100,
+      "filePath": "src/content/duemme/ricette/colazioni/toast_uova_avocado.md"
+    },
+    {
+      "id": "duemme-colazioni-yogurt_greco_bowl",
+      "name": "Yogurt Greco Bowl Proteico",
+      "score": 100,
+      "filePath": "src/content/duemme/ricette/colazioni/yogurt_greco_bowl.md"
+    },
+    {
+      "id": "duemme-pranzi-buddha_bowl_ceci",
+      "name": "Buddha Bowl con Ceci Speziati e Quinoa",
+      "score": 100,
+      "filePath": "src/content/duemme/ricette/pranzi/buddha_bowl_ceci.md"
+    },
+    {
+      "id": "duemme-pranzi-burrito_bowl",
+      "name": "Burrito Bowl Proteica",
+      "score": 100,
+      "filePath": "src/content/duemme/ricette/pranzi/burrito_bowl.md"
+    },
+    {
+      "id": "duemme-pranzi-insalata_farro_tonno",
+      "name": "Insalata di Farro con Tonno e Verdure",
+      "score": 100,
+      "filePath": "src/content/duemme/ricette/pranzi/insalata_farro_tonno.md"
+    },
+    {
+      "id": "duemme-pranzi-pasta_pollo_pomodoro",
+      "name": "Pasta Integrale al Pomodoro con Pollo alla Paprika",
+      "score": 100,
+      "filePath": "src/content/duemme/ricette/pranzi/pasta_pollo_pomodoro.md"
+    },
+    {
+      "id": "duemme-pranzi-poke_bowl_salmone",
+      "name": "Poké Bowl con Salmone",
+      "score": 100,
+      "filePath": "src/content/duemme/ricette/pranzi/poke_bowl_salmone.md"
+    },
+    {
+      "id": "duemme-pranzi-pollo_curry_riso",
+      "name": "Pollo al Curry con Riso Basmati",
+      "score": 100,
+      "filePath": "src/content/duemme/ricette/pranzi/pollo_curry_riso.md"
+    },
+    {
+      "id": "duemme-pranzi-risotto_funghi_porcini",
+      "name": "Risotto ai Funghi Porcini con Pollo",
+      "score": 100,
+      "filePath": "src/content/duemme/ricette/pranzi/risotto_funghi_porcini.md"
+    },
+    {
+      "id": "duemme-spuntini-energy_balls",
+      "name": "Energy Balls Proteiche",
+      "score": 100,
+      "filePath": "src/content/duemme/ricette/spuntini/energy_balls.md"
+    },
+    {
+      "id": "duemme-spuntini-frutta_fresca_secca",
+      "name": "Frutta Fresca con Frutta Secca",
+      "score": 100,
+      "filePath": "src/content/duemme/ricette/spuntini/frutta_fresca_secca.md"
+    },
+    {
+      "id": "duemme-spuntini-pane_burro_arachidi",
+      "name": "Pane Integrale con Burro di Arachidi e Banana",
+      "score": 100,
+      "filePath": "src/content/duemme/ricette/spuntini/pane_burro_arachidi.md"
+    },
+    {
+      "id": "duemme-spuntini-smoothie_proteico",
+      "name": "Smoothie Proteico",
+      "score": 100,
+      "filePath": "src/content/duemme/ricette/spuntini/smoothie_proteico.md"
+    }
+  ]
+}

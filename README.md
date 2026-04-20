@@ -119,6 +119,17 @@ Supported website adapters:
 
 Unsupported websites fail with explicit diagnostics in the import UI.
 
+## Duemme Pack Notes
+
+- The built-in Duemme collection is sourced from `duemme/piano_alimentare` (MIT).
+- For offline review/hardening before broad import, run:
+
+```bash
+npm run build:duemme-pack
+```
+
+This produces a draft pack, a vetted-subset candidate file, and a compact review report in `tmp/`.
+
 ## Persistence and Compatibility
 
 - Recipe model is normalized before persistence.

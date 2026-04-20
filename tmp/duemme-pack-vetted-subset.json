@@ -1,0 +1,1145 @@
+[
+  {
+    "id": "duemme-cene-chili_con_carne",
+    "name": "Chili con Carne e Fagioli",
+    "category": "Cena",
+    "emoji": "🤖",
+    "time": "30 minuti",
+    "servings": "1",
+    "difficolta": "Facile",
+    "ingredients": [
+      "80g carne macinata di manzo (90% magra)",
+      "120g fagioli rossi in scatola (scolati)",
+      "150g pomodori pelati",
+      "50g mais dolce",
+      "1/2 cipolla media (40g)",
+      "1 spicchio aglio",
+      "1/2 peperone rosso (60g)",
+      "1 cucchiaino cumino in polvere",
+      "1 cucchiaino paprika affumicata",
+      "1/2 cucchiaino peperoncino in polvere (chipotle se disponibile)",
+      "1/2 cucchiaino origano secco",
+      "1/2 cucchiaino cacao amaro in polvere (segreto per profondità!)",
+      "Sale, pepe nero",
+      "1 cucchiaio olio EVO",
+      "100ml brodo di carne o vegetale",
+      "1 cucchiaino concentrato di pomodoro",
+      "60g riso basmati cotto (20g crudo)",
+      "Yogurt greco, coriandolo fresco, lime"
+    ],
+    "steps": [
+      "Vel. 5 · 3 sec — Inserire cipolla, aglio, peperone",
+      "Temp. 100° · Vel. 1 · 3 min — Aggiungere olio: //",
+      "Temp. 100° · Vel. 1 · 5 min — Aggiungere carne macinata: // senso antiorario con misurino aperto (sbriciolare con spatola)",
+      "Vel. 3 · 10 sec — Aggiungere tutte le spezie",
+      "Aggiungere pomodori, brodo, concentrato, fagioli, mais",
+      "Temp. 100° · Vel. 1 · 15 min — Cuocere // senso antiorario",
+      "Assaggiare, aggiustare sale e spezie",
+      "Temp. 100° · Vel. 1 · 20 min — Servire su riso con yogurt, coriandolo, lime Quadruplicare tutti gli ingredienti Seguire stessa procedura Cottura finale: // Porzionare in 4 contenitori Il chili migliora nei giorni successivi!"
+    ],
+    "timerMinutes": 30,
+    "source": "web",
+    "sourceDomain": "github.com",
+    "preparationType": "bimby",
+    "bimby": true,
+    "tags": [
+      "Piano Alimentare",
+      "duemme/piano_alimentare",
+      "Cene",
+      "Bimby"
+    ],
+    "mealOccasion": [
+      "Cena"
+    ]
+  },
+  {
+    "id": "duemme-cene-frittata_verdure",
+    "name": "Frittata di Verdure con Patate",
+    "category": "Cena",
+    "emoji": "🍴",
+    "time": "20 minuti",
+    "servings": "1",
+    "difficolta": "Facile",
+    "ingredients": [
+      "2 uova intere + 2 albumi",
+      "20g Parmigiano Reggiano grattugiato",
+      "Sale, pepe, noce moscata",
+      "Erbe aromatiche (basilico, prezzemolo)",
+      "100g patate a cubetti piccoli",
+      "80g zucchine a dadini",
+      "60g peperoni misti",
+      "40g cipolla tritata",
+      "50g spinaci freschi (o 30g surgelati)",
+      "1 cucchiaio olio EVO",
+      "80g pane integrale (2 fette)",
+      "Insalata mista fresca"
+    ],
+    "steps": [
+      "Prep verdure: Sbollentare patate a cubetti 5 minuti (precottura) Tagliare zucchine, peperoni, cipolla",
+      "Cuocere verdure: In padella antiaderente (20-22cm), scaldare olio Soffriggere cipolla 2 minuti Aggiungere patate, rosolare 5 minuti Aggiungere zucchine e peperoni, cuocere 5 minuti Aggiungere spinaci ultimi 2 minuti Regolare sale, pepe",
+      "Preparare composto uova: Sbattere uova e albumi in ciotola Aggiungere Parmigiano, sale, pepe, noce moscata, erbe",
+      "Cuocere frittata: Distribuire verdure uniformemente in padella Versare composto uova sopra verdure Cuocere a fuoco medio-basso 8-10 minuti coperto Quando quasi rappresa, girare con coperchio o piatto Cuocere altro lato 3-4 minuti",
+      "Servire: Tagliare a spicchi, accompagnare con pane e insalata"
+    ],
+    "timerMinutes": 20,
+    "source": "web",
+    "sourceDomain": "github.com",
+    "preparationType": "classic",
+    "bimby": false,
+    "tags": [
+      "Piano Alimentare",
+      "duemme/piano_alimentare",
+      "Cene",
+      "Classiche"
+    ],
+    "mealOccasion": [
+      "Cena"
+    ]
+  },
+  {
+    "id": "duemme-cene-merluzzo_forno_verdure",
+    "name": "Merluzzo al Forno con Verdure Mediterranee",
+    "category": "Cena",
+    "emoji": "🍴",
+    "time": "25 minuti",
+    "servings": "1",
+    "difficolta": "Facile",
+    "ingredients": [
+      "140g filetto di merluzzo fresco (o nasello, platessa)",
+      "Succo di 1/2 limone",
+      "Sale, pepe bianco",
+      "Timo fresco o origano",
+      "150g pomodorini ciliegino",
+      "100g zucchine a rondelle",
+      "80g peperoni a listarelle",
+      "50g cipolla rossa a fette",
+      "10 olive nere denocciolate",
+      "1 spicchio aglio",
+      "1 cucchiaio capperi dissalati",
+      "15ml olio EVO",
+      "Prezzemolo fresco",
+      "Peperoncino (opzionale)",
+      "80g pane integrale (2 fette grandi) o 60g riso/cous cous"
+    ],
+    "steps": [
+      "Preriscaldare forno a 200°C",
+      "Prep verdure: Tagliare tutte le verdure In ciotola, mescolare verdure con metà olio, sale, pepe, aglio tritato",
+      "Teglia al cartoccio (metodo 1 - più umido): Stendere un grande foglio alluminio o carta forno Disporre verdure al centro Appoggiare merluzzo sopra le verdure Condire pesce con limone, sale, pepe, timo, olio restante Aggiungere olive e capperi Chiudere cartoccio sigillando bene Infornare 18-20 minuti",
+      "Teglia aperta (metodo 2 - più caramellato): Disporre verdure in teglia con carta forno Infornare verdure sole 10 minuti Aggiungere merluzzo condito sopra Infornare altri 10-12 minuti",
+      "Verificare cottura: Merluzzo si sfalda facilmente, colore bianco opaco",
+      "Servire con pane tostato per fare scarpetta con sughetto"
+    ],
+    "timerMinutes": 25,
+    "source": "web",
+    "sourceDomain": "github.com",
+    "preparationType": "classic",
+    "bimby": false,
+    "tags": [
+      "Piano Alimentare",
+      "duemme/piano_alimentare",
+      "Cene",
+      "Classiche"
+    ],
+    "mealOccasion": [
+      "Cena"
+    ]
+  },
+  {
+    "id": "duemme-cene-pollo_teriyaki_verdure",
+    "name": "Pollo Teriyaki con Verdure Saltate",
+    "category": "Cena",
+    "emoji": "🍴",
+    "time": "20 minuti",
+    "servings": "1",
+    "difficolta": "Facile",
+    "ingredients": [
+      "100g petto di pollo a strisce",
+      "1 cucchiaio olio di sesamo (o EVO)",
+      "30ml salsa di soia",
+      "15ml mirin (o 10ml aceto di riso + 5ml acqua + 1 cucchiaino zucchero)",
+      "1 cucchiaio miele",
+      "1 spicchio aglio tritato",
+      "1 cucchiaino zenzero fresco grattugiato",
+      "1 cucchiaino amido di mais",
+      "30ml acqua",
+      "80g broccoli a cimette",
+      "60g peperoni misti",
+      "50g carote julienne",
+      "40g cipolla",
+      "30g edamame (opzionale)",
+      "Cipollotto per guarnire",
+      "80g riso basmati (cotto = 200g circa)",
+      "Semi di sesamo per guarnire"
+    ],
+    "steps": [
+      "Preparare salsa teriyaki: mescolare soia, mirin, miele, aglio, zenzero, amido, acqua",
+      "Tagliare pollo a strisce, verdure a pezzi uniformi",
+      "Cuocere riso a parte (12-15 min)",
+      "Scaldare wok o padella larga a fuoco alto",
+      "Aggiungere olio di sesamo",
+      "Pollo: Saltare 5-6 minuti, deve dorarsi e cuocersi completamente",
+      "Trasferire pollo in ciotola",
+      "Verdure dure (carote, broccoli): Saltare 3 minuti",
+      "Verdure tenere (peperoni, cipolla): Aggiungere, saltare 2 minuti",
+      "Rimettere pollo nel wok",
+      "Versare salsa teriyaki: Mescolare 1-2 minuti fino a glassa densa",
+      "Servire su riso, guarnire con sesamo e cipollotto"
+    ],
+    "timerMinutes": 20,
+    "source": "web",
+    "sourceDomain": "github.com",
+    "preparationType": "classic",
+    "bimby": false,
+    "tags": [
+      "Piano Alimentare",
+      "duemme/piano_alimentare",
+      "Cene",
+      "Classiche"
+    ],
+    "mealOccasion": [
+      "Cena"
+    ]
+  },
+  {
+    "id": "duemme-cene-polpette_al_sugo",
+    "name": "Polpette di Tacchino al Sugo con Verdure",
+    "category": "Cena",
+    "emoji": "🤖",
+    "time": "30 minuti",
+    "servings": "1",
+    "difficolta": "Media",
+    "ingredients": [
+      "120g carne macinata di tacchino",
+      "30g pane integrale raffermo",
+      "30ml latte",
+      "1 uovo piccolo",
+      "15g Parmigiano grattugiato",
+      "1 spicchio aglio",
+      "Prezzemolo fresco",
+      "Sale, pepe, noce moscata",
+      "250g passata di pomodoro",
+      "1/2 cipolla piccola",
+      "1 spicchio aglio",
+      "1 cucchiaio olio EVO",
+      "Basilico fresco",
+      "Origano secco",
+      "Sale, pepe",
+      "150g zucchine o melanzane",
+      "50g pane integrale (1 fetta grande)"
+    ],
+    "steps": [
+      "5 min — Ammollare pane nel latte uti",
+      "Vel. 7 · 3 sec — Nel boccale: aglio, prezzemolo: /",
+      "Aggiungere tacchino, pane strizzato, uovo, Parmigiano, sale, pepe, noce moscata",
+      "Vel. 4 · 20 sec — Impastare / (aiutarsi con spatola)",
+      "Trasferire in ciotola",
+      "Formare 4-5 polpette con mani umide",
+      "Tenere da parte",
+      "Pulire boccale velocemente",
+      "Vel. 5 · 3 sec — Inserire cipolla e aglio",
+      "Temp. 100° · Vel. 1 · 3 min — Aggiungere olio: //",
+      "Aggiungere passata, origano, sale, pepe, basilico",
+      "Temp. 100° · Vel. 1 · 5 min — Cuocere //",
+      "Aggiungere delicatamente le polpette nel sugo",
+      "Temp. 100° · Vel. 1 · 15 min — Cuocere // senso antiorario (delicato per non rompere)",
+      "Controllare cottura polpette (devono essere cotte al centro)",
+      "Servire polpette con sugo, verdure grigliate, pane per scarpetta"
+    ],
+    "timerMinutes": 30,
+    "source": "web",
+    "sourceDomain": "github.com",
+    "preparationType": "bimby",
+    "bimby": true,
+    "tags": [
+      "Piano Alimentare",
+      "duemme/piano_alimentare",
+      "Cene",
+      "Bimby"
+    ],
+    "mealOccasion": [
+      "Cena"
+    ]
+  },
+  {
+    "id": "duemme-cene-salmone_forno_patate",
+    "name": "Salmone al Forno Speziato con Patate Dolci",
+    "category": "Cena",
+    "emoji": "🤖",
+    "time": "25 minuti",
+    "servings": "1",
+    "difficolta": "Facile",
+    "ingredients": [
+      "120g filetto di salmone fresco",
+      "1 cucchiaio olio EVO",
+      "1 cucchiaino paprika affumicata",
+      "1/2 cucchiaino cumino",
+      "Succo di 1/2 limone",
+      "Sale, pepe",
+      "Aneto fresco o prezzemolo",
+      "150g patate dolci",
+      "1/2 cucchiaio olio EVO",
+      "1/2 cucchiaino cannella",
+      "Sale",
+      "150g broccoli o asparagi",
+      "Aglio, limone"
+    ],
+    "steps": [
+      "Temp. 200° · 25 min — Patate dolci: Cuocere prima al forno 20- a  (Bimby non ottimale per patate arrosto)",
+      "Vel. 1 · 10 min — Salmone nel cestello vapore Bimby: Marinare salmone come sopra 500ml acqua nel boccale Salmone nel cestello vapore Broccoli nel cestello se c'è spazio Cuocere 8-/Varoma/",
+      "Verificare cottura salmone (si sfalda, rosa opaco)",
+      "Servire"
+    ],
+    "timerMinutes": 25,
+    "source": "web",
+    "sourceDomain": "github.com",
+    "preparationType": "bimby",
+    "bimby": true,
+    "tags": [
+      "Piano Alimentare",
+      "duemme/piano_alimentare",
+      "Cene",
+      "Bimby"
+    ],
+    "mealOccasion": [
+      "Cena"
+    ]
+  },
+  {
+    "id": "duemme-cene-tacos_pollo",
+    "name": "Tacos di Pollo Speziato con Verdure",
+    "category": "Cena",
+    "emoji": "🤖",
+    "time": "20 minuti",
+    "servings": "1",
+    "difficolta": "Facile",
+    "ingredients": [
+      "110g petto di pollo a strisce",
+      "1 cucchiaio olio EVO",
+      "1 cucchiaino cumino",
+      "1 cucchiaino paprika affumicata",
+      "1/2 cucchiaino peperoncino in polvere",
+      "1/2 cucchiaino aglio in polvere",
+      "1/2 cucchiaino origano secco",
+      "Sale, pepe",
+      "3 tortillas integrali di grano (70g totale)",
+      "50g lattuga iceberg sminuzzata",
+      "50g pomodori a cubetti",
+      "30g cipolla rossa tritata",
+      "30g avocado a fette",
+      "20g mais dolce",
+      "30g yogurt greco (per \"panna acida\")",
+      "Succo di lime",
+      "Coriandolo fresco",
+      "Jalapeños (opzionale)"
+    ],
+    "steps": [
+      "Marinare pollo come sopra",
+      "Nel boccale: pollo marinato",
+      "Temp. 100° · Vel. 1 · 8 min — Cuocere // senso antiorario con misurino aperto",
+      "Controllare cottura (deve essere bianco)",
+      "Seguire stessi passaggi per assemblaggio"
+    ],
+    "timerMinutes": 20,
+    "source": "web",
+    "sourceDomain": "github.com",
+    "preparationType": "bimby",
+    "bimby": true,
+    "tags": [
+      "Piano Alimentare",
+      "duemme/piano_alimentare",
+      "Cene",
+      "Bimby"
+    ],
+    "mealOccasion": [
+      "Cena"
+    ]
+  },
+  {
+    "id": "duemme-colazioni-pancakes_proteici",
+    "name": "Pancakes Proteici",
+    "category": "Colazione",
+    "emoji": "🤖",
+    "time": "15 minuti",
+    "servings": "1",
+    "difficolta": "Facile",
+    "ingredients": [
+      "60g farina d'avena (o fiocchi d'avena tritati)",
+      "30g farina 00",
+      "1 misurino (25g) proteine in polvere vaniglia",
+      "2 uova medie",
+      "120ml latte parzialmente scremato",
+      "1 cucchiaino lievito per dolci",
+      "1 pizzico sale",
+      "1 cucchiaino estratto vaniglia (opzionale)",
+      "Olio spray per cottura",
+      "Topping: 1 banana (100g), 15ml sciroppo d'acero, 10g burro di arachidi"
+    ],
+    "steps": [
+      "Vel. 9 · 10 sec — Inserire nel boccale fiocchi d'avena: / per ottenere farina",
+      "Aggiungere farina 00, proteine in polvere, lievito, sale",
+      "Vel. 4 · 5 sec — Mescolare /",
+      "Aggiungere uova, latte, estratto vaniglia",
+      "Vel. 5 · 20 sec — Mescolare / fino a impasto liscio e omogeneo",
+      "3 min — Lasciare riposare 2-uti"
+    ],
+    "timerMinutes": 15,
+    "source": "web",
+    "sourceDomain": "github.com",
+    "preparationType": "bimby",
+    "bimby": true,
+    "tags": [
+      "Piano Alimentare",
+      "duemme/piano_alimentare",
+      "Colazioni",
+      "Bimby"
+    ],
+    "mealOccasion": [
+      "Colazione"
+    ]
+  },
+  {
+    "id": "duemme-colazioni-porridge_proteico",
+    "name": "Porridge Proteico con Cannella e Frutta",
+    "category": "Colazione",
+    "emoji": "🤖",
+    "time": "8-10 minuti",
+    "servings": "1",
+    "difficolta": "Facile",
+    "ingredients": [
+      "60g fiocchi d'avena",
+      "250ml latte parzialmente scremato",
+      "100ml acqua",
+      "1 misurino (30g) proteine in polvere vaniglia",
+      "1 banana media (100g)",
+      "15g mandorle a lamelle",
+      "1 cucchiaino cannella",
+      "1 pizzico sale",
+      "Miele (5g, opzionale)"
+    ],
+    "steps": [
+      "Inserire nel boccale avena, latte, acqua, cannella e sale",
+      "Temp. 90° · Vel. 1 · 8 min — Cuocere // in senso antiorario",
+      "A cottura ultimata, aggiungere proteine in polvere",
+      "Vel. 3 · 10 sec — Mescolare /",
+      "Trasferire in una ciotola",
+      "Guarnire con banana a fette, mandorle e miele"
+    ],
+    "timerMinutes": 10,
+    "source": "web",
+    "sourceDomain": "github.com",
+    "preparationType": "bimby",
+    "bimby": true,
+    "tags": [
+      "Piano Alimentare",
+      "duemme/piano_alimentare",
+      "Colazioni",
+      "Bimby"
+    ],
+    "mealOccasion": [
+      "Colazione"
+    ]
+  },
+  {
+    "id": "duemme-colazioni-shakshuka_express",
+    "name": "Shakshuka Express",
+    "category": "Colazione",
+    "emoji": "🤖",
+    "time": "15 minuti",
+    "servings": "1",
+    "difficolta": "Facile",
+    "ingredients": [
+      "3 uova medie",
+      "200g passata di pomodoro",
+      "80g pane integrale (2 fette)",
+      "1 spicchio aglio",
+      "1/2 peperone rosso (80g)",
+      "1 cucchiaio olio EVO (10g)",
+      "1 cucchiaino cumino in polvere",
+      "1/2 cucchiaino paprika dolce",
+      "Peperoncino q.b.",
+      "Sale, pepe",
+      "Prezzemolo fresco",
+      "20g feta sbriciolata (opzionale)"
+    ],
+    "steps": [
+      "Vel. 5 · 3 sec — Inserire aglio e olio",
+      "Temp. 100° · Vel. 1 · 2 min — Soffriggere //",
+      "Vel. 4 · 3 sec — Aggiungere peperone a pezzi: / per tritare grossolanamente",
+      "Temp. 100° · Vel. 1 · 3 min — Cuocere //",
+      "Aggiungere passata, cumino, paprika, peperoncino, sale",
+      "Temp. 100° · Vel. 1 · 5 min — Cuocere // in senso antiorario",
+      "Con spatola fare 3 avvallamenti nel sugo",
+      "Rompere le uova direttamente negli avvallamenti",
+      "Temp. 90° · Vel. 1 · 7 min — Cuocere 5-// fino a cottura desiderata uova (+ tempo per uova più sode)",
+      "Servire con pane tostato, feta e prezzemolo"
+    ],
+    "timerMinutes": 15,
+    "source": "web",
+    "sourceDomain": "github.com",
+    "preparationType": "bimby",
+    "bimby": true,
+    "tags": [
+      "Piano Alimentare",
+      "duemme/piano_alimentare",
+      "Colazioni",
+      "Bimby"
+    ],
+    "mealOccasion": [
+      "Colazione"
+    ]
+  },
+  {
+    "id": "duemme-colazioni-toast_uova_avocado",
+    "name": "Toast Proteico con Uova Strapazzate e Avocado",
+    "category": "Colazione",
+    "emoji": "🍴",
+    "time": "10 minuti",
+    "servings": "1",
+    "difficolta": "Facile",
+    "ingredients": [
+      "100g pane integrale a fette (2-3 fette grandi)",
+      "2 uova intere + 1 albume",
+      "1/2 avocado maturo (60g)",
+      "50g pomodorini ciliegino",
+      "1 cucchiaino olio EVO",
+      "Sale, pepe nero",
+      "Peperoncino in scaglie (opzionale)",
+      "Paprika affumicata",
+      "Prezzemolo fresco o erba cipollina"
+    ],
+    "steps": [
+      "Preparare avocado: Schiacciare con forchetta, aggiungere sale, pepe, succo di limone",
+      "Tostare il pane: In tostapane o padella antiaderente fino a dorato",
+      "Uova strapazzate: Sbattere uova e albume in una ciotola con sale e pepe Scaldare padella antiaderente a fuoco medio con olio Versare le uova Mescolare delicatamente con spatola 2-3 minuti Togliere dal fuoco quando ancora leggermente cremose (continuano a cuocere)",
+      "Tagliare pomodorini a metà, condire con sale e paprika",
+      "Assemblare: Spalmare avocado sul toast, aggiungere uova, pomodorini",
+      "Guarnire con erbe fresche e peperoncino"
+    ],
+    "timerMinutes": 10,
+    "source": "web",
+    "sourceDomain": "github.com",
+    "preparationType": "classic",
+    "bimby": false,
+    "tags": [
+      "Piano Alimentare",
+      "duemme/piano_alimentare",
+      "Colazioni",
+      "Classiche"
+    ],
+    "mealOccasion": [
+      "Colazione"
+    ]
+  },
+  {
+    "id": "duemme-colazioni-yogurt_greco_bowl",
+    "name": "Yogurt Greco Bowl Proteico",
+    "category": "Colazione",
+    "emoji": "🤖",
+    "time": "5 minuti",
+    "servings": "1",
+    "difficolta": "Facile",
+    "ingredients": [
+      "250g yogurt greco 0% grassi",
+      "50g fiocchi d'avena",
+      "15g miele",
+      "1 banana media (100g)",
+      "80g frutti di bosco misti (freschi o surgelati)",
+      "20g mandorle a scaglie",
+      "10g semi di chia",
+      "1 cucchiaino cannella"
+    ],
+    "steps": [
+      "In una ciotola capiente, versare lo yogurt greco",
+      "Aggiungere fiocchi d'avena e semi di chia, mescolare",
+      "Tagliare la banana a rondelle",
+      "Comporre la bowl: yogurt alla base, frutta sopra",
+      "Guarnire con mandorle, miele e spolverare cannella",
+      "Consumare immediatamente"
+    ],
+    "timerMinutes": 5,
+    "source": "web",
+    "sourceDomain": "github.com",
+    "preparationType": "bimby",
+    "bimby": true,
+    "tags": [
+      "Piano Alimentare",
+      "duemme/piano_alimentare",
+      "Colazioni",
+      "Bimby"
+    ],
+    "mealOccasion": [
+      "Colazione"
+    ]
+  },
+  {
+    "id": "duemme-pranzi-buddha_bowl_ceci",
+    "name": "Buddha Bowl con Ceci Speziati e Quinoa",
+    "category": "Pranzo",
+    "emoji": "🤖",
+    "time": "25 minuti",
+    "servings": "1",
+    "difficolta": "Facile",
+    "ingredients": [
+      "70g quinoa (secca)",
+      "150g ceci cotti in scatola (scolati)",
+      "100g patate dolci a cubetti",
+      "80g broccoli o cavolfiore",
+      "50g cavolo riccio o spinaci",
+      "50g carote julienne",
+      "30g avocado",
+      "1 cucchiaino cumino",
+      "1 cucchiaino paprika dolce",
+      "1/2 cucchiaino curcuma",
+      "1/2 cucchiaino aglio in polvere",
+      "Peperoncino q.b.",
+      "Sale, pepe",
+      "1 cucchiaio tahini (pasta di sesamo)",
+      "1 cucchiaio succo di limone",
+      "1 cucchiaio acqua",
+      "1 spicchio aglio tritato",
+      "Sale",
+      "10g semi di zucca",
+      "10g semi di girasole",
+      "Prezzemolo fresco"
+    ],
+    "steps": [
+      "Sciacquare quinoa sotto acqua corrente",
+      "Nel boccale: 70g quinoa + 160ml acqua + pizzico sale",
+      "Temp. 100° · Vel. 1 · 15 min — Cuocere //",
+      "3 min — Lasciare riposare uti nel boccale chiuso",
+      "Sgranare con forchetta",
+      "Temp. 200° — Preriscaldare forno a",
+      "Sciacquare e asciugare bene i ceci",
+      "In una ciotola: ceci + 1 cucchiaio olio + tutte le spezie",
+      "Su teglia con carta forno: ceci speziati + patate dolci + broccoli",
+      "20 min — Infornare uti, mescolare a metà",
+      "Ceci devono essere croccanti fuori Affettare cavolo riccio sottile, massaggiare con goccia olio e limone Julienne di carote Avocado a fette Mescolare tahini, limone, acqua, aglio, sale Aggiungere acqua fino a consistenza cremosa Base quinoa + cavolo riccio Disporre ceci, patate dolci, broccoli, carote, avocado a sezioni Drizzle salsa tahini Guarnire con semi e prezzemolo"
+    ],
+    "timerMinutes": 25,
+    "source": "web",
+    "sourceDomain": "github.com",
+    "preparationType": "bimby",
+    "bimby": true,
+    "tags": [
+      "Piano Alimentare",
+      "duemme/piano_alimentare",
+      "Pranzi",
+      "Bimby"
+    ],
+    "mealOccasion": [
+      "Pranzo"
+    ]
+  },
+  {
+    "id": "duemme-pranzi-burrito_bowl",
+    "name": "Burrito Bowl Proteica",
+    "category": "Pranzo",
+    "emoji": "🤖",
+    "time": "25 minuti",
+    "servings": "1",
+    "difficolta": "Facile",
+    "ingredients": [
+      "90g riso basmati o integrale",
+      "80g fagioli neri (in scatola, scolati) o fagioli borlotti",
+      "120g petto di pollo a strisce",
+      "50g mais dolce",
+      "50g peperoni misti",
+      "30g pomodori ciliegino",
+      "30g avocado",
+      "20g cipolla rossa",
+      "Lattuga iceberg o romana",
+      "30g salsa messicana (pico de gallo) o salsa pomodoro speziata",
+      "20g yogurt greco (per \"panna acida\")",
+      "Succo di 1/2 lime",
+      "1 cucchiaio olio EVO",
+      "1 cucchiaino cumino in polvere",
+      "1 cucchiaino paprika affumicata",
+      "1/2 cucchiaino peperoncino in polvere (chipotle se disponibile)",
+      "Sale, pepe",
+      "Coriandolo fresco"
+    ],
+    "steps": [
+      "Nel boccale: 90g riso + 180ml acqua + pizzico sale",
+      "Aggiungere fagioli scolati sopra il riso (si cuociono insieme!)",
+      "Temp. 100° · Vel. 1 · 13 min — Cuocere //",
+      "Trasferire in ciotola, tenere da parte",
+      "Pulire boccale velocemente",
+      "Inserire pollo a strisce + olio + cumino + paprika + sale",
+      "Temp. 100° · Vel. 1 · 8 min — Cuocere // senso antiorario con misurino",
+      "Controllare cottura (deve essere bianco)",
+      "Nel frattempo: tagliare verdure crude",
+      "Preparare condimento: yogurt + lime + coriandolo",
+      "Assemblare bowl: riso+fagioli base, pollo, verdure a sezioni",
+      "Condire con salsa, yogurt, avocado, coriandolo"
+    ],
+    "timerMinutes": 25,
+    "source": "web",
+    "sourceDomain": "github.com",
+    "preparationType": "bimby",
+    "bimby": true,
+    "tags": [
+      "Piano Alimentare",
+      "duemme/piano_alimentare",
+      "Pranzi",
+      "Bimby"
+    ],
+    "mealOccasion": [
+      "Pranzo"
+    ]
+  },
+  {
+    "id": "duemme-pranzi-insalata_farro_tonno",
+    "name": "Insalata di Farro con Tonno e Verdure",
+    "category": "Pranzo",
+    "emoji": "🤖",
+    "time": "20 minuti (+ raffreddamento farro)",
+    "servings": "1",
+    "difficolta": "Facile",
+    "ingredients": [
+      "100g farro perlato",
+      "160g tonno in scatola al naturale (2 scatolette medie, sgocciolato)",
+      "100g pomodorini ciliegino",
+      "80g cetrioli",
+      "50g mais dolce",
+      "40g olive nere denocciolate",
+      "30g cipolla rossa",
+      "50g rucola o spinaci freschi",
+      "Basilico fresco",
+      "15ml olio EVO",
+      "Succo di 1/2 limone",
+      "1 cucchiaino senape di Digione",
+      "1 spicchio aglio (opzionale)",
+      "Origano secco",
+      "Sale, pepe",
+      "30g feta sbriciolata (opzionale)",
+      "10g pinoli tostati"
+    ],
+    "steps": [
+      "Sciacquare farro sotto acqua corrente",
+      "Nel boccale: 100g farro + 250ml acqua + pizzico sale",
+      "Temp. 100° · Vel. 1 · 18 min — Cuocere //",
+      "Scolare se c'è acqua residua",
+      "Trasferire in ciotola ampia",
+      "10 min — Lasciare raffreddare uti (importante!)",
+      "Tagliare pomodorini a metà",
+      "Cetrioli a dadini",
+      "5 min — Cipolla rossa affettata sottile (ammollare  in acqua fredda per ridurre piccante)",
+      "Sgocciolare tonno bene",
+      "In barattolino: olio, limone, senape, sale, pepe, origano",
+      "Agitare bene",
+      "Farro raffreddato + tonno sbriciolato + tutte le verdure",
+      "Versare condimento, mescolare bene",
+      "Aggiungere rucola, basilico, feta, pinoli",
+      "Mescolare delicatamente",
+      "Servire a temperatura ambiente o fredda"
+    ],
+    "timerMinutes": 20,
+    "source": "web",
+    "sourceDomain": "github.com",
+    "preparationType": "bimby",
+    "bimby": true,
+    "tags": [
+      "Piano Alimentare",
+      "duemme/piano_alimentare",
+      "Pranzi",
+      "Bimby"
+    ],
+    "mealOccasion": [
+      "Pranzo"
+    ]
+  },
+  {
+    "id": "duemme-pranzi-pasta_pollo_pomodoro",
+    "name": "Pasta Integrale al Pomodoro con Pollo alla Paprika",
+    "category": "Pranzo",
+    "emoji": "🍴",
+    "time": "20 minuti",
+    "servings": "1",
+    "difficolta": "Facile",
+    "ingredients": [
+      "110g pasta integrale (penne, fusilli, rigatoni)",
+      "Sale per cottura",
+      "130g petto di pollo a strisce",
+      "1 cucchiaio olio EVO",
+      "1 cucchiaino paprika affumicata",
+      "1/2 cucchiaino aglio in polvere",
+      "Sale, pepe nero",
+      "200g passata di pomodoro o pelati",
+      "1 spicchio aglio",
+      "1 cucchiaio olio EVO",
+      "Basilico fresco",
+      "Origano secco",
+      "Sale, pepe",
+      "Peperoncino (opzionale)",
+      "15g Parmigiano Reggiano grattugiato",
+      "100g zucchine o melanzane grigliate"
+    ],
+    "steps": [
+      "Mettere pentola acqua per pasta a bollire con sale",
+      "Mentre acqua bolle - Prep pollo: Tagliare pollo a strisce Mescolare in ciotola con olio, paprika, aglio polvere, sale, pepe",
+      "Cuocere pollo: Scaldare padella antiaderente media-alta Cuocere pollo 6-7 minuti, girare spesso Deve essere dorato fuori e bianco dentro Tenere da parte coperto",
+      "Sugo al pomodoro (stessa padella): Aggiungere 1 cucchiaio olio, soffriggere aglio 1 minuto Aggiungere passata, origano, sale, pepe Cuocere 8-10 minuti a fuoco medio",
+      "Nel frattempo - Pasta: Cuocere pasta secondo istruzioni (10-12 min) Conservare 1/2 tazza acqua cottura",
+      "Verdure: Grigliare zucchine su griglia o padella (5 min)",
+      "Mantecare: Scolare pasta al dente Versare nel sugo Aggiungere pollo Mantecare 1 minuto, aggiungere acqua cottura se serve",
+      "Servire con Parmigiano, basilico fresco, verdure grigliate a lato"
+    ],
+    "timerMinutes": 20,
+    "source": "web",
+    "sourceDomain": "github.com",
+    "preparationType": "classic",
+    "bimby": false,
+    "tags": [
+      "Piano Alimentare",
+      "duemme/piano_alimentare",
+      "Pranzi",
+      "Classiche"
+    ],
+    "mealOccasion": [
+      "Pranzo"
+    ]
+  },
+  {
+    "id": "duemme-pranzi-poke_bowl_salmone",
+    "name": "Poké Bowl con Salmone",
+    "category": "Pranzo",
+    "emoji": "🤖",
+    "time": "20 minuti",
+    "servings": "1",
+    "difficolta": "Facile",
+    "ingredients": [
+      "120g riso basmati o sushi",
+      "150g salmone fresco (NON per sushi crudo - verrà cotto)",
+      "50g edamame sgusciati (surgelati va bene)",
+      "50g cetriolo",
+      "50g carote",
+      "30g avocado",
+      "20g cavolo rosso",
+      "10g alghe wakame reidratate (opzionale)",
+      "15ml salsa di soia",
+      "1 cucchiaino olio di sesamo",
+      "1 cucchiaino semi di sesamo",
+      "1 cucchiaino zenzero fresco grattugiato",
+      "Succo di 1/2 lime",
+      "1 cipollotto fresco"
+    ],
+    "steps": [
+      "Riso nel boccale: 120g riso + 250ml acqua + pizzico sale",
+      "Temp. 100° · Vel. 1 · 12 min — Cuocere //",
+      "Nel frattempo: Prep verdure (tagliare cetriolo, carote julienne, avocado)",
+      "Mentre riso cuoce: Mettere salmone nel cestello vapore sopra",
+      "7 min — Inserire cestello nel boccale con riso ultimi 5-uti di cottura",
+      "A fine cottura: riso perfetto + salmone cotto a vapore simultaneamente!",
+      "5 min — Far raffreddare riso uti",
+      "3 min — Edamame: Sbollentare  in acqua bollente (o microonde)",
+      "Condimento: Mescolare soia, olio sesamo, zenzero, lime",
+      "Assemblare bowl: Base riso, disporre salmone a cubetti e verdure a sezioni",
+      "Condire con salsa, semi di sesamo, cipollotto"
+    ],
+    "timerMinutes": 20,
+    "source": "web",
+    "sourceDomain": "github.com",
+    "preparationType": "bimby",
+    "bimby": true,
+    "tags": [
+      "Piano Alimentare",
+      "duemme/piano_alimentare",
+      "Pranzi",
+      "Bimby"
+    ],
+    "mealOccasion": [
+      "Pranzo"
+    ]
+  },
+  {
+    "id": "duemme-pranzi-pollo_curry_riso",
+    "name": "Pollo al Curry con Riso Basmati",
+    "category": "Pranzo",
+    "emoji": "🤖",
+    "time": "25 minuti",
+    "servings": "1",
+    "difficolta": "Facile",
+    "ingredients": [
+      "150g petto di pollo a cubetti",
+      "1/2 cipolla media (40g)",
+      "1 spicchio aglio",
+      "100g pomodori pelati",
+      "100ml latte di cocco light",
+      "2 cucchiaini curry in polvere",
+      "1/2 cucchiaino curcuma",
+      "1/2 cucchiaino paprika",
+      "1/2 cucchiaino zenzero in polvere",
+      "1 cucchiaio olio EVO",
+      "Sale, peperoncino",
+      "Coriandolo fresco",
+      "120g riso basmati",
+      "250ml acqua",
+      "Pizzico sale",
+      "100g spinaci freschi o fagiolini"
+    ],
+    "steps": [
+      "Vel. 5 · 3 sec — Inserire cipolla e aglio nel boccale",
+      "Temp. 100° · Vel. 1 · 3 min — Aggiungere olio: // (soffritto)",
+      "Temp. 100° · Vel. 1 · 5 min — Aggiungere pollo a cubetti: // senso antiorario con misurino",
+      "Vel. 3 · 10 sec — Aggiungere curry, curcuma, paprika, zenzero",
+      "Temp. 100° · Vel. 1 · 8 min — Aggiungere pomodori pelati, latte cocco, sale: // senso antiorario",
+      "Trasferire curry in una ciotola",
+      "Pulire velocemente boccale",
+      "Temp. 100° · Vel. 1 · 12 min — Inserire riso, acqua, sale: //",
+      "5 min — Nel frattempo: Verdure nel cestello vapore sopra il riso (ultimi uti)",
+      "Servire riso con curry di pollo sopra e verdure a lato",
+      "Guarnire con coriandolo fresco"
+    ],
+    "timerMinutes": 25,
+    "source": "web",
+    "sourceDomain": "github.com",
+    "preparationType": "bimby",
+    "bimby": true,
+    "tags": [
+      "Piano Alimentare",
+      "duemme/piano_alimentare",
+      "Pranzi",
+      "Bimby"
+    ],
+    "mealOccasion": [
+      "Pranzo"
+    ]
+  },
+  {
+    "id": "duemme-pranzi-risotto_funghi_porcini",
+    "name": "Risotto ai Funghi Porcini con Pollo",
+    "category": "Pranzo",
+    "emoji": "🤖",
+    "time": "25 minuti",
+    "servings": "1",
+    "difficolta": "Media",
+    "ingredients": [
+      "100g riso Carnaroli/Arborio",
+      "120g petto di pollo a cubetti",
+      "20g funghi porcini secchi",
+      "50g funghi champignon freschi",
+      "1/2 cipolla piccola (30g)",
+      "400ml brodo vegetale caldo",
+      "30ml vino bianco secco",
+      "15g Parmigiano Reggiano grattugiato",
+      "10g burro",
+      "1 cucchiaio olio EVO",
+      "Prezzemolo fresco",
+      "Sale, pepe"
+    ],
+    "steps": [
+      "10 min — Prep funghi: Ammollare porcini secchi in acqua calda uti, strizzare",
+      "Vel. 5 · 3 sec — Inserire cipolla nel boccale",
+      "Temp. 100° · Vel. 1 · 3 min — Aggiungere olio: // (soffritto)",
+      "Temp. 100° · Vel. 1 · 5 min — Aggiungere pollo a cubetti: // senso antiorario con misurino aperto",
+      "Temp. 100° · Vel. 1 · 2 min — Aggiungere funghi (porcini e champignon affettati): //",
+      "Temp. 100° · Vel. 1 · 1 min — Aggiungere riso: // (tostatura)",
+      "Temp. 100° · Vel. 1 · 2 min — Sfumare con vino: //",
+      "Aggiungere brodo caldo, sale, pepe",
+      "Temp. 100° · Vel. 1 · 13 min — Cuocere // in senso antiorario",
+      "A fine cottura, aggiungere burro e Parmigiano",
+      "Vel. 3 · 20 sec — Mantecare /",
+      "Servire con prezzemolo fresco e pepe"
+    ],
+    "timerMinutes": 25,
+    "source": "web",
+    "sourceDomain": "github.com",
+    "preparationType": "bimby",
+    "bimby": true,
+    "tags": [
+      "Piano Alimentare",
+      "duemme/piano_alimentare",
+      "Pranzi",
+      "Bimby"
+    ],
+    "mealOccasion": [
+      "Pranzo"
+    ]
+  },
+  {
+    "id": "duemme-spuntini-energy_balls",
+    "name": "Energy Balls Proteiche",
+    "category": "Spuntino",
+    "emoji": "🤖",
+    "time": "10 minuti (+ 30 min frigo)",
+    "servings": "10 palline",
+    "difficolta": "Facile",
+    "ingredients": [
+      "100g fiocchi d'avena",
+      "50g proteine in polvere (vaniglia o cioccolato)",
+      "60g burro di arachidi o mandorle",
+      "40ml miele",
+      "30g gocce di cioccolato fondente",
+      "20g semi di chia o lino",
+      "30ml latte (per legare se serve)",
+      "1 pizzico sale",
+      "Cannella, estratto vaniglia",
+      "Cocco rapè",
+      "Cacao amaro"
+    ],
+    "steps": [
+      "Nel boccale: fiocchi d'avena",
+      "Vel. 7 · 10 sec — Tritare / (non troppo fine, lasciare texture)",
+      "Aggiungere tutti gli altri ingredienti (proteine, burro arachidi, miele, semi, gocce cioccolato, sale)",
+      "Vel. 4 · 20 sec — Mescolare e impastare /",
+      "Vel. 3 · 10 sec — Se troppo secco, aggiungere 1 cucchiaio latte e mescolare /",
+      "Trasferire impasto in ciotola",
+      "Con mani leggermente umide, formare 10 palline (circa 30g l'una)",
+      "30 min — Riporre in frigo uti per compattare",
+      "Conservare in contenitore ermetico"
+    ],
+    "timerMinutes": 10,
+    "source": "web",
+    "sourceDomain": "github.com",
+    "preparationType": "bimby",
+    "bimby": true,
+    "tags": [
+      "Piano Alimentare",
+      "duemme/piano_alimentare",
+      "Spuntini",
+      "Bimby"
+    ],
+    "mealOccasion": [
+      "Spuntino"
+    ]
+  },
+  {
+    "id": "duemme-spuntini-frutta_fresca_secca",
+    "name": "Frutta Fresca con Frutta Secca",
+    "category": "Spuntino",
+    "emoji": "🍴",
+    "time": "2 minuti",
+    "servings": "1",
+    "difficolta": "Facilissimo",
+    "ingredients": [
+      "1 mela media (80g) OPPURE",
+      "1 banana piccola (90g) OPPURE",
+      "150g frutti di bosco misti OPPURE",
+      "1 arancia grande (150g) OPPURE",
+      "2 kiwi (100g) OPPURE",
+      "150g fragole",
+      "12 mandorle (20g) OPPURE",
+      "10 noci (20g) OPPURE",
+      "15 nocciole (20g) OPPURE",
+      "20g anacardi OPPURE",
+      "Mix: 10g mandorle + 10g noci",
+      "100g yogurt greco 0% grassi OPPURE",
+      "20g bresaola (5-6 fettine)"
+    ],
+    "steps": [
+      "Lavare frutta fresca",
+      "Tagliare se necessario (mela a spicchi, fragole a metà)",
+      "Porzionare frutta secca",
+      "Servire insieme con yogurt greco a lato"
+    ],
+    "timerMinutes": 2,
+    "source": "web",
+    "sourceDomain": "github.com",
+    "preparationType": "classic",
+    "bimby": false,
+    "tags": [
+      "Piano Alimentare",
+      "duemme/piano_alimentare",
+      "Spuntini",
+      "Classiche"
+    ],
+    "mealOccasion": [
+      "Spuntino"
+    ]
+  },
+  {
+    "id": "duemme-spuntini-pane_burro_arachidi",
+    "name": "Pane Integrale con Burro di Arachidi e Banana",
+    "category": "Spuntino",
+    "emoji": "🤖",
+    "time": "3 minuti",
+    "servings": "1",
+    "difficolta": "Facilissimo",
+    "ingredients": [
+      "60g pane integrale (2 fette medie)",
+      "20g burro di arachidi naturale (solo arachidi, no zuccheri aggiunti)",
+      "1/2 banana media (50g) a rondelle",
+      "Cannella in polvere",
+      "Opzionali: Gocce cioccolato fondente (5g), miele (5g), semi di chia"
+    ],
+    "steps": [
+      "Tostare leggermente il pane (opzionale, più croccante)",
+      "Spalmare burro di arachidi uniformemente su entrambe le fette",
+      "Disporre rondelle di banana sopra",
+      "Spolverare cannella",
+      "Aggiungere topping opzionali se desiderato",
+      "Chiudere a sandwich o lasciare aperto"
+    ],
+    "timerMinutes": 3,
+    "source": "web",
+    "sourceDomain": "github.com",
+    "preparationType": "bimby",
+    "bimby": true,
+    "tags": [
+      "Piano Alimentare",
+      "duemme/piano_alimentare",
+      "Spuntini",
+      "Bimby"
+    ],
+    "mealOccasion": [
+      "Spuntino"
+    ]
+  },
+  {
+    "id": "duemme-spuntini-smoothie_proteico",
+    "name": "Smoothie Proteico",
+    "category": "Spuntino",
+    "emoji": "🤖",
+    "time": "5 minuti",
+    "servings": "1",
+    "difficolta": "Facilissimo",
+    "ingredients": [
+      "150g frutti di bosco misti (surgelati ok)",
+      "1 banana piccola (80g)",
+      "150ml latte parzialmente scremato",
+      "100g yogurt greco 0% grassi",
+      "1 misurino (25g) proteine in polvere vaniglia",
+      "10g mandorle",
+      "5g semi di chia",
+      "Ghiaccio (opzionale)",
+      "1 banana media (100g)",
+      "50g spinaci freschi (non si sente!)",
+      "1/2 mela verde (60g)",
+      "200ml latte parzialmente scremato",
+      "1 misurino (25g) proteine in polvere vaniglia",
+      "10g burro di mandorle",
+      "5g semi di lino",
+      "Ghiaccio",
+      "1 banana media (100g)",
+      "200ml latte parzialmente scremato",
+      "1 misurino (25g) proteine in polvere cioccolato",
+      "15g burro di arachidi",
+      "10g cacao amaro in polvere",
+      "1 cucchiaino miele",
+      "Ghiaccio"
+    ],
+    "steps": [
+      "Inserire nel boccale tutti gli ingredienti",
+      "Se frutta surgelata: iniziare con liquidi in fondo",
+      "Vel. 9 · 40 sec — Frullare /",
+      "Vel. 9 · 10 sec — Se troppo denso: aggiungere 50ml latte/acqua e frullare /",
+      "Vel. 10 · 20 sec — Se grumi rimasti: frullare altri /",
+      "Versare in bicchiere grande",
+      "Bere immediatamente"
+    ],
+    "timerMinutes": 5,
+    "source": "web",
+    "sourceDomain": "github.com",
+    "preparationType": "bimby",
+    "bimby": true,
+    "tags": [
+      "Piano Alimentare",
+      "duemme/piano_alimentare",
+      "Spuntini",
+      "Bimby"
+    ],
+    "mealOccasion": [
+      "Spuntino"
+    ]
+  }
+]
