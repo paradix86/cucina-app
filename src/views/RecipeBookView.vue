@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref, watch } from 'vue';
+import { computed, inject, ref, watch } from 'vue';
 import { storeToRefs } from 'pinia';
 import { useRouter } from 'vue-router';
 import { useDebounce } from '@vueuse/core';
@@ -15,6 +15,7 @@ const props = defineProps({
 const router = useRouter();
 const store = useRecipeBookStore();
 const { recipes } = storeToRefs(store);
+const requestConfirm = inject('requestConfirm', null);
 
 const search = ref('');
 const debouncedSearch = useDebounce(search, 180);
@@ -25,15 +26,25 @@ const mealFilter = ref('all');
 const mobileFiltersOpen = ref(false);
 
 const sourceOptions = [
-  ['all', () => t('filter_all')],
-  ['youtube', () => t('source_youtube')],
-  ['tiktok', () => t('source_tiktok')],
-  ['instagram', () => t('source_instagram')],
-  ['classica', () => t('source_classic')],
-  ['bimby', () => t('source_bimby')],
-  ['web', () => t('source_web')],
-  ['manual', () => t('source_manual')],
+  { value: 'all', label: () => t('filter_all') },
+  { value: 'youtube', label: () => t('source_youtube') },
+  { value: 'tiktok', label: () => t('source_tiktok') },
+  { value: 'instagram', label: () => t('source_instagram') },
+  { value: 'classica', label: () => t('source_classic') },
+  { value: 'bimby', label: () => t('source_bimby') },
+  { value: 'web', label: () => t('source_web') },
+  { value: 'manual', label: () => t('source_manual') },
 ];
+
+const sourceCounts = computed(() => recipes.value.reduce((acc, recipe) => {
+  const key = recipe.source || 'web';
+  acc[key] = (acc[key] || 0) + 1;
+  return acc;
+}, {}));
+
+const visibleSourceOptions = computed(() => sourceOptions.filter(option => (
+  option.value === 'all' || (sourceCounts.value[option.value] || 0) > 0
+)));
 
 const siteCounts = computed(() => recipes.value.reduce((acc, recipe) => {
   if (recipe.sourceDomain) acc[recipe.sourceDomain] = (acc[recipe.sourceDomain] || 0) + 1;
@@ -89,13 +100,26 @@ watch([selectedRecipeId, selectedRecipe], ([id, selected]) => {
   }
 }, { immediate: true });
 
+watch(visibleSourceOptions, (options) => {
+  if (!options.some(option => option.value === sourceFilter.value)) {
+    sourceFilter.value = 'all';
+  }
+});
+
 function openDetail(recipe) {
   router.push({ name: 'recipe-book-detail', params: { id: recipe.id } }).catch(() => {});
   store.viewed(recipe.id);
 }
 
-function confirmDelete(id) {
-  if (!window.confirm(t('delete_confirm'))) return;
+async function confirmDelete(id) {
+  const confirmed = requestConfirm
+    ? await requestConfirm({
+        message: t('delete_confirm'),
+        confirmLabel: t('confirm_confirm'),
+        cancelLabel: t('confirm_cancel'),
+      })
+    : false;
+  if (!confirmed) return;
   store.remove(id);
   if (selectedRecipeId.value === id) {
     router.replace('/recipe-book').catch(() => {});
@@ -179,7 +203,15 @@ defineExpose({
         <div class="saved-filter-content">
           <div class="saved-filter-group">
             <div class="filter-row">
-              <button v-for="[value, label] in sourceOptions" :key="value" class="src-pill" :class="{ active: sourceFilter === value }" @click="sourceFilter = value">{{ label() }}</button>
+              <button
+                v-for="option in visibleSourceOptions"
+                :key="option.value"
+                class="src-pill"
+                :class="{ active: sourceFilter === option.value }"
+                @click="sourceFilter = option.value"
+              >
+                {{ option.label() }}
+              </button>
             </div>
           </div>
           <div class="saved-filter-group">
@@ -226,8 +258,12 @@ defineExpose({
         <div v-for="recipe in filteredRecipes" :key="recipe.id" class="ricetta-card" @click="openDetail(recipe)">
           <span class="card-src" :class="getPreparationInfo(recipe).cls">{{ getPreparationInfo(recipe).txt }}</span>
           <div class="card-actions">
-            <button class="card-fav card-action-btn" @click.stop="toggleFavorite(recipe.id)" :title="recipe.favorite ? t('favorite_remove') : t('favorite_add')">{{ recipe.favorite ? '★' : '☆' }}</button>
-            <button class="card-del card-action-btn btn-danger" @click.stop="confirmDelete(recipe.id)" title="✕">✕</button>
+            <button class="card-fav card-action-btn" @click.stop="toggleFavorite(recipe.id)" :title="recipe.favorite ? t('favorite_remove') : t('favorite_add')">
+              <span class="card-action-glyph" aria-hidden="true">{{ recipe.favorite ? '★' : '☆' }}</span>
+            </button>
+            <button class="card-del card-action-btn btn-danger" @click.stop="confirmDelete(recipe.id)" title="✕">
+              <span class="card-action-glyph" aria-hidden="true">✕</span>
+            </button>
           </div>
           <div class="card-name" v-html="highlight(recipe.name || '', debouncedSearch.trim())"></div>
           <div class="card-body">

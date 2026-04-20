@@ -5,6 +5,7 @@ import { extractStepSeconds, formatClock, getPreparationInfo } from '../lib/reci
 import { detectBimbyAction } from '../lib/bimbyIcons.js';
 import { t } from '../lib/i18n.js';
 import { useToasts } from '../composables/useToasts.js';
+import { useTimerAlerts } from '../composables/useTimerAlerts.js';
 import BimbyActionIcon from './BimbyActionIcon.vue';
 
 const props = defineProps({
@@ -19,6 +20,7 @@ const timerRemaining = ref(0);
 const timerRunning = ref(false);
 let timerInterval = null;
 const { showToast } = useToasts();
+const { triggerTimerAlert } = useTimerAlerts();
 const { request: requestWakeLock, release: releaseWakeLock } = useWakeLock();
 
 const prepInfo = computed(() => getPreparationInfo(props.recipe));
@@ -76,7 +78,9 @@ function ensureTimer() {
       timerRunning.value = false;
       window.clearInterval(timerInterval);
       timerInterval = null;
-      showToast(t('toast_cooking_timer_done'), 'success');
+      const message = t('toast_cooking_timer_done');
+      showToast(message, 'success');
+      triggerTimerAlert(message);
     }
   }, 1000);
 }

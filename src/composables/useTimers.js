@@ -2,11 +2,12 @@ import { computed, ref } from 'vue';
 import { t } from '../lib/i18n.js';
 import { formatClock } from '../lib/recipes.js';
 import { useToasts } from './useToasts.js';
+import { useTimerAlerts } from './useTimerAlerts.js';
 
 const timers = ref({});
 let timerInterval = null;
 
-function ensureTimerInterval(showToast) {
+function ensureTimerInterval(showToast, triggerTimerAlert) {
   if (timerInterval) return;
   timerInterval = window.setInterval(() => {
     let changed = false;
@@ -19,7 +20,9 @@ function ensureTimerInterval(showToast) {
       if (timer.remaining === 0 && timer.running) {
         timer.running = false;
         changed = true;
-        showToast(t('toast_timer_done', { name: timer.name }), 'success');
+        const message = t('toast_timer_done', { name: timer.name });
+        showToast(message, 'success');
+        triggerTimerAlert(message);
       }
     });
     if (changed) {
@@ -30,6 +33,7 @@ function ensureTimerInterval(showToast) {
 
 export function useTimers() {
   const { showToast } = useToasts();
+  const { triggerTimerAlert } = useTimerAlerts();
 
   function addTimer(name, min, sec) {
     const timerName = (name || '').trim() || 'Pietanza';
@@ -43,7 +47,7 @@ export function useTimers() {
       ...timers.value,
       [id]: { name: timerName, total, remaining: total, running: true },
     };
-    ensureTimerInterval(showToast);
+    ensureTimerInterval(showToast, triggerTimerAlert);
     return true;
   }
 
@@ -55,7 +59,7 @@ export function useTimers() {
       ...timers.value,
       [`t${Date.now()}`]: { name, total, remaining: total, running: true },
     };
-    ensureTimerInterval(showToast);
+    ensureTimerInterval(showToast, triggerTimerAlert);
     return true;
   }
 

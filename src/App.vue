@@ -1,14 +1,17 @@
 <script setup>
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted, provide, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import AppHeader from './components/AppHeader.vue';
 import AppFooter from './components/AppFooter.vue';
 import ToastStack from './components/ToastStack.vue';
 import CookingModeView from './components/CookingModeView.vue';
+import ConfirmDialog from './components/ConfirmDialog.vue';
+import TimerAlertModal from './components/TimerAlertModal.vue';
 import { t, initLanguage } from './lib/i18n.js';
 import { migrateFromV2 } from './lib/storage';
 import { useToasts } from './composables/useToasts.js';
 import { useTimers } from './composables/useTimers.js';
+import { useTimerAlerts } from './composables/useTimerAlerts.js';
 import { initServiceWorkerUpdates } from './composables/useServiceWorker.js';
 import { useRecipeBookStore } from './stores/recipeBook';
 import { useShoppingListStore } from './stores/shoppingList';
@@ -16,11 +19,20 @@ import { useShoppingListStore } from './stores/shoppingList';
 const router = useRouter();
 const cookingRecipe = ref(null);
 const currentView = ref(null);
+const confirmState = ref({
+  open: false,
+  title: '',
+  message: '',
+  confirmLabel: '',
+  cancelLabel: '',
+});
+let confirmResolver = null;
 
 const { showToast } = useToasts();
 const recipeBook = useRecipeBookStore();
 const shoppingList = useShoppingListStore();
 const timers = useTimers();
+const { timerAlert, dismissTimerAlert } = useTimerAlerts();
 
 const tabs = computed(() => [
   { path: '/recipe-book', label: t('nav_recipebook') },
@@ -30,6 +42,39 @@ const tabs = computed(() => [
   { path: '/timer',       label: t('nav_timer') },
   { path: '/guides',      label: t('nav_guides') },
 ]);
+
+function requestConfirm(options = {}) {
+  const {
+    title = t('confirm_title'),
+    message = '',
+    confirmLabel = t('confirm_confirm'),
+    cancelLabel = t('confirm_cancel'),
+  } = options;
+  return new Promise(resolve => {
+    confirmResolver = resolve;
+    confirmState.value = {
+      open: true,
+      title,
+      message,
+      confirmLabel,
+      cancelLabel,
+    };
+  });
+}
+
+function resolveConfirm(value) {
+  if (confirmResolver) confirmResolver(value);
+  confirmResolver = null;
+  confirmState.value = {
+    open: false,
+    title: '',
+    message: '',
+    confirmLabel: '',
+    cancelLabel: '',
+  };
+}
+
+provide('requestConfirm', requestConfirm);
 
 function goHome() {
   cookingRecipe.value = null;
@@ -116,4 +161,20 @@ onMounted(() => {
 
   <AppFooter />
   <ToastStack />
+  <ConfirmDialog
+    :open="confirmState.open"
+    :title="confirmState.title"
+    :message="confirmState.message"
+    :confirm-label="confirmState.confirmLabel"
+    :cancel-label="confirmState.cancelLabel"
+    @confirm="resolveConfirm(true)"
+    @cancel="resolveConfirm(false)"
+  />
+  <TimerAlertModal
+    :open="timerAlert.open"
+    :title="timerAlert.title"
+    :message="timerAlert.message"
+    :dismiss-label="t('timer_alarm_dismiss')"
+    @dismiss="dismissTimerAlert"
+  />
 </template>

@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref } from 'vue';
+import { computed, inject, ref } from 'vue';
 import { storeToRefs } from 'pinia';
 import { useRouter } from 'vue-router';
 import { parseIngredient, formatQuantity } from '../lib/storage';
@@ -13,14 +13,22 @@ const store = useShoppingListStore();
 const { items, groupedSections } = storeToRefs(store);
 const { toggleItem, removeItem, toggleGroup, removeMany, clearAll } = store;
 const expandedGroups = ref({});
+const requestConfirm = inject('requestConfirm', null);
 
 const countLabel = computed(() => items.value.length === 1 ? t('shopping_count', { n: items.value.length }) : t('shopping_count_plural', { n: items.value.length }));
 const completedCount = computed(() => items.value.filter(item => item.checked).length);
 const remainingCount = computed(() => Math.max(0, items.value.length - completedCount.value));
 
-function clearList() {
+async function clearList() {
   if (!items.value.length) return;
-  if (!window.confirm(t('shopping_clear_confirm'))) return;
+  const confirmed = requestConfirm
+    ? await requestConfirm({
+        message: t('shopping_clear_confirm'),
+        confirmLabel: t('confirm_confirm'),
+        cancelLabel: t('confirm_cancel'),
+      })
+    : false;
+  if (!confirmed) return;
   clearAll();
   emit('toast', t('shopping_cleared_toast'), 'info');
 }

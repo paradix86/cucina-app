@@ -215,6 +215,8 @@ export const TRANSLATIONS = {
     timer_invalid: 'Inserisci un tempo valido!',
     toast_timer_done: '{name} pronto!',
     toast_cooking_timer_done: 'Timer del passo completato!',
+    timer_alarm_title: 'Timer completato',
+    timer_alarm_dismiss: 'OK',
 
     // Source badges
     source_youtube: 'YouTube',
@@ -260,6 +262,9 @@ export const TRANSLATIONS = {
 
     // Misc
     delete_confirm: 'Eliminare questa ricetta dal ricettario?',
+    confirm_title: 'Conferma azione',
+    confirm_confirm: 'Conferma',
+    confirm_cancel: 'Annulla',
     app_subtitle: 'Ricette · Bimby · Timer',
     app_refresh: 'Aggiorna app',
     credits_link: 'Credits / Attribuzioni',
@@ -483,6 +488,8 @@ export const TRANSLATIONS = {
     timer_invalid: 'Please enter a valid time!',
     toast_timer_done: '{name} is ready!',
     toast_cooking_timer_done: 'Step timer complete!',
+    timer_alarm_title: 'Timer complete',
+    timer_alarm_dismiss: 'OK',
 
     source_youtube: 'YouTube',
     source_tiktok: 'TikTok',
@@ -525,6 +532,9 @@ export const TRANSLATIONS = {
     favorite_remove: 'Remove from favorites',
 
     delete_confirm: 'Remove this recipe from your book?',
+    confirm_title: 'Confirm action',
+    confirm_confirm: 'Confirm',
+    confirm_cancel: 'Cancel',
     app_subtitle: 'Recipes · Bimby · Timer',
     app_refresh: 'Refresh app',
     credits_link: 'Credits / Attributions',
@@ -747,6 +757,8 @@ export const TRANSLATIONS = {
     timer_invalid: 'Bitte gültige Zeit eingeben!',
     toast_timer_done: '{name} ist fertig!',
     toast_cooking_timer_done: 'Schritt-Timer beendet!',
+    timer_alarm_title: 'Timer beendet',
+    timer_alarm_dismiss: 'OK',
 
     source_youtube: 'YouTube',
     source_tiktok: 'TikTok',
@@ -789,6 +801,9 @@ export const TRANSLATIONS = {
     favorite_remove: 'Aus Favoriten entfernen',
 
     delete_confirm: 'Dieses Rezept aus dem Buch entfernen?',
+    confirm_title: 'Aktion bestätigen',
+    confirm_confirm: 'Bestätigen',
+    confirm_cancel: 'Abbrechen',
     app_subtitle: 'Rezepte · Bimby · Timer',
     app_refresh: 'App aktualisieren',
     credits_link: 'Credits / Quellen',
@@ -1011,6 +1026,8 @@ export const TRANSLATIONS = {
     timer_invalid: 'Veuillez entrer une durée valide!',
     toast_timer_done: '{name} est prêt !',
     toast_cooking_timer_done: 'Minuteur de l’étape terminé !',
+    timer_alarm_title: 'Minuteur terminé',
+    timer_alarm_dismiss: 'OK',
 
     source_youtube: 'YouTube',
     source_tiktok: 'TikTok',
@@ -1053,6 +1070,9 @@ export const TRANSLATIONS = {
     favorite_remove: 'Retirer des favoris',
 
     delete_confirm: 'Supprimer cette recette du livre?',
+    confirm_title: 'Confirmer l’action',
+    confirm_confirm: 'Confirmer',
+    confirm_cancel: 'Annuler',
     app_subtitle: 'Recettes · Bimby · Minuteur',
     app_refresh: 'Actualiser l’app',
     credits_link: 'Crédits / Attributions',
@@ -1275,6 +1295,8 @@ export const TRANSLATIONS = {
     timer_invalid: '¡Ingresa un tiempo válido!',
     toast_timer_done: '¡{name} está listo!',
     toast_cooking_timer_done: '¡Temporizador del paso completado!',
+    timer_alarm_title: 'Temporizador completado',
+    timer_alarm_dismiss: 'OK',
 
     source_youtube: 'YouTube',
     source_tiktok: 'TikTok',
@@ -1317,6 +1339,9 @@ export const TRANSLATIONS = {
     favorite_remove: 'Quitar de favoritos',
 
     delete_confirm: '¿Eliminar esta receta del recetario?',
+    confirm_title: 'Confirmar acción',
+    confirm_confirm: 'Confirmar',
+    confirm_cancel: 'Cancelar',
     app_subtitle: 'Recetas · Bimby · Temporizador',
     app_refresh: 'Actualizar app',
     credits_link: 'Créditos / Atribuciones',
