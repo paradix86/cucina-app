@@ -1,6 +1,7 @@
 import type { ImportSource } from '../../types';
 
-const ANTHROPIC_API_KEY = '';
+const ANTHROPIC_API_KEY = String(import.meta.env.VITE_ANTHROPIC_API_KEY || '').trim();
+const SOCIAL_IMPORT_ENABLED = ANTHROPIC_API_KEY.length > 0;
 
 function normalizeSourceDomain(url: string): string {
   try {
@@ -30,3 +31,4 @@ function detectSource(url: string): ImportSource {
 }
 
 export { ANTHROPIC_API_KEY, normalizeSourceDomain, detectSource };
+export { SOCIAL_IMPORT_ENABLED };

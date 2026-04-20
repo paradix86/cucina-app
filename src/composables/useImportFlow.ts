@@ -4,6 +4,7 @@ import {
   ANTHROPIC_API_KEY,
   detectSource,
   normalizeSourceDomain,
+  SOCIAL_IMPORT_ENABLED,
 } from '../lib/import/core';
 import {
   extractPageHeadingsHint,
@@ -99,6 +100,12 @@ export function useImportFlow() {
     }
 
     const source = detectSource(nextUrl);
+    if (source !== 'web' && !SOCIAL_IMPORT_ENABLED) {
+      setStatus(t('import_error_social_unavailable', { source: sourceMap[source] }), 'err');
+      clearDiagnostics();
+      return false;
+    }
+
     const domain = normalizeSourceDomain(nextUrl);
     // getImportAdapterForUrl checks domain match first, then canHandle fallback
     const adapterObj = getImportAdapterForUrl(nextUrl);
@@ -256,5 +263,6 @@ Rispondi SOLO con un oggetto JSON valido, senza backtick, senza testo aggiuntivo
     savePreviewedRecipe,
     discardPreview: clearPreview,
     clearDiagnostics,
+    socialImportAvailable: SOCIAL_IMPORT_ENABLED,
   };
 }

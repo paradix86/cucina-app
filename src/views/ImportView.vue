@@ -9,7 +9,7 @@ import { DUEMME_VETTED_RECIPE_PACK } from '../lib/duemmeVettedPack.js';
 
 const emit = defineEmits(['toast', 'go-home']);
 const route = useRoute();
-const { url, loading, status, diagnostic, previewRecipe, importRecipeFromUrl, updatePreparationType, togglePreviewMealOccasion, savePreviewedRecipe, discardPreview, removeTag, addTag } = useImportFlow();
+const { url, loading, status, diagnostic, previewRecipe, importRecipeFromUrl, updatePreparationType, togglePreviewMealOccasion, savePreviewedRecipe, discardPreview, removeTag, addTag, socialImportAvailable } = useImportFlow();
 const recipeBookStore = useRecipeBookStore();
 
 const prepOptions = ['classic', 'bimby', 'airfryer'];
@@ -330,6 +330,7 @@ function savePreview() {
         <h2>{{ t('import_section_link_title') }}</h2>
         <p class="muted-label import-section-subtitle">{{ t('import_section_link_desc') }}</p>
         <p class="muted-label import-help-line">{{ t('import_section_link_helper') }}</p>
+        <p v-if="!socialImportAvailable" class="muted-label import-help-line">{{ t('import_social_unavailable_hint') }}</p>
         <div class="source-pills source-pills-static">
           <span class="src-pill web">ricetteperbimby.it</span>
           <span class="src-pill web">giallozafferano.it</span>
