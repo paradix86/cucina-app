@@ -27,18 +27,16 @@ const languageOptions = [
       <h1>Cucina App</h1>
     </button>
     <div class="header-right">
-      <span class="app-sub">{{ t('app_subtitle') }}</span>
-      <label class="header-select-wrap" for="theme-select">
-        <span class="sr-only">{{ t('theme_label') }}</span>
+      <div class="header-controls">
         <select id="theme-select" :value="theme" :aria-label="t('theme_label')" @change="setThemePreference($event.target.value)">
           <option value="system">{{ t('theme_system') }}</option>
           <option value="light">{{ t('theme_light') }}</option>
           <option value="dark">{{ t('theme_dark') }}</option>
         </select>
-      </label>
-      <select id="lang-select" :value="currentLang" aria-label="Language" @change="setLanguage($event.target.value)">
-        <option v-for="option in languageOptions" :key="option.value" :value="option.value">{{ option.label }}</option>
-      </select>
+        <select id="lang-select" :value="currentLang" aria-label="Language" @change="setLanguage($event.target.value)">
+          <option v-for="option in languageOptions" :key="option.value" :value="option.value">{{ option.label }}</option>
+        </select>
+      </div>
     </div>
   </header>
 </template>

@@ -189,7 +189,13 @@ function cleanGialloZafferanoTitle(title: string): string {
 }
 
 function parseGialloZafferanoIngredients(block: string): string[] {
-  const cleanedBlock = normalizeImportText((block || '').replace(/!\[[^\]]*]\([^)]*\)/g, ' '));
+  const cleanedBlock = normalizeImportText(
+    (block || '')
+      .replace(/!\[[^\]]*]\([^)]*\)/g, ' ')
+      // Drop long nutrition disclaimer text that may appear before real ingredient links.
+      .replace(/\*\*Attenzione\.[\s\S]*?(?=(?:Per i [^\[]+)?\[[^\]]+\]\([^)]*\))/i, ' ')
+      .replace(/Dati forniti da[\s\S]*?(?=(?:Per i [^\[]+)?\[[^\]]+\]\([^)]*\))/i, ' '),
+  );
   const firstIngredientIdx = cleanedBlock.search(/\[[^\]]+\]\([^)]*\)/);
   if (firstIngredientIdx === -1) return [];
 
@@ -201,25 +207,41 @@ function parseGialloZafferanoIngredients(block: string): string[] {
       if (!match) return null;
       const name = match[ 1 ].trim();
       const rest = normalizeImportText(match[ 2 ]).replace(/\s*!+\s*/g, ' ').replace(/\s{2,}/g, ' ').trim();
-      return rest ? `${name} ${rest}`.trim() : name;
+      if (/^(?:edamam|light|senza lattosio)$/i.test(name)) return null;
+      const candidate = rest ? `${name} ${rest}`.trim() : name;
+      // Reject very long prose-like chunks; ingredients are compact and quantity-oriented.
+      if (candidate.length > 220 && /[.!?]/.test(candidate)) return null;
+      return candidate;
     })
     .filter((v): v is string => Boolean(v));
 }
 
 function parseGialloZafferanoAdapter(markdown: string, url: string): ImportPreviewRecipe {
   const md = normalizeImportText(markdown);
-  const titleMatch = md.match(/^#\s+(.+)$/m);
+  const titleMatch = md.match(/^#\s+(.+)$/m) || md.match(/^Title:\s*(.+)$/m);
   const difficultyMatch = md.match(/\*\s+Difficoltà:\s+\*\*(.*?)\*\*/i);
   const prepMatch = md.match(/\*\s+Preparazione:\s+\*\*(.*?)\*\*/i);
   const cookMatch = md.match(/\*\s+Cottura:\s+\*\*(.*?)\*\*/i);
   const servingsMatch = md.match(/\*\s+Dosi per:\s+\*\*(.*?)\*\*/i);
   const stepsStart = md.indexOf('## Come preparare');
-  const stepsEnd = md.indexOf('## Conservazione', stepsStart);
+  const stepsEndRaw = md.indexOf('## Conservazione', stepsStart);
+  const stepsEnd = stepsEndRaw === -1 ? md.length : stepsEndRaw;
   if (stepsStart === -1) throw new Error('GZ_STEPS_NOT_FOUND');
 
-  const ingredientsStart = md.lastIndexOf('In caso di dubbi', stepsStart);
-  const ingredientsEnd = md.indexOf('[AGGIUNGI ALLA LISTA DELLA SPESA]', ingredientsStart);
-  if (ingredientsStart === -1 || ingredientsEnd === -1) throw new Error('GZ_INGREDIENTS_NOT_FOUND');
+  const ingredientsHeadingMatch = md.match(/^(?:##\s*)?INGREDIENTI\s*$/im);
+  if (!ingredientsHeadingMatch || ingredientsHeadingMatch.index == null) throw new Error('GZ_INGREDIENTS_NOT_FOUND');
+  const ingredientsStart = ingredientsHeadingMatch.index + ingredientsHeadingMatch[ 0 ].length;
+  if (ingredientsStart >= stepsStart) throw new Error('GZ_INGREDIENTS_NOT_FOUND');
+
+  let ingredientsEnd = md.indexOf('[AGGIUNGI ALLA LISTA DELLA SPESA]', ingredientsStart);
+  // Some GZ pages omit the shopping-list CTA button and/or nutrition disclaimer text.
+  // In those cases, use a standalone "Preparazione" marker when present, else fall back to
+  // the "## Come preparare ..." heading as section boundary.
+  if (ingredientsEnd === -1) {
+    const prepInBlock = md.slice(ingredientsStart, stepsStart).search(/\n\s*Preparazione\s*(?:\n|$)/);
+    ingredientsEnd = prepInBlock !== -1 ? ingredientsStart + prepInBlock : stepsStart;
+  }
+  if (ingredientsEnd <= ingredientsStart) throw new Error('GZ_INGREDIENTS_NOT_FOUND');
 
   const ingredients = parseGialloZafferanoIngredients(md.slice(ingredientsStart, ingredientsEnd));
   const steps = md

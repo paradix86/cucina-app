@@ -186,6 +186,10 @@ function onShoppingAction() {
     baseServings,
   });
 }
+
+function printRecipe() {
+  window.print();
+}
 </script>
 
 <template>
@@ -195,6 +199,7 @@ function onShoppingAction() {
       <div class="detail-head">
         <h2 class="detail-title">{{ recipe.emoji || '🍴' }} {{ recipe.name }}</h2>
         <p class="detail-meta">{{ joinMetaParts([recipe.category, recipe.time, recipe.difficolta]) }}</p>
+        <p class="detail-print-servings print-only">{{ t('detail_servings') }}: {{ servings }}</p>
       </div>
 
       <div class="detail-meta-grid detail-meta-panel">
@@ -275,6 +280,9 @@ function onShoppingAction() {
           <span class="button-icon">✎</span>
           {{ t('recipe_edit') }}
         </button>
+      </div>
+      <div class="detail-print-row">
+        <button class="btn-ghost btn-print" @click="printRecipe" type="button">🖨 {{ t('recipe_print') }}</button>
       </div>
     </div>
     <div v-else-if="savedMode" class="notes-box card recipe-edit-box">

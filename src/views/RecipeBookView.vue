@@ -160,7 +160,7 @@ defineExpose({
           <input hidden type="file" accept="application/json,.json" @change="onImportBackup" />
         </label>
       </div>
-      <div v-if="recipes.length" id="saved-source-filter">
+      <div v-if="recipes.length" id="saved-source-filter" class="saved-filter-panel">
         <div class="saved-filter-group">
           <div class="filter-row">
             <button v-for="[value, label] in sourceOptions" :key="value" class="src-pill" :class="{ active: sourceFilter === value }" @click="sourceFilter = value">{{ label() }}</button>
@@ -173,15 +173,15 @@ defineExpose({
             <button class="type-pill" :class="{ active: filterType === 'recent' }" @click="filterType = 'recent'">{{ t('filter_recent') }}</button>
           </div>
         </div>
-        <div class="saved-filter-group">
-          <span class="filter-group-label">{{ t('filter_meal_occasion') }}:</span>
+        <div class="saved-filter-group filter-group--labeled">
+          <span class="filter-group-label">{{ t('filter_meal_occasion') }}</span>
           <div class="filter-row">
             <button class="type-pill" :class="{ active: mealFilter === 'all' }" @click="mealFilter = 'all'">{{ t('filter_all') }}</button>
             <button v-for="occ in MEAL_OCCASION_OPTIONS" :key="occ" class="type-pill" :class="{ active: mealFilter === occ }" @click="mealFilter = occ">{{ getMealOccasionLabel(occ) }}</button>
           </div>
         </div>
-        <div v-if="sortedDomains.length" class="saved-filter-group">
-          <span class="filter-group-label">{{ t('filter_site') }}:</span>
+        <div v-if="sortedDomains.length" class="saved-filter-group filter-group--labeled">
+          <span class="filter-group-label">{{ t('filter_site') }}</span>
           <div class="filter-row">
             <button class="site-pill" :class="{ active: siteFilter === 'all' }" @click="siteFilter = 'all'">{{ t('filter_all_sites') }} <span class="pill-count">({{ recipes.length }})</span></button>
             <button v-for="domain in sortedDomains" :key="domain" class="site-pill" :class="{ active: siteFilter === domain }" @click="siteFilter = domain">{{ getSourceDomainLabel(domain) }} <span class="pill-count">({{ siteCounts[domain] }})</span></button>

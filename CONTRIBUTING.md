@@ -150,6 +150,24 @@ The import pipeline in `src/lib/import/` follows this flow:
 
 Adding a new adapter: add an entry to the adapter registry in `src/lib/import/adapters.ts` with a domain matcher and a parse function. Do not break existing adapters.
 
+### Parser regression fixture policy
+
+When a **real recipe import bug** requires parser logic changes, the fix should include:
+
+1. the parser change
+2. a **minimal fixture** that reproduces the failing structure
+3. a test that prevents regression
+
+Exceptions: a fixture is not required when failure is clearly caused only by:
+- wrong or stale URL
+- external site outage (404/500/down)
+- proxy/infrastructure outage unrelated to parser logic
+
+Fixture convention (keep it lightweight):
+- use compact inline fixtures for small logic cases
+- use dedicated fixture files only when they improve clarity/reuse
+- do not commit giant raw pages unless strictly necessary; keep only the minimal failing snippet
+
 ## CSS
 
 All styles are in `css/style.css`, organized with commented sections. Reuse existing CSS custom properties and utility classes. Check both light and dark theme after visual changes.

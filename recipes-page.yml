@@ -1,0 +1,52 @@
+- generic [ref=e2]:
+  - banner [ref=e36]:
+    - button "Cucina App home" [ref=e37] [cursor=pointer]:
+      - generic [ref=e38]: 🍳
+      - heading "Cucina App" [level=1] [ref=e39]
+    - generic [ref=e41]:
+      - combobox "Theme" [ref=e42] [cursor=pointer]:
+        - option "System" [selected]
+        - option "Light"
+        - option "Dark"
+      - combobox "Language" [ref=e43] [cursor=pointer]:
+        - option "🇮🇹 IT"
+        - option "🇬🇧 EN" [selected]
+        - option "🇩🇪 DE"
+        - option "🇫🇷 FR"
+        - option "🇪🇸 ES"
+  - main [ref=e44]:
+    - tablist [ref=e45]:
+      - tab "Recipe Book" [ref=e46] [cursor=pointer]
+      - tab "+ Import" [ref=e47] [cursor=pointer]
+      - tab "Recipes" [selected] [ref=e48] [cursor=pointer]
+      - tab "Shopping List" [ref=e49] [cursor=pointer]
+      - tab "Timer" [ref=e50] [cursor=pointer]
+      - tab "Guides" [ref=e51] [cursor=pointer]
+    - generic [ref=e70]:
+      - generic [ref=e71]:
+        - textbox "Search…" [ref=e73]
+        - generic [ref=e74]
+        - generic [ref=e94]: Showing 17 of 18
+      - generic [ref=e95]:
+        - generic [ref=e96] [cursor=pointer]
+        - generic [ref=e108] [cursor=pointer]
+        - generic [ref=e120] [cursor=pointer]
+        - generic [ref=e132] [cursor=pointer]
+        - generic [ref=e144] [cursor=pointer]
+        - generic [ref=e156] [cursor=pointer]
+        - generic [ref=e168] [cursor=pointer]
+        - generic [ref=e180] [cursor=pointer]
+        - generic [ref=e192] [cursor=pointer]
+        - generic [ref=e204] [cursor=pointer]
+        - generic [ref=e216] [cursor=pointer]
+        - generic [ref=e228] [cursor=pointer]
+        - generic [ref=e240] [cursor=pointer]
+        - generic [ref=e252] [cursor=pointer]
+        - generic [ref=e264] [cursor=pointer]
+        - generic [ref=e276] [cursor=pointer]
+        - generic [ref=e288] [cursor=pointer]
+  - contentinfo [ref=e64]:
+    - generic [ref=e65]: Made with ❤️ by Alan in Switzerland · 2026 · v0.10.0+c0196a0 · build 20-04-2026
+    - generic [ref=e66]:
+      - button "Credits / Attributions" [ref=e67] [cursor=pointer]
+      - button "Refresh app" [ref=e68] [cursor=pointer]

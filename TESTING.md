@@ -258,6 +258,22 @@ Implemented a focused **Vitest + unit-test foundation** for high-value logic in 
 Stable unit tests protect parsing logic with deterministic fixtures.
 The smoke suite complements them by testing actual live behaviour on real Italian recipe sites.
 
+### Import parser regression fixture rule
+
+For parser-related import bugs, the standard maintenance pattern is:
+1. parser fix
+2. minimal regression fixture
+3. regression test
+
+Use inline fixtures for compact, single-case coverage.
+Use dedicated fixture files only when they make the case clearer or reusable.
+Avoid storing full raw pages unless a reduced snippet cannot reproduce the parser bug.
+
+Allowed exceptions (no parser fixture required):
+- stale/wrong URL
+- external site outage (404/500/down)
+- proxy/infrastructure outage unrelated to parser logic
+
 ### What it is
 
 A small set of real-URL checks that run the full pipeline:

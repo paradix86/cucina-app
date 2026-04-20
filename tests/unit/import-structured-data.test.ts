@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import { readFileSync } from 'node:fs';
 import {
   parseJsonLdRecipeFromHtml,
   parseWprmRecipeFromHtml,
@@ -11,6 +12,10 @@ const TEST_URL = 'https://example.com/ricetta/pasta';
 
 function wrapJsonLd(json: string): string {
   return `<html><head><script type="application/ld+json">${json}</script></head></html>`;
+}
+
+function loadFixture(relativePath: string): string {
+  return readFileSync(new URL(`../fixtures/import/${relativePath}`, import.meta.url), 'utf8');
 }
 
 const VALID_JSONLD_RECIPE = JSON.stringify({
@@ -420,6 +425,15 @@ describe('parseJsonLdRecipeFromHtml — malformed JSON-LD', () => {
   it('handles an empty JSON-LD script block without throwing', () => {
     const html = `<html><head><script type="application/ld+json"></script></head></html>`;
     expect(parseJsonLdRecipeFromHtml(html, TEST_URL)).toBeNull();
+  });
+
+  it('regression fixture: recovers cucchiaio-style JSON-LD with raw control chars in strings', () => {
+    const html = loadFixture('jsonld-cucchiaio-control-chars.html');
+    const result = parseJsonLdRecipeFromHtml(html, 'https://www.cucchiaio.it/ricetta/pasta-al-forno/');
+    expect(result).not.toBeNull();
+    expect(result!.name).toContain('Pasta al Forno');
+    expect(result!.ingredients).toHaveLength(3);
+    expect(result!.steps).toHaveLength(2);
   });
 });
 

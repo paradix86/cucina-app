@@ -218,27 +218,34 @@ body {
 }
 .app-logo { font-size: 22px; }
 .app-header h1 { font-size: 18px; font-weight: 600; }
-.app-sub { font-size: 13px; color: var(--text-muted); }
 .header-right {
   display: flex;
   align-items: center;
-  gap: 10px;
   margin-left: auto;
 }
-#theme-select,
-#lang-select {
-  font-size: 13px;
-  padding: 4px 8px;
+.header-controls {
+  display: inline-flex;
+  align-items: stretch;
   border: 0.5px solid var(--border-md);
   border-radius: var(--radius-sm);
-  background: var(--bg);
+  background: var(--bg-secondary);
+  overflow: hidden;
+}
+.header-controls select {
+  font-size: 13px;
+  padding: 5px 9px;
+  min-height: 32px;
+  border: none;
+  border-radius: 0;
+  background: transparent;
   color: var(--text);
   cursor: pointer;
   font-family: var(--font);
+  transition: background .12s;
 }
-.header-select-wrap {
-  display: inline-flex;
-  align-items: center;
+.header-controls select:hover { background: var(--bg-tertiary); }
+.header-controls select + select {
+  border-left: 0.5px solid var(--border-md);
 }
 .sr-only {
   position: absolute;
@@ -1351,14 +1358,47 @@ input[type="number"] {
 .backup-actions {
   display: flex;
   gap: 8px;
-  margin-bottom: 10px;
+  margin-bottom: 8px;
   flex-wrap: wrap;
 }
 .backup-actions .btn-ghost {
   min-height: 38px;
 }
+.saved-filter-panel {
+  background: var(--bg-tertiary);
+  border: 0.5px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: .65rem .85rem;
+  margin-bottom: .75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.saved-filter-panel .saved-filter-group {
+  margin-bottom: 0;
+}
+.saved-filter-panel .filter-row {
+  justify-content: flex-start;
+  margin-bottom: 0;
+}
 .saved-filter-group {
   margin-bottom: 10px;
+}
+.filter-group--labeled {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+.filter-group--labeled > .filter-group-label {
+  display: block;
+  margin-bottom: 0;
+  padding-top: 10px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.filter-group--labeled > .filter-row {
+  flex: 1;
+  min-width: 0;
 }
 .filter-group-label {
   display: block;
@@ -2287,9 +2327,8 @@ input[type="number"] {
   margin-top: 6px;
 }
 
-#saved-source-filter,
-#builtin-filters {
-  margin-bottom: 2px;
+#saved-source-filter {
+  margin-bottom: 0;
 }
 
 #builtin-toolbar {
@@ -2302,19 +2341,29 @@ input[type="number"] {
 }
 #builtin-cats.filter-row,
 #builtin-filters .filter-row {
-  justify-content: center;
+  justify-content: flex-start;
 }
 #builtin-filters {
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: stretch;
 }
 #builtin-filters .time-slider-row {
   max-width: 780px;
-  padding-inline: .5rem;
+}
+.builtin-filter-panel {
+  margin-bottom: .5rem;
+}
+.builtin-filter-panel .filter-row {
+  margin-bottom: 0;
+}
+.builtin-filter-panel #builtin-filters {
+  gap: 6px;
+  display: flex;
+  flex-direction: column;
 }
 #builtin-results-count {
-  text-align: center;
+  text-align: left;
 }
 
 /* ---- Toasts ---- */
@@ -2671,7 +2720,6 @@ mark {
     font-size: 11px;
     margin-bottom: 10px;
   }
-  .app-sub { display: none; }
   .app-header {
     flex-wrap: wrap;
     align-items: flex-start;
@@ -2680,13 +2728,13 @@ mark {
   }
   .header-right {
     width: 100%;
-    justify-content: space-between;
+    justify-content: flex-end;
     gap: 8px;
   }
-  #theme-select,
-  #lang-select {
+  .header-controls select {
     min-height: 40px;
     font-size: 14px;
+    padding: 6px 10px;
   }
   .add-row { grid-template-columns: 1fr 52px 52px auto; }
   .lbl-row { grid-template-columns: 1fr 52px 52px auto; }
@@ -2744,6 +2792,16 @@ mark {
   .backup-actions .btn-ghost,
   .shopping-header .btn-ghost {
     width: 100%;
+  }
+  .saved-filter-panel {
+    padding: .6rem .7rem;
+  }
+  .filter-group--labeled {
+    flex-direction: column;
+    gap: 4px;
+  }
+  .filter-group--labeled > .filter-group-label {
+    padding-top: 0;
   }
 
   .import-flow-head {
@@ -2935,5 +2993,231 @@ mark {
   }
   .collection-browser-actions .btn-primary {
     width: 100%;
+  }
+}
+
+/* =====================================================================
+   PRINT STYLES — recipe cooking sheet
+   ====================================================================== */
+
+.print-only { display: none; }
+.detail-print-row {
+  margin-top: 1rem;
+  padding-top: .75rem;
+  border-top: 1px solid var(--border);
+  display: flex;
+  justify-content: flex-end;
+}
+.btn-print {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+.detail-print-servings {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-top: 2px;
+  margin-bottom: 0;
+}
+
+@media print {
+  @page { margin: 1.8cm 2cm; }
+
+  /* Base */
+  *, *::before, *::after {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+    box-shadow: none !important;
+  }
+
+  body {
+    background: white !important;
+    color: black !important;
+    font-size: 11pt;
+    line-height: 1.55;
+  }
+
+  /* Show print-only elements */
+  .print-only { display: block !important; }
+
+  /* ---- Hide all chrome ---- */
+  .app-header,
+  .tabs,
+  .app-footer,
+  .toast-stack,
+  .detail-back,
+  .detail-actions-prep,
+  .detail-start-cta,
+  .detail-actions-secondary,
+  .detail-print-row,
+  .notes-box,
+  .servings-btn,
+  .backup-actions,
+  .saved-filter-panel,
+  #saved-list-view { display: none !important; }
+
+  /* ---- Layout ---- */
+  .app { padding: 0 !important; max-width: 100% !important; }
+  .panel { display: block !important; }
+  .detail-wrap {
+    background: white !important;
+    border: none !important;
+    border-radius: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* ---- Header ---- */
+  .detail-title {
+    font-size: 20pt;
+    font-weight: 700;
+    margin-bottom: 3pt;
+    color: black !important;
+  }
+  .detail-meta {
+    font-size: 10pt;
+    color: #555 !important;
+    margin-bottom: 4pt;
+  }
+  .detail-print-servings {
+    font-size: 10pt;
+    color: #555 !important;
+    margin-bottom: 0;
+  }
+
+  /* ---- Meta panel ---- */
+  .detail-meta-panel {
+    border: 0.5pt solid #bbb !important;
+    background: #f7f7f7 !important;
+    padding: 7pt 10pt;
+    margin-bottom: 12pt;
+    border-radius: 3pt;
+  }
+  .detail-meta-row + .detail-meta-row {
+    border-top: 0.5pt dashed #ccc !important;
+    padding-top: 5pt;
+  }
+  .sec-label-inline { font-weight: 600; font-size: 9pt; color: #444 !important; }
+  .card-src {
+    font-size: 9pt;
+    padding: 1pt 5pt;
+    border-radius: 2pt;
+    border: 0.5pt solid #999;
+    background: #eee !important;
+    color: #333 !important;
+  }
+  .badge-bimby  { background: #ede !important; color: #440088 !important; }
+  .badge-airfryer { background: #fef3e2 !important; color: #885500 !important; }
+  .badge-classica { background: #e8f5e9 !important; color: #1b5e20 !important; }
+
+  .meal-badge {
+    font-size: 9pt;
+    padding: 1pt 5pt;
+    border: 0.5pt solid #aaa;
+    border-radius: 2pt;
+    background: #f0f0f0 !important;
+    color: #333 !important;
+  }
+  .card-chip--tag {
+    font-size: 8pt;
+    padding: 1pt 5pt;
+    border: 0.5pt solid #bbb;
+    border-radius: 2pt;
+    background: #f0f0f0 !important;
+    color: #444 !important;
+  }
+  .detail-origin a { color: #333 !important; text-decoration: none; }
+
+  /* ---- Servings (show label + value, buttons already hidden) ---- */
+  .servings-ctrl {
+    display: flex;
+    align-items: center;
+    gap: 6pt;
+    margin-bottom: 10pt;
+    font-size: 10pt;
+  }
+  .sec-label {
+    font-size: 10pt;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #222 !important;
+    margin-bottom: 5pt;
+  }
+
+  /* ---- Ingredients ---- */
+  .ing-wrap { margin-bottom: 14pt; page-break-inside: avoid; }
+  .ing-list {
+    columns: 2;
+    column-gap: 18pt;
+    list-style: disc;
+    padding-left: 12pt;
+    font-size: 10pt;
+    line-height: 1.65;
+  }
+  .ing-list li {
+    border-bottom: none !important;
+    padding: 1pt 0;
+    break-inside: avoid;
+    color: black !important;
+  }
+
+  /* ---- Steps ---- */
+  .steps-wrap { page-break-before: avoid; }
+  .step-row {
+    display: flex;
+    gap: 8pt;
+    margin-bottom: 8pt;
+    align-items: flex-start;
+    page-break-inside: avoid;
+  }
+  .step-n {
+    width: 20pt;
+    height: 20pt;
+    min-width: 20pt;
+    background: #e0e0e0 !important;
+    color: #222 !important;
+    font-size: 9pt;
+    font-weight: 700;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .step-txt {
+    font-size: 10pt;
+    line-height: 1.6;
+    color: black !important;
+    margin: 0;
+    padding-top: 1pt;
+  }
+
+  /* ---- Bimby steps ---- */
+  .bimby-step {
+    display: flex;
+    gap: 8pt;
+    align-items: flex-start;
+    background: #faf5ff !important;
+    border: 0.5pt solid #c8a0e8 !important;
+    border-radius: 3pt;
+    padding: 7pt 10pt;
+    margin-bottom: 7pt;
+    page-break-inside: avoid;
+  }
+  .bimby-step-body { flex: 1; min-width: 0; }
+  .bimby-step-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 3pt;
+    margin-bottom: 4pt;
+  }
+  .bimby-tag {
+    font-size: 8pt;
+    font-weight: 700;
+    color: #440088 !important;
+    background: #ede !important;
+    border: 0.5pt solid #c8a0e8;
+    padding: 1pt 5pt;
+    border-radius: 2pt;
+    letter-spacing: 0.01em;
   }
 }

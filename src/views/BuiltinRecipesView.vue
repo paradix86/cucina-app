@@ -81,25 +81,27 @@ defineExpose({
         <div class="saved-header">
           <input v-model="search" type="text" :placeholder="t('builtin_search')" />
         </div>
-        <div id="builtin-cats" class="filter-row source-pills">
-          <button v-for="category in categories" :key="category" class="src-pill" :class="{ active: selectedCategory === category }" @click="selectedCategory = category">
-            {{ category === '__all__' ? t('builtin_filter_all') : category }}
-          </button>
-        </div>
-        <div id="builtin-filters">
-          <div class="filter-row">
-            <span class="filter-label">{{ t('filter_method') }}:</span>
-            <button class="src-pill" :class="{ active: selectedPrep === 'all' }" @click="selectedPrep = 'all'">{{ t('filter_all') }}</button>
-            <button class="src-pill" :class="{ active: selectedPrep === 'classic' }" @click="selectedPrep = 'classic'">{{ t('filter_classic') }}</button>
-            <button class="src-pill" :class="{ active: selectedPrep === 'bimby' }" @click="selectedPrep = 'bimby'">{{ t('filter_bimby') }}</button>
-            <button class="src-pill" :class="{ active: selectedPrep === 'airfryer' }" @click="selectedPrep = 'airfryer'">{{ t('filter_airfryer') }}</button>
+        <div class="saved-filter-panel builtin-filter-panel">
+          <div id="builtin-cats" class="filter-row source-pills">
+            <button v-for="category in categories" :key="category" class="src-pill" :class="{ active: selectedCategory === category }" @click="selectedCategory = category">
+              {{ category === '__all__' ? t('builtin_filter_all') : category }}
+            </button>
           </div>
-          <div class="filter-row time-slider-row">
-            <span class="filter-label">{{ t('filter_max_time') }}:</span>
-            <input v-model="maxTime" type="range" min="5" max="120" step="5" />
-            <span id="time-val">{{ maxTime >= 120 ? t('filter_any_time') : `${maxTime} ${t('minutes_short')}` }}</span>
+          <div id="builtin-filters">
+            <div class="filter-row">
+              <span class="filter-label">{{ t('filter_method') }}:</span>
+              <button class="src-pill" :class="{ active: selectedPrep === 'all' }" @click="selectedPrep = 'all'">{{ t('filter_all') }}</button>
+              <button class="src-pill" :class="{ active: selectedPrep === 'classic' }" @click="selectedPrep = 'classic'">{{ t('filter_classic') }}</button>
+              <button class="src-pill" :class="{ active: selectedPrep === 'bimby' }" @click="selectedPrep = 'bimby'">{{ t('filter_bimby') }}</button>
+              <button class="src-pill" :class="{ active: selectedPrep === 'airfryer' }" @click="selectedPrep = 'airfryer'">{{ t('filter_airfryer') }}</button>
+            </div>
+            <div class="filter-row time-slider-row">
+              <span class="filter-label">{{ t('filter_max_time') }}:</span>
+              <input v-model="maxTime" type="range" min="5" max="120" step="5" />
+              <span id="time-val">{{ maxTime >= 120 ? t('filter_any_time') : `${maxTime} ${t('minutes_short')}` }}</span>
+            </div>
+            <button v-if="search || selectedCategory !== '__all__' || selectedPrep !== 'all' || maxTime < 120" class="reset-filters" @click="resetFilters">{{ t('filter_reset') }}</button>
           </div>
-          <button v-if="search || selectedCategory !== '__all__' || selectedPrep !== 'all' || maxTime < 120" class="reset-filters" @click="resetFilters">{{ t('filter_reset') }}</button>
         </div>
         <div id="builtin-results-count" class="results-count">{{ resultsLabel }}</div>
       </div>
