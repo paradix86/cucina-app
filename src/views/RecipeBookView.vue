@@ -22,6 +22,7 @@ const sourceFilter = ref('all');
 const filterType = ref('all');
 const siteFilter = ref('all');
 const mealFilter = ref('all');
+const mobileFiltersOpen = ref(false);
 
 const sourceOptions = [
   ['all', () => t('filter_all')],
@@ -61,6 +62,14 @@ const filteredRecipes = computed(() => {
 
 const savedCountLabel = computed(() => recipes.value.length === 1 ? t('recipebook_saved', { n: recipes.value.length }) : t('recipebook_saved_plural', { n: recipes.value.length }));
 const resultsLabel = computed(() => filteredRecipes.value.length < recipes.value.length ? t('results_showing', { n: filteredRecipes.value.length, total: recipes.value.length }) : '');
+const activeFilterCount = computed(() => {
+  let count = 0;
+  if (sourceFilter.value !== 'all') count += 1;
+  if (filterType.value !== 'all') count += 1;
+  if (siteFilter.value !== 'all') count += 1;
+  if (mealFilter.value !== 'all') count += 1;
+  return count;
+});
 
 const selectedRecipeId = computed(() => {
   const id = props.id;
@@ -160,31 +169,39 @@ defineExpose({
           <input hidden type="file" accept="application/json,.json" @change="onImportBackup" />
         </label>
       </div>
-      <div v-if="recipes.length" id="saved-source-filter" class="saved-filter-panel">
-        <div class="saved-filter-group">
-          <div class="filter-row">
-            <button v-for="[value, label] in sourceOptions" :key="value" class="src-pill" :class="{ active: sourceFilter === value }" @click="sourceFilter = value">{{ label() }}</button>
+      <div v-if="recipes.length" class="saved-filter-mobile-toggle-wrap">
+        <button class="btn-ghost saved-filter-mobile-toggle" :aria-expanded="mobileFiltersOpen ? 'true' : 'false'" @click="mobileFiltersOpen = !mobileFiltersOpen">
+          <span>{{ mobileFiltersOpen ? t('filters_hide') : t('filters_show') }}</span>
+          <span v-if="activeFilterCount" class="saved-filter-mobile-badge">{{ activeFilterCount }}</span>
+        </button>
+      </div>
+      <div v-if="recipes.length" id="saved-source-filter" class="saved-filter-panel mobile-collapsible" :class="{ 'is-mobile-open': mobileFiltersOpen }">
+        <div class="saved-filter-content">
+          <div class="saved-filter-group">
+            <div class="filter-row">
+              <button v-for="[value, label] in sourceOptions" :key="value" class="src-pill" :class="{ active: sourceFilter === value }" @click="sourceFilter = value">{{ label() }}</button>
+            </div>
           </div>
-        </div>
-        <div class="saved-filter-group">
-          <div class="filter-row">
-            <button class="type-pill" :class="{ active: filterType === 'all' }" @click="filterType = 'all'">{{ t('filter_all') }}</button>
-            <button class="type-pill" :class="{ active: filterType === 'favorites' }" @click="filterType = 'favorites'">{{ t('filter_favorites') }}</button>
-            <button class="type-pill" :class="{ active: filterType === 'recent' }" @click="filterType = 'recent'">{{ t('filter_recent') }}</button>
+          <div class="saved-filter-group">
+            <div class="filter-row">
+              <button class="type-pill" :class="{ active: filterType === 'all' }" @click="filterType = 'all'">{{ t('filter_all') }}</button>
+              <button class="type-pill" :class="{ active: filterType === 'favorites' }" @click="filterType = 'favorites'">{{ t('filter_favorites') }}</button>
+              <button class="type-pill" :class="{ active: filterType === 'recent' }" @click="filterType = 'recent'">{{ t('filter_recent') }}</button>
+            </div>
           </div>
-        </div>
-        <div class="saved-filter-group filter-group--labeled">
-          <span class="filter-group-label">{{ t('filter_meal_occasion') }}</span>
-          <div class="filter-row">
-            <button class="type-pill" :class="{ active: mealFilter === 'all' }" @click="mealFilter = 'all'">{{ t('filter_all') }}</button>
-            <button v-for="occ in MEAL_OCCASION_OPTIONS" :key="occ" class="type-pill" :class="{ active: mealFilter === occ }" @click="mealFilter = occ">{{ getMealOccasionLabel(occ) }}</button>
+          <div class="saved-filter-group filter-group--labeled">
+            <span class="filter-group-label">{{ t('filter_meal_occasion') }}</span>
+            <div class="filter-row">
+              <button class="type-pill" :class="{ active: mealFilter === 'all' }" @click="mealFilter = 'all'">{{ t('filter_all') }}</button>
+              <button v-for="occ in MEAL_OCCASION_OPTIONS" :key="occ" class="type-pill" :class="{ active: mealFilter === occ }" @click="mealFilter = occ">{{ getMealOccasionLabel(occ) }}</button>
+            </div>
           </div>
-        </div>
-        <div v-if="sortedDomains.length" class="saved-filter-group filter-group--labeled">
-          <span class="filter-group-label">{{ t('filter_site') }}</span>
-          <div class="filter-row">
-            <button class="site-pill" :class="{ active: siteFilter === 'all' }" @click="siteFilter = 'all'">{{ t('filter_all_sites') }} <span class="pill-count">({{ recipes.length }})</span></button>
-            <button v-for="domain in sortedDomains" :key="domain" class="site-pill" :class="{ active: siteFilter === domain }" @click="siteFilter = domain">{{ getSourceDomainLabel(domain) }} <span class="pill-count">({{ siteCounts[domain] }})</span></button>
+          <div v-if="sortedDomains.length" class="saved-filter-group filter-group--labeled">
+            <span class="filter-group-label">{{ t('filter_site') }}</span>
+            <div class="filter-row">
+              <button class="site-pill" :class="{ active: siteFilter === 'all' }" @click="siteFilter = 'all'">{{ t('filter_all_sites') }} <span class="pill-count">({{ recipes.length }})</span></button>
+              <button v-for="domain in sortedDomains" :key="domain" class="site-pill" :class="{ active: siteFilter === domain }" @click="siteFilter = domain">{{ getSourceDomainLabel(domain) }} <span class="pill-count">({{ siteCounts[domain] }})</span></button>
+            </div>
           </div>
         </div>
       </div>

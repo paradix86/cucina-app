@@ -235,6 +235,8 @@ export const TRANSLATIONS = {
     filter_max_time: 'Tempo max',
     filter_any_time: 'Qualsiasi',
     filter_reset: 'Reimposta filtri',
+    filters_show: 'Mostra filtri',
+    filters_hide: 'Nascondi filtri',
     results_showing: 'Mostra {n} di {total}',
 
     filter_favorites: 'Preferiti',
@@ -487,6 +489,8 @@ export const TRANSLATIONS = {
     filter_max_time: 'Max time',
     filter_any_time: 'Any',
     filter_reset: 'Reset filters',
+    filters_show: 'Show filters',
+    filters_hide: 'Hide filters',
     results_showing: 'Showing {n} of {total}',
 
     filter_favorites: 'Favorites',
@@ -737,6 +741,8 @@ export const TRANSLATIONS = {
     filter_max_time: 'Max. Zeit',
     filter_any_time: 'Beliebig',
     filter_reset: 'Filter zurücksetzen',
+    filters_show: 'Filter zeigen',
+    filters_hide: 'Filter ausblenden',
     results_showing: '{n} von {total}',
 
     filter_favorites: 'Favoriten',
@@ -987,6 +993,8 @@ export const TRANSLATIONS = {
     filter_max_time: 'Temps max',
     filter_any_time: 'Indifférent',
     filter_reset: 'Réinitialiser les filtres',
+    filters_show: 'Afficher les filtres',
+    filters_hide: 'Masquer les filtres',
     results_showing: '{n} sur {total}',
 
     filter_favorites: 'Favoris',
@@ -1237,6 +1245,8 @@ export const TRANSLATIONS = {
     filter_max_time: 'Tiempo máx.',
     filter_any_time: 'Cualquiera',
     filter_reset: 'Restablecer filtros',
+    filters_show: 'Mostrar filtros',
+    filters_hide: 'Ocultar filtros',
     results_showing: '{n} de {total}',
 
     filter_favorites: 'Favoritos',

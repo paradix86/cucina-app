@@ -28,9 +28,9 @@ function submitTimer() {
       <span></span>
     </div>
     <div class="add-row">
-      <input v-model="name" type="text" :placeholder="t('timer_name_placeholder')" />
-      <input v-model="minutes" type="number" min="0" max="999" />
-      <input v-model="seconds" type="number" min="0" max="59" />
+      <input v-model="name" type="text" :placeholder="t('timer_name_placeholder')" :aria-label="t('timer_label_name')" />
+      <input v-model="minutes" type="number" min="0" max="999" :aria-label="t('timer_label_min')" />
+      <input v-model="seconds" type="number" min="0" max="59" :aria-label="t('timer_label_sec')" />
       <button class="btn-primary" @click="submitTimer">{{ t('timer_add') }}</button>
     </div>
     <div style="margin-top:1rem">

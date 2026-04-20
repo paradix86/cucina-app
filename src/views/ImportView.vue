@@ -18,6 +18,7 @@ const showCollectionBrowser = ref(false);
 const selectedCollectionIds = ref([]);
 const selectedCollectionId = ref('');
 const urlInputRef = ref(null);
+const manualNameInputRef = ref(null);
 function normalizeStringArray(value) {
   return Array.isArray(value)
     ? value.map(item => {
@@ -117,12 +118,23 @@ function startWithLink() {
   });
 }
 
+function focusManualNameInput() {
+  nextTick(() => {
+    if (manualNameInputRef.value && typeof manualNameInputRef.value.focus === 'function') {
+      manualNameInputRef.value.focus();
+    }
+  });
+}
+
 function openManualForm(options = {}) {
-  const { scroll = true } = options;
+  const { scroll = true, focus = false } = options;
   showCollectionBrowser.value = false;
   showManualForm.value = true;
   if (scroll) {
     scrollToSection('import-manual-card');
+  }
+  if (focus) {
+    focusManualNameInput();
   }
 }
 
@@ -146,7 +158,7 @@ watch(() => route.query.start, rawMode => {
   const mode = Array.isArray(rawMode) ? rawMode[0] : rawMode;
   if (!mode) return;
   if (mode === 'manual') {
-    openManualForm({ scroll: true });
+    openManualForm({ scroll: true, focus: true });
     return;
   }
   if (mode === 'collections') {
@@ -286,7 +298,7 @@ function savePreview() {
         <p class="muted-label import-section-subtitle">{{ t('import_start_desc') }}</p>
         <div class="import-start-actions">
           <button class="btn-primary" @click="startWithLink">{{ t('import_start_link') }}</button>
-          <button class="btn-secondary" @click="openManualForm()">{{ t('import_start_manual') }}</button>
+          <button class="btn-secondary btn-secondary-strong" @click="openManualForm({ focus: true })">{{ t('import_start_manual') }}</button>
           <button class="btn-secondary" @click="openCollectionBrowser()">{{ t('import_start_collections') }}</button>
         </div>
       </div>
@@ -318,14 +330,14 @@ function savePreview() {
         </div>
       </div>
 
-      <div id="import-manual-card" class="card import-flow-card">
+      <div id="import-manual-card" class="card import-flow-card" :class="{ 'import-manual-active': showManualForm }">
         <div class="import-flow-head">
           <div>
             <h2>{{ t('import_section_manual_title') }}</h2>
             <p class="muted-label import-section-subtitle">{{ t('import_section_manual_desc') }}</p>
             <p class="muted-label import-help-line">{{ t('import_section_manual_helper') }}</p>
           </div>
-          <button class="btn-secondary" id="manual-open" @click="openManualForm">{{ t('import_section_manual_btn') }}</button>
+          <button class="btn-secondary btn-secondary-strong" id="manual-open" @click="openManualForm({ focus: true })">{{ t('import_section_manual_btn') }}</button>
         </div>
         <div v-if="showManualForm" class="manual-form-wrap">
           <div class="manual-form-top-actions">
@@ -337,7 +349,7 @@ function savePreview() {
             <div class="manual-grid">
               <div class="manual-field">
                 <label for="manual-name">{{ t('manual_name_label') }}</label>
-                <input id="manual-name" v-model="manualForm.name" type="text" :placeholder="t('manual_name_placeholder')" />
+                <input id="manual-name" ref="manualNameInputRef" v-model="manualForm.name" type="text" :placeholder="t('manual_name_placeholder')" />
               </div>
               <div class="manual-field">
                 <label for="manual-category">{{ t('manual_category_label') }}</label>
