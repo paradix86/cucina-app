@@ -56,6 +56,21 @@ function toggleGroupExpanded(group) {
   next[group.groupKey] = !isGroupExpanded(group);
   expandedGroups.value = next;
 }
+
+function groupPrimaryLabel(group) {
+  if (group.groupType === 'numeric') return group.baseName;
+  return group.displayName || group.baseName;
+}
+
+function groupQuantityLabel(group) {
+  if (group.groupType !== 'numeric') return '';
+  return `${group.displayQty} ${group.unit}`.trim();
+}
+
+function groupCompletionPercent(group) {
+  if (!group.items.length) return 0;
+  return Math.round((checkedCount(group) / group.items.length) * 100);
+}
 </script>
 
 <template>
@@ -92,8 +107,11 @@ function toggleGroupExpanded(group) {
         <div class="shopping-list-rows">
           <div v-for="section in groupedSections" :key="section.id" class="shopping-section">
             <div class="shopping-section-heading">
-              <span class="shopping-section-name">{{ t(section.labelKey) }}</span>
-              <span class="shopping-section-count">({{ section.grouped.length + section.ungrouped.length }})</span>
+              <div class="shopping-section-title-wrap">
+                <span class="shopping-section-name">{{ t(section.labelKey) }}</span>
+                <span class="shopping-section-rule" aria-hidden="true"></span>
+              </div>
+              <span class="shopping-section-count">{{ section.grouped.length + section.ungrouped.length }}</span>
             </div>
 
             <div
@@ -106,26 +124,33 @@ function toggleGroupExpanded(group) {
                 <label class="shopping-item-main">
                   <input
                     type="checkbox"
-                    class="shopping-group-checkbox"
+                    class="shopping-item-checkbox shopping-group-checkbox"
                     :checked="isGroupChecked(group)"
                     @change="toggleGroup(group.items.map(item => item.id), $event.target.checked)"
                   />
                   <span class="shopping-item-text shopping-item-total">
-                    {{ group.groupType === 'numeric' ? `${group.baseName} — ${group.displayQty} ${group.unit}` : (group.displayName || group.baseName) }}
+                    <span class="shopping-item-total-name">{{ groupPrimaryLabel(group) }}</span>
+                    <span v-if="groupQuantityLabel(group)" class="shopping-item-total-qty">{{ groupQuantityLabel(group) }}</span>
                   </span>
                   <span v-if="group.items.length === 1" class="shopping-item-sub">
                     {{ group.items[0].sourceRecipeName || t('shopping_recipe_unknown') }}
                   </span>
                 </label>
                 <div class="shopping-group-side">
-                  <span class="shopping-group-progress">{{ checkedCount(group) }}/{{ group.items.length }}</span>
+                  <span class="shopping-group-progress">
+                    <span class="shopping-group-progress-value">{{ checkedCount(group) }}/{{ group.items.length }}</span>
+                    <span class="shopping-group-progress-track" aria-hidden="true">
+                      <span class="shopping-group-progress-fill" :style="{ width: `${groupCompletionPercent(group)}%` }"></span>
+                    </span>
+                  </span>
                   <button
                     v-if="group.items.length > 1"
                     class="shopping-group-toggle"
                     :aria-label="isGroupExpanded(group) ? t('shopping_hide_details') : t('shopping_show_details')"
                     @click="toggleGroupExpanded(group)"
                   >
-                    {{ isGroupExpanded(group) ? t('shopping_hide_details') : t('shopping_show_details') }}
+                    <span>{{ isGroupExpanded(group) ? t('shopping_hide_details') : t('shopping_show_details') }}</span>
+                    <span class="shopping-group-toggle-icon" aria-hidden="true">{{ isGroupExpanded(group) ? '▾' : '▸' }}</span>
                   </button>
                   <button class="shopping-remove" :aria-label="t('shopping_remove')" @click="removeMany(group.items.map(item => item.id))">✕</button>
                 </div>
@@ -133,6 +158,7 @@ function toggleGroupExpanded(group) {
               <div v-if="isGroupExpanded(group)" class="shopping-group-breakdown">
                 <div class="shopping-group-meta">{{ checkedCount(group) }}/{{ group.items.length }}</div>
                 <div v-for="item in group.items" :key="item.id" class="shopping-group-contribution" :class="{ 'is-checked': item.checked }">
+                  <span class="shopping-contrib-state" aria-hidden="true"></span>
                   <div class="shopping-group-contribution-main">
                     <span class="contrib-qty">
                       {{ contributionLabel(group, item) }}
@@ -146,7 +172,7 @@ function toggleGroupExpanded(group) {
 
             <div v-for="item in section.ungrouped" :key="item.id" class="shopping-item" :class="{ 'is-checked': item.checked }">
               <label class="shopping-item-main">
-                <input type="checkbox" :checked="item.checked" @change="toggleItem(item.id)" />
+                <input type="checkbox" class="shopping-item-checkbox" :checked="item.checked" @change="toggleItem(item.id)" />
                 <span class="shopping-item-text">{{ item.text }}</span>
               </label>
               <button class="shopping-remove" :aria-label="t('shopping_remove')" @click="removeItem(item.id)">✕</button>

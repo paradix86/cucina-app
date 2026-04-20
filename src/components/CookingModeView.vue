@@ -1,7 +1,7 @@
 <script setup>
-import { computed, onBeforeUnmount, ref } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import { useWakeLock } from '@vueuse/core';
-import { extractStepSeconds, formatClock } from '../lib/recipes.js';
+import { extractStepSeconds, formatClock, getPreparationInfo } from '../lib/recipes.js';
 import { t } from '../lib/i18n.js';
 import { useToasts } from '../composables/useToasts.js';
 
@@ -19,8 +19,27 @@ let timerInterval = null;
 const { showToast } = useToasts();
 const { request: requestWakeLock, release: releaseWakeLock } = useWakeLock();
 
+const prepInfo = computed(() => getPreparationInfo(props.recipe));
 const currentStep = computed(() => props.recipe.steps?.[stepIndex.value] || '');
 const isComplete = ref(false);
+
+const progressPct = computed(() => {
+  const total = props.recipe.steps?.length || 1;
+  return Math.round(((stepIndex.value + 1) / total) * 100);
+});
+
+const currentStepStructured = computed(() => {
+  const step = currentStep.value;
+  if (prepInfo.value.type === 'bimby') {
+    const sep = step.indexOf(' — ');
+    if (sep !== -1) {
+      const tags = step.slice(0, sep).split('·').map(tg => tg.trim()).filter(Boolean);
+      const text = step.slice(sep + 3);
+      return { type: 'bimby', tags, text };
+    }
+  }
+  return { type: 'plain', text: step };
+});
 
 function clearTimer() {
   window.clearInterval(timerInterval);
@@ -90,6 +109,9 @@ function exitMode() {
 
 setupStepTimer();
 requestWakeLock('screen').catch(() => {});
+onMounted(() => {
+  window.scrollTo({ top: 0, behavior: 'instant' });
+});
 onBeforeUnmount(() => {
   clearTimer();
   releaseWakeLock().catch(() => {});
@@ -104,6 +126,10 @@ onBeforeUnmount(() => {
       <span class="cooking-progress">{{ t('cooking_step_of', { current: stepIndex + 1, total: recipe.steps?.length || 0 }) }}</span>
     </div>
 
+    <div class="cooking-progress-bar" role="progressbar" :aria-valuenow="stepIndex + 1" :aria-valuemax="recipe.steps?.length || 0">
+      <div class="cooking-progress-fill" :style="{ width: progressPct + '%' }"></div>
+    </div>
+
     <details class="cooking-ingredients">
       <summary>{{ t('detail_ingredients') }}</summary>
       <ul class="ing-list">
@@ -114,7 +140,15 @@ onBeforeUnmount(() => {
     <div class="cooking-step-wrap">
       <template v-if="!isComplete">
         <div class="cooking-step-number">{{ stepIndex + 1 }}</div>
-        <div class="cooking-step-text">{{ currentStep }}</div>
+        <div class="cooking-step-content">
+          <template v-if="currentStepStructured.type === 'bimby'">
+            <div class="cooking-bimby-tags">
+              <span v-for="tag in currentStepStructured.tags" :key="tag" class="bimby-tag cooking-bimby-tag">{{ tag }}</span>
+            </div>
+            <div class="cooking-step-text">{{ currentStepStructured.text }}</div>
+          </template>
+          <div v-else class="cooking-step-text">{{ currentStepStructured.text }}</div>
+        </div>
       </template>
       <div v-else class="cooking-complete">
         <div class="cooking-complete-icon">✓</div>

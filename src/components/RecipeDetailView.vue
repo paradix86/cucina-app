@@ -246,12 +246,14 @@ function onShoppingAction() {
         <div class="steps-list" v-html="steps"></div>
       </div>
 
-      <div class="detail-actions detail-actions-primary">
+      <div class="detail-actions detail-actions-prep">
         <button class="btn-shopping" @click="onShoppingAction">{{ shoppingActionLabel }}</button>
         <button v-if="recipe.timerMinutes" class="btn-secondary" @click="emit('start-recipe-timer', recipe)">
           {{ t('detail_timer_btn', { t: formatTimerLabel(recipe.timerMinutes) }) }}
         </button>
-        <button class="btn-primary" @click="emit('start-cooking', recipe)">{{ t('cooking_start') }}</button>
+      </div>
+      <div class="detail-start-cta">
+        <button class="btn-start-cooking" @click="emit('start-cooking', recipe)">{{ t('cooking_start') }}</button>
         <button v-if="canSaveBuiltin" class="btn-primary" @click="emit('save-builtin', recipe)">{{ t('builtin_save') }}</button>
       </div>
 

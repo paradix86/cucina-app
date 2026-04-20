@@ -129,12 +129,12 @@ export function buildStepsHtml(steps, preparationType) {
       if (sep !== -1) {
         const tags = step.slice(0, sep).split('·').map(tag => tag.trim()).filter(Boolean);
         const text = step.slice(sep + 3);
-        const tagsHtml = tags.map(tag => `<span class="step-tag">${escapeHtml(tag)}</span>`).join('');
+        const tagsHtml = tags.map(tag => `<span class="bimby-tag">${escapeHtml(tag)}</span>`).join('');
         return `
-          <div class="step-row step-row-bimby">
+          <div class="bimby-step">
             <span class="step-n">${i + 1}</span>
-            <div class="step-detail">
-              ${tagsHtml ? `<div class="step-tags">${tagsHtml}</div>` : ''}
+            <div class="bimby-step-body">
+              ${tagsHtml ? `<div class="bimby-step-tags">${tagsHtml}</div>` : ''}
               <p class="step-txt">${escapeHtml(text)}</p>
             </div>
           </div>

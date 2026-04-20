@@ -208,30 +208,36 @@ defineExpose({
       <div v-else class="ricette-grid" id="saved-grid">
         <div v-for="recipe in filteredRecipes" :key="recipe.id" class="ricetta-card" @click="openDetail(recipe)">
           <span class="card-src" :class="getPreparationInfo(recipe).cls">{{ getPreparationInfo(recipe).txt }}</span>
-          <button class="card-del btn-danger" @click.stop="confirmDelete(recipe.id)" title="✕">✕</button>
-          <button class="card-fav" @click.stop="toggleFavorite(recipe.id)" :title="recipe.favorite ? t('favorite_remove') : t('favorite_add')">{{ recipe.favorite ? '★' : '☆' }}</button>
+          <div class="card-actions">
+            <button class="card-fav card-action-btn" @click.stop="toggleFavorite(recipe.id)" :title="recipe.favorite ? t('favorite_remove') : t('favorite_add')">{{ recipe.favorite ? '★' : '☆' }}</button>
+            <button class="card-del card-action-btn btn-danger" @click.stop="confirmDelete(recipe.id)" title="✕">✕</button>
+          </div>
           <div class="card-name" v-html="highlight(recipe.name || '', debouncedSearch.trim())"></div>
           <div class="card-body">
-            <div v-if="recipe.time && recipe.time !== 'n.d.'" class="card-row card-row--time">
-              <span class="card-row-icon" aria-hidden="true">⏱</span>
-              <span>{{ recipe.time }}</span>
+            <div class="card-meta-block">
+              <div v-if="recipe.time && recipe.time !== 'n.d.'" class="card-row card-row--time">
+                <span class="card-row-icon" aria-hidden="true">⏱</span>
+                <span>{{ recipe.time }}</span>
+              </div>
+              <div v-if="recipe.mealOccasion && recipe.mealOccasion.length" class="card-row card-row--meal">
+                <span class="card-row-icon" aria-hidden="true">◑</span>
+                <span class="card-chips">
+                  <span v-for="m in recipe.mealOccasion" :key="m" class="card-chip card-chip--meal">{{ getMealOccasionLabel(m) }}</span>
+                </span>
+              </div>
+              <div v-if="recipe.sourceDomain" class="card-row card-row--source">
+                <span class="card-row-icon" aria-hidden="true">↗</span>
+                <span>{{ getSourceDomainLabel(recipe.sourceDomain) }}</span>
+              </div>
+              <div v-if="recipe.category" class="card-row card-row--cat">
+                <span class="card-row-icon" aria-hidden="true">◈</span>
+                <span>{{ recipe.category }}</span>
+              </div>
             </div>
-            <div v-if="recipe.mealOccasion && recipe.mealOccasion.length" class="card-row card-row--meal">
-              <span class="card-row-icon" aria-hidden="true">◑</span>
-              <span class="card-chips">
-                <span v-for="m in recipe.mealOccasion" :key="m" class="card-chip card-chip--meal">{{ getMealOccasionLabel(m) }}</span>
-              </span>
-            </div>
-            <div v-if="recipe.sourceDomain" class="card-row card-row--source">
-              <span class="card-row-icon" aria-hidden="true">↗</span>
-              <span>{{ getSourceDomainLabel(recipe.sourceDomain) }}</span>
-            </div>
-            <div v-if="recipe.category" class="card-row card-row--cat">
-              <span class="card-row-icon" aria-hidden="true">◈</span>
-              <span>{{ recipe.category }}</span>
-            </div>
-            <div v-if="recipe.tags && recipe.tags.length" class="card-row card-row--tags">
-              <span v-for="tag in recipe.tags.slice(0, 3)" :key="tag" class="card-chip card-chip--tag">{{ tag }}</span>
+            <div class="card-tags-block" :class="{ 'is-empty': !(recipe.tags && recipe.tags.length) }">
+              <div v-if="recipe.tags && recipe.tags.length" class="card-row card-row--tags">
+                <span v-for="tag in recipe.tags.slice(0, 3)" :key="tag" class="card-chip card-chip--tag">{{ tag }}</span>
+              </div>
             </div>
           </div>
         </div>
