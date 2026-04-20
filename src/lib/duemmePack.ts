@@ -51,7 +51,7 @@ function parseBlock(markdown: string, title: string): string {
   const escaped = title.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   // Accept headings such as "## Ingredienti (Porzione Singola)" and capture until next level-2 section.
   const match = markdown.match(new RegExp(`(?:^|\\n)##\\s+${escaped}(?:[^\\n]*)\\n([\\s\\S]*?)(?=\\n##\\s+|$)`, 'i'));
-  return match ? match[1].trim() : '';
+  return match ? match[ 1 ].trim() : '';
 }
 
 function extractListLines(block: string): string[] {
@@ -74,12 +74,19 @@ function extractNumberedSteps(block: string): string[] {
     const numbered = line.match(/^\d+[.)]\s+(.+)$/);
     if (numbered) {
       if (current) steps.push(stripMarkdown(current));
-      current = numbered[1];
+      current = numbered[ 1 ];
       return;
     }
     if (!current) return;
     if (/^###\s+/.test(line)) return;
+    // Bold section headers (e.g. "**🎯 BATCH MEAL PREP**:") mark non-cooking content — stop accumulating
+    if (/^\*\*[^*]+\*\*\s*:/.test(line)) {
+      steps.push(stripMarkdown(current));
+      current = '';
+      return;
+    }
     if (/^[-*•]\s+/.test(line)) {
+      // Only continue if we're still inside a cooking step (current is set)
       current += ` ${line.replace(/^[-*•]\s+/, '')}`;
       return;
     }
@@ -96,7 +103,7 @@ function extractPreparationSection(preparationBlock: string, type: Exclude<Secti
   const pattern = type === 'bimby'
     ? /###\s+.*(?:🤖|bimby|tm31|tm5|tm6)[\s\S]*?(?=\n###\s+|$)/i
     : /###\s+.*(?:🍳|tradizionale|classico|classica|forno|padella)[\s\S]*?(?=\n###\s+|$)/i;
-  return (preparationBlock.match(pattern) || [])[0] || '';
+  return (preparationBlock.match(pattern) || [])[ 0 ] || '';
 }
 
 function inferPreparationType(markdown: string): PreparationType {
@@ -106,29 +113,73 @@ function inferPreparationType(markdown: string): PreparationType {
   return 'classic';
 }
 
+function cleanupCorruptedFragments(text: string): string {
+  return text
+    .replace(/\buti\b/g, '')
+    .replace(/\d+-uti\b/g, '')
+    .replace(/\/\//g, '')
+    .replace(/\s+\/\s+/g, ' ')
+    .replace(/\s{2,}/g, ' ')
+    .replace(/^[/\s]+|[/\s]+$/g, '')
+    .trim();
+}
+
 function normalizeBimbyStep(step: string): string {
-  const raw = stripMarkdown(step);
-  const strongTag = raw.match(/^([^:]+):\s*(\d+\s*(?:sec|min))\s*\/\s*vel(?:ocit[àa])?\s*([0-9]+(?:\.[0-9]+)?)\s*$/i);
-  if (strongTag) {
-    return `Vel. ${strongTag[3]} · ${strongTag[2]} — ${strongTag[1]}`;
+  let raw = stripMarkdown(step);
+
+  // Handle "//" Bimby marker: convert to readable "Senso antiorario" or remove if standalone
+  // "//" typically indicates reverse/counterclockwise direction (senso antiorario)
+  if (raw.includes('//')) {
+    raw = raw
+      .replace(/:\s*\/\/\s*senso antiorario/gi, ': senso antiorario')
+      .replace(/:\s*\/\/\s*([^\s])/gi, ': $1')
+      .replace(/\s*\/\/\s*senso antiorario/gi, ' (senso antiorario)')
+      .replace(/:\s*\/\/$/gi, '')
+      .replace(/\s*\/\/\s*$/gi, '');
   }
 
-  const timeMatch = raw.match(/(\d+\s*(?:sec|min))/i);
+  // Try to match pattern: "instruction: TIME/VEL X" 
+  const strongTag = raw.match(/^([^:]+):\s*(\d+\s*(?:sec|min))\s*\/\s*vel(?:ocit[àa])?\s*([0-9]+(?:\.[0-9]+)?)\s*$/i);
+  if (strongTag) {
+    return `Vel. ${strongTag[ 3 ]} · ${strongTag[ 2 ]} — ${strongTag[ 1 ]}`;
+  }
+
+  // Extract time/speed/temp — use \b after unit to avoid matching "min" inside "minuti"
+  const timeMatch = raw.match(/(\d+)\s*(sec|min)\b(?!uti)/i);
   const speedMatch = raw.match(/\bvel(?:ocit[àa])?\.?\s*([0-9]+(?:\.[0-9]+)?)/i);
   const tempMatch = raw.match(/(\d{2,3})\s*°\s*c?/i);
-  if (!timeMatch && !speedMatch && !tempMatch) return raw;
+
+  if (!timeMatch && !speedMatch && !tempMatch) {
+    // No Bimby markers found, return cleaned text
+    return cleanupCorruptedFragments(raw);
+  }
 
   const tags: string[] = [];
-  if (tempMatch) tags.push(`Temp. ${tempMatch[1]}°`);
-  if (speedMatch) tags.push(`Vel. ${speedMatch[1]}`);
-  if (timeMatch) tags.push(timeMatch[1].replace(/\s+/g, ' ').trim());
+  if (tempMatch) tags.push(`Temp. ${tempMatch[ 1 ]}°`);
+  if (speedMatch) tags.push(`Vel. ${speedMatch[ 1 ]}`);
+  if (timeMatch) tags.push(`${timeMatch[ 1 ]} ${timeMatch[ 2 ]}`);
 
-  const instruction = raw
-    .replace(/\d+\s*(?:sec|min)/i, '')
-    .replace(/\bvel(?:ocit[àa])?\.?\s*[0-9]+(?:\.[0-9]+)?/i, '')
-    .replace(/\d{2,3}\s*°\s*c?/i, '')
+  // Remove extracted markers from instruction text
+  let instruction = raw;
+  if (timeMatch) {
+    // Remove "N min/sec" including any immediately-following slash (compound Bimby notation like "5 min/100°C")
+    instruction = instruction.replace(new RegExp(`\\b${timeMatch[ 1 ]}\\s*${timeMatch[ 2 ]}\\b(?!uti)\\s*/?`, 'i'), ' ');
+  }
+  if (speedMatch) {
+    instruction = instruction.replace(/\bvel(?:ocit[àa])?\.?\s*[0-9]+(?:\.[0-9]+)?/i, '');
+  }
+  if (tempMatch) {
+    instruction = instruction.replace(/\d{2,3}\s*°\s*c?/i, '');
+  }
+
+  instruction = instruction
     .replace(/^[,;:\-\s]+/, '')
+    .replace(/[\s:]+$/, '')
     .trim();
+
+  // Cleanup corrupted fragments in instruction
+  instruction = cleanupCorruptedFragments(instruction);
+
   return instruction ? `${tags.join(' · ')} — ${instruction}` : raw;
 }
 
@@ -139,15 +190,15 @@ function parseDuemmeRecipe(filePath: string, markdown: string): DuemmeParseResul
       recipe: null,
       quality: {
         score: 0,
-        warnings: ['DUEMME_TITLE_MISSING'],
+        warnings: [ 'DUEMME_TITLE_MISSING' ],
         sectionUsed: 'full',
         eligibleForSubset: false,
       },
     };
   }
 
-  const folder = pathMatch[1];
-  const slug = pathMatch[2];
+  const folder = pathMatch[ 1 ];
+  const slug = pathMatch[ 2 ];
   const titleMatch = markdown.match(/^#\s+(.+)$/m);
   const warnings: DuemmeWarningCode[] = [];
   if (!titleMatch) warnings.push('DUEMME_TITLE_MISSING');
@@ -197,8 +248,8 @@ function parseDuemmeRecipe(filePath: string, markdown: string): DuemmeParseResul
     };
   }
 
-  const timerMatch = String(timeMatch?.[1] || '').match(/(\d+)\s*min/i);
-  const timerMinutes = timerMatch ? parseInt(timerMatch[1], 10) : 0;
+  const timerMatch = String(timeMatch?.[ 1 ] || '').match(/(\d+)\s*min/i);
+  const timerMinutes = timerMatch ? parseInt(timerMatch[ 1 ], 10) : 0;
   const folderTagMap: Record<string, string> = {
     colazioni: 'Colazioni',
     pranzi: 'Pranzi',
@@ -206,16 +257,16 @@ function parseDuemmeRecipe(filePath: string, markdown: string): DuemmeParseResul
     spuntini: 'Spuntini',
   };
   const folderMealOccasionMap: Record<string, string[]> = {
-    colazioni: ['Colazione'],
-    pranzi: ['Pranzo'],
-    cene: ['Cena'],
-    spuntini: ['Spuntino'],
+    colazioni: [ 'Colazione' ],
+    pranzi: [ 'Pranzo' ],
+    cene: [ 'Cena' ],
+    spuntini: [ 'Spuntino' ],
   };
 
   const uniqueTags = Array.from(new Set([
     'Piano Alimentare',
     'duemme/piano_alimentare',
-    folderTagMap[folder] || folder,
+    folderTagMap[ folder ] || folder,
     preparationType === 'bimby' ? 'Bimby' : (preparationType === 'airfryer' ? 'Air Fryer' : 'Classiche'),
   ]));
 
@@ -227,7 +278,7 @@ function parseDuemmeRecipe(filePath: string, markdown: string): DuemmeParseResul
     DUEMME_LOW_INGREDIENT_COUNT: 10,
     DUEMME_LOW_STEP_COUNT: 10,
   };
-  const score = warnings.reduce((acc, warning) => acc - (scoreDeductions[warning] || 0), 100);
+  const score = warnings.reduce((acc, warning) => acc - (scoreDeductions[ warning ] || 0), 100);
   const finalScore = Math.max(0, score);
   const eligibleForSubset = finalScore >= 82
     && !warnings.includes('DUEMME_FALLBACK_SECTION_USED')
@@ -237,12 +288,12 @@ function parseDuemmeRecipe(filePath: string, markdown: string): DuemmeParseResul
   return {
     recipe: {
       id: `duemme-${folder}-${slug}`,
-      name: stripMarkdown(titleMatch[1]),
-      category: stripMarkdown(categoryMatch?.[1] || folderTagMap[folder] || ''),
+      name: stripMarkdown(titleMatch[ 1 ]),
+      category: stripMarkdown(categoryMatch?.[ 1 ] || folderTagMap[ folder ] || ''),
       emoji: preparationType === 'bimby' ? '🤖' : '🍴',
-      time: stripMarkdown(timeMatch?.[1] || ''),
-      servings: stripMarkdown(servingsMatch?.[1] || '1').replace(/\s*\(.+\)\s*$/, '').trim(),
-      difficolta: stripMarkdown(difficultyMatch?.[1] || ''),
+      time: stripMarkdown(timeMatch?.[ 1 ] || ''),
+      servings: stripMarkdown(servingsMatch?.[ 1 ] || '1').replace(/\s*\(.+\)\s*$/, '').trim(),
+      difficolta: stripMarkdown(difficultyMatch?.[ 1 ] || ''),
       ingredients,
       steps,
       timerMinutes,
@@ -251,7 +302,7 @@ function parseDuemmeRecipe(filePath: string, markdown: string): DuemmeParseResul
       preparationType,
       bimby: preparationType === 'bimby',
       tags: uniqueTags,
-      mealOccasion: folderMealOccasionMap[folder] || [],
+      mealOccasion: folderMealOccasionMap[ folder ] || [],
     },
     quality: {
       score: finalScore,
@@ -263,7 +314,7 @@ function parseDuemmeRecipe(filePath: string, markdown: string): DuemmeParseResul
 }
 
 const DUEMME_RECIPE_PACK: Recipe[] = Object.entries(duemmeRecipeModules)
-  .map(([path, raw]) => parseDuemmeRecipe(path, raw).recipe)
+  .map(([ path, raw ]) => parseDuemmeRecipe(path, raw).recipe)
   .filter((recipe): recipe is Recipe => Boolean(recipe));
 
-export { DUEMME_RECIPE_PACK, parseDuemmeRecipe, extractListLines, extractNumberedSteps, inferPreparationType, normalizeText, stripMarkdown };
+export { DUEMME_RECIPE_PACK, parseDuemmeRecipe, extractListLines, extractNumberedSteps, inferPreparationType, normalizeText, stripMarkdown, normalizeBimbyStep };

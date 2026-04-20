@@ -55,6 +55,7 @@ const manualMealOccasionSuggestions = computed(() => suggestMealOccasions({
 }));
 const previewMealOccasionSuggestions = computed(() => previewRecipe.value ? suggestMealOccasions(previewRecipe.value) : []);
 const collectionRecipes = computed(() => DUEMME_VETTED_RECIPE_PACK);
+const duemmeFeaturedCount = computed(() => collectionRecipes.value.length);
 const collectionSelectedCount = computed(() => selectedCollectionIds.value.length);
 const selectedCollectionRecipe = computed(() => {
   if (!selectedCollectionId.value) return collectionRecipes.value[0] || null;
@@ -204,6 +205,12 @@ function importSelectedCollectionRecipes() {
   }
 }
 
+function quickImportFeaturedCollection() {
+  if (!collectionRecipes.value.length) return;
+  selectedCollectionIds.value = collectionRecipes.value.map(recipe => recipe.id);
+  importSelectedCollectionRecipes();
+}
+
 function addIngredientField() {
   manualForm.value.ingredients.push('');
 }
@@ -300,6 +307,22 @@ function savePreview() {
           <button class="btn-primary" @click="startWithLink">{{ t('import_start_link') }}</button>
           <button class="btn-secondary btn-secondary-strong" @click="openManualForm({ focus: true })">{{ t('import_start_manual') }}</button>
           <button class="btn-secondary" @click="openCollectionBrowser()">{{ t('import_start_collections') }}</button>
+        </div>
+      </div>
+
+      <div class="card import-duemme-featured">
+        <div class="import-duemme-featured-head">
+          <span class="import-duemme-featured-kicker">{{ t('import_duemme_feature_kicker') }}</span>
+          <h2>{{ t('import_duemme_feature_title') }}</h2>
+        </div>
+        <p class="muted-label import-section-subtitle">{{ t('import_duemme_feature_desc') }}</p>
+        <div class="import-duemme-featured-meta">
+          <span class="chip-featured">{{ t('import_duemme_feature_count', { n: duemmeFeaturedCount }) }}</span>
+          <span class="chip-featured">{{ t('import_duemme_feature_source') }}</span>
+        </div>
+        <div class="import-duemme-featured-actions">
+          <button class="btn-secondary btn-secondary-strong" @click="openCollectionBrowser()">{{ t('import_duemme_feature_browse') }}</button>
+          <button class="btn-primary" @click="quickImportFeaturedCollection">{{ t('import_duemme_feature_import_all', { n: duemmeFeaturedCount }) }}</button>
         </div>
       </div>
 
@@ -462,6 +485,7 @@ function savePreview() {
         <div>
           <h3>{{ t('import_collection_title') }}</h3>
           <p class="muted-label">{{ t('import_collection_desc') }}</p>
+          <p class="muted-label">{{ t('import_duemme_feature_source') }}</p>
         </div>
         <button class="btn-ghost" @click="closeCollectionBrowser">{{ t('import_collection_close') }}</button>
       </div>

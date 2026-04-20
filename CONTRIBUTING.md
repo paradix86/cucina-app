@@ -113,6 +113,20 @@ If the repo is ever renamed or the Pages URL changes, update `base` in `vite.con
 
 The app is optimized for tablets and touchscreens. Avoid small tap targets or cramped layouts.
 
+### Bimby icon policy freeze
+
+The Bimby step-icon action set is intentionally closed:
+- `reverse`
+- `knead`
+- `scissors`
+- `cup`
+- `open`
+- `lock`
+
+Do not casually add generic actions (for example `simmer`, `tare`) or broaden detection patterns.
+For this module, false positives are worse than missing icons.
+Any action-set change must be explicit, product-reviewed, and test-updated in `tests/unit/bimby-action-icons.test.ts`.
+
 ## Recipe model
 
 Use the current v3 English shape for new work:

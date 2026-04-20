@@ -274,6 +274,19 @@ Allowed exceptions (no parser fixture required):
 - external site outage (404/500/down)
 - proxy/infrastructure outage unrelated to parser logic
 
+### Bimby icon closed-set rule
+
+Bimby instruction icons are intentionally limited to this approved set:
+- `reverse`
+- `knead`
+- `scissors`
+- `cup`
+- `open`
+- `lock`
+
+Policy: false positives are worse than missing icons.  
+Tests in `tests/unit/bimby-action-icons.test.ts` are expected to fail if this set is widened casually or if removed generic actions (for example `simmer`, `tare`) are reintroduced without deliberate review.
+
 ### What it is
 
 A small set of real-URL checks that run the full pipeline:

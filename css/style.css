@@ -1201,6 +1201,50 @@ input[type="number"] {
   gap: 8px;
 }
 
+.import-duemme-featured {
+  border-color: color-mix(in srgb, var(--green) 32%, var(--border) 68%);
+  background: linear-gradient(140deg, color-mix(in srgb, var(--green-soft) 72%, var(--bg) 28%), var(--bg));
+  padding: 1rem;
+  display: grid;
+  gap: 10px;
+}
+.import-duemme-featured-head {
+  display: grid;
+  gap: 2px;
+}
+.import-duemme-featured-kicker {
+  font-size: 11px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  font-weight: 700;
+}
+.import-duemme-featured h2 {
+  margin: 0;
+}
+.import-duemme-featured-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.chip-featured {
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  padding: 5px 10px;
+  border: 1px solid color-mix(in srgb, var(--green) 20%, var(--border) 80%);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--bg) 88%, var(--green-soft) 12%);
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+.import-duemme-featured-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 /* ---- RICETTE GRID ---- */
 .ricette-grid {
   display: grid;
@@ -3135,6 +3179,17 @@ mark {
   }
   .collection-browser-actions .btn-primary {
     width: 100%;
+  }
+  .import-duemme-featured {
+    padding: .9rem;
+  }
+  .import-duemme-featured-actions {
+    flex-direction: column;
+  }
+  .import-duemme-featured-actions .btn-primary,
+  .import-duemme-featured-actions .btn-secondary {
+    width: 100%;
+    justify-content: center;
   }
 }
 

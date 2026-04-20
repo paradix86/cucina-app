@@ -42,7 +42,7 @@
 ### 🤖 Metodo Bimby TM31 (Completo)
 
 **Fase 1 - Preparare impasto polpette**:
-1. Ammollare pane nel latte 5 minuti
+1. Ammollare pane nel latte 5 min
 2. Nel boccale: aglio, prezzemolo: **3 sec/vel 7**
 3. Aggiungere tacchino, pane strizzato, uovo, Parmigiano, sale, pepe, noce moscata
 4. Impastare **20 sec/vel 4** (aiutarsi con spatola)

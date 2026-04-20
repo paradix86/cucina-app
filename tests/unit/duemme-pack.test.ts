@@ -5,6 +5,7 @@ import {
   extractListLines,
   extractNumberedSteps,
   inferPreparationType,
+  normalizeBimbyStep,
   parseDuemmeRecipe,
 } from '../../src/lib/duemmePack';
 
@@ -48,6 +49,70 @@ additional sentence
     expect(inferPreparationType('# Recipe\n### 🤖 Metodo Bimby\nsteps')).toBe('bimby');
     expect(inferPreparationType('Ricetta per friggitrice ad aria')).toBe('airfryer');
     expect(inferPreparationType('Ricetta classica')).toBe('classic');
+  });
+});
+
+describe('normalizeBimbyStep', () => {
+  it('formats compound Bimby notation without leaving // or stray / artifacts', () => {
+    // Source pattern: "Cottura: 20 min/100°C/vel 1" — removing markers must not leave "/" artifacts
+    const result = normalizeBimbyStep('Cottura: 20 min/100°C/vel 1');
+    expect(result).not.toContain('//');
+    expect(result).not.toMatch(/\s\/\s/);
+    expect(result).toContain('Vel. 1');
+    expect(result).toContain('20 min');
+    expect(result).toContain('100°');
+  });
+
+  it('removes stray / before senso antiorario in compound notation', () => {
+    // "Cuocere 15 min/100°C/vel 1 senso antiorario" must not leave "Cuocere / senso antiorario"
+    const result = normalizeBimbyStep('Cuocere 15 min/100°C/vel 1 senso antiorario');
+    expect(result).not.toMatch(/\s\/\s/);
+    expect(result).toContain('senso antiorario');
+    expect(result).toContain('Vel. 1');
+  });
+
+  it('does not generate uti fragment from minuti text', () => {
+    const result = normalizeBimbyStep('Cuocere 30 minuti a fuoco lento');
+    expect(result).not.toMatch(/\buti\b/);
+    expect(result).not.toMatch(/\d+-uti\b/);
+  });
+
+  it('handles // senso antiorario in source text', () => {
+    const result = normalizeBimbyStep('Mescolare: 15 min/vel 1 senso antiorario');
+    expect(result).not.toContain('//');
+  });
+
+  it('returns clean text for steps with no Bimby markers', () => {
+    const result = normalizeBimbyStep('Aggiungere sale e pepe a piacere');
+    expect(result).toBe('Aggiungere sale e pepe a piacere');
+  });
+});
+
+describe('extractNumberedSteps — bloated-step protection', () => {
+  it('stops accumulating bullets at a bold section-header line', () => {
+    const block = `
+1. Cuocere la carne nel sugo
+2. Servire con riso
+**🎯 BATCH MEAL PREP (x4 porzioni)**:
+- Quadruplicare gli ingredienti
+- Cottura finale: 20 min
+- Conservare in frigo
+`;
+    const steps = extractNumberedSteps(block);
+    expect(steps).toHaveLength(2);
+    expect(steps[1]).not.toContain('BATCH');
+    expect(steps[1]).not.toContain('Quadruplicare');
+  });
+
+  it('still appends normal bullet detail lines to the current step', () => {
+    const block = `
+1. Tritare aglio e cipolla:
+   - finemente
+2. Aggiungere al soffritto
+`;
+    const steps = extractNumberedSteps(block);
+    expect(steps[0]).toContain('finemente');
+    expect(steps).toHaveLength(2);
   });
 });
 
