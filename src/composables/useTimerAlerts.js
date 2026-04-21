@@ -9,7 +9,7 @@ const timerAlert = ref({
 });
 
 const TIMER_SOUND_STORAGE_KEY = 'cucina_timer_sound';
-const VALID_TIMER_SOUNDS = ['beep', 'bell', 'kitchen', 'chime', 'alarm', 'digital', 'doublebell', 'siren', 'phone', 'buzzer', 'retro', 'silent'];
+const VALID_TIMER_SOUNDS = ['beep', 'bell', 'kitchen', 'chime', 'alarm', 'digital', 'doublebell', 'siren', 'phone', 'buzzer', 'retro', 'clockradio', 'silent'];
 const selectedTimerSound = useLocalStorage(TIMER_SOUND_STORAGE_KEY, 'beep');
 
 let audioContext = null;
@@ -107,6 +107,13 @@ function playSelectedTimerSound(soundId = selectedTimerSound.value) {
         playOscillatorStep(ctx, ctx.destination, { startAt: now + 0.18, duration: 0.16, frequency: 988, endFrequency: 988, type: 'square', gain: 0.17 });
         playOscillatorStep(ctx, ctx.destination, { startAt: now + 0.36, duration: 0.16, frequency: 1174, endFrequency: 1174, type: 'square', gain: 0.17 });
         playOscillatorStep(ctx, ctx.destination, { startAt: now + 0.62, duration: 0.22, frequency: 988, endFrequency: 784, type: 'square', gain: 0.18 });
+        break;
+      case 'clockradio':
+        playOscillatorStep(ctx, ctx.destination, { startAt: now, duration: 0.2, frequency: 720, endFrequency: 720, type: 'square', gain: 0.24 });
+        playOscillatorStep(ctx, ctx.destination, { startAt: now + 0.24, duration: 0.2, frequency: 960, endFrequency: 960, type: 'square', gain: 0.24 });
+        playOscillatorStep(ctx, ctx.destination, { startAt: now + 0.48, duration: 0.2, frequency: 720, endFrequency: 720, type: 'square', gain: 0.24 });
+        playOscillatorStep(ctx, ctx.destination, { startAt: now + 0.72, duration: 0.2, frequency: 960, endFrequency: 960, type: 'square', gain: 0.24 });
+        playOscillatorStep(ctx, ctx.destination, { startAt: now + 1.02, duration: 0.32, frequency: 1320, endFrequency: 1120, type: 'sawtooth', gain: 0.22 });
         break;
       case 'beep':
       default:
