@@ -5,7 +5,7 @@ import { useRouter } from 'vue-router';
 import { useDebounce } from '@vueuse/core';
 import RecipeDetailView from '../components/RecipeDetailView.vue';
 import { useRecipeBookStore } from '../stores/recipeBook';
-import { getPreparationInfo, getSourceDomainLabel, getMealOccasionLabel, highlight, joinMetaParts, recipeMatchesQuery, MEAL_OCCASION_OPTIONS } from '../lib/recipes.js';
+import { getPreparationInfo, getSourceDomainLabel, getMealOccasionLabel, highlight, recipeMatchesQuery, MEAL_OCCASION_OPTIONS } from '../lib/recipes.js';
 import { t } from '../lib/i18n.js';
 
 const emit = defineEmits(['start-recipe-timer', 'start-cooking', 'add-to-shopping', 'toast']);
@@ -20,20 +20,28 @@ const requestConfirm = inject('requestConfirm', null);
 const search = ref('');
 const debouncedSearch = useDebounce(search, 180);
 const sourceFilter = ref('all');
+const preparationFilter = ref('all');
 const filterType = ref('all');
 const siteFilter = ref('all');
 const mealFilter = ref('all');
 const mobileFiltersOpen = ref(false);
 
+// Source = where the recipe came from (YouTube / TikTok / Instagram / Web / Manual)
 const sourceOptions = [
   { value: 'all', label: () => t('filter_all') },
   { value: 'youtube', label: () => t('source_youtube') },
   { value: 'tiktok', label: () => t('source_tiktok') },
   { value: 'instagram', label: () => t('source_instagram') },
-  { value: 'classica', label: () => t('source_classic') },
-  { value: 'bimby', label: () => t('source_bimby') },
   { value: 'web', label: () => t('source_web') },
   { value: 'manual', label: () => t('source_manual') },
+];
+
+// Preparation method = how it's cooked (checked against recipe.preparationType)
+const preparationOptions = [
+  { value: 'all', label: () => t('filter_all') },
+  { value: 'classic', label: () => t('filter_classic') },
+  { value: 'bimby', label: () => t('filter_bimby') },
+  { value: 'airfryer', label: () => t('filter_airfryer') },
 ];
 
 const sourceCounts = computed(() => recipes.value.reduce((acc, recipe) => {
@@ -42,9 +50,24 @@ const sourceCounts = computed(() => recipes.value.reduce((acc, recipe) => {
   return acc;
 }, {}));
 
+const prepCounts = computed(() => recipes.value.reduce((acc, recipe) => {
+  const key = recipe.preparationType || 'classic';
+  acc[key] = (acc[key] || 0) + 1;
+  return acc;
+}, {}));
+
 const visibleSourceOptions = computed(() => sourceOptions.filter(option => (
   option.value === 'all' || (sourceCounts.value[option.value] || 0) > 0
 )));
+
+const visiblePrepOptions = computed(() => preparationOptions.filter(option => (
+  option.value === 'all' || (prepCounts.value[option.value] || 0) > 0
+)));
+
+// Show the preparation filter row only when at least two distinct types exist
+const showPrepFilter = computed(() =>
+  (prepCounts.value.bimby || 0) > 0 || (prepCounts.value.airfryer || 0) > 0,
+);
 
 const siteCounts = computed(() => recipes.value.reduce((acc, recipe) => {
   if (recipe.sourceDomain) acc[recipe.sourceDomain] = (acc[recipe.sourceDomain] || 0) + 1;
@@ -58,12 +81,13 @@ const filteredRecipes = computed(() => {
   const list = recipes.value.filter(recipe => {
     const matchQuery = recipeMatchesQuery(recipe, query);
     const matchSource = sourceFilter.value === 'all' || (recipe.source || 'web') === sourceFilter.value;
+    const matchPrep = preparationFilter.value === 'all' || (recipe.preparationType || 'classic') === preparationFilter.value;
     const matchType = filterType.value === 'all'
       || (filterType.value === 'favorites' && recipe.favorite)
       || (filterType.value === 'recent' && recipe.lastViewedAt);
     const matchSite = siteFilter.value === 'all' || recipe.sourceDomain === siteFilter.value;
     const matchMeal = mealFilter.value === 'all' || (recipe.mealOccasion || []).includes(mealFilter.value);
-    return matchQuery && matchSource && matchType && matchSite && matchMeal;
+    return matchQuery && matchSource && matchPrep && matchType && matchSite && matchMeal;
   });
   if (filterType.value === 'recent') {
     list.sort((a, b) => (b.lastViewedAt || 0) - (a.lastViewedAt || 0));
@@ -76,6 +100,7 @@ const resultsLabel = computed(() => filteredRecipes.value.length < recipes.value
 const activeFilterCount = computed(() => {
   let count = 0;
   if (sourceFilter.value !== 'all') count += 1;
+  if (preparationFilter.value !== 'all') count += 1;
   if (filterType.value !== 'all') count += 1;
   if (siteFilter.value !== 'all') count += 1;
   if (mealFilter.value !== 'all') count += 1;
@@ -103,6 +128,12 @@ watch([selectedRecipeId, selectedRecipe], ([id, selected]) => {
 watch(visibleSourceOptions, (options) => {
   if (!options.some(option => option.value === sourceFilter.value)) {
     sourceFilter.value = 'all';
+  }
+});
+
+watch(visiblePrepOptions, (options) => {
+  if (!options.some(option => option.value === preparationFilter.value)) {
+    preparationFilter.value = 'all';
   }
 });
 
@@ -221,7 +252,8 @@ defineExpose({
       </div>
       <div v-if="recipes.length" id="saved-source-filter" class="saved-filter-panel mobile-collapsible" :class="{ 'is-mobile-open': mobileFiltersOpen }">
         <div class="saved-filter-content">
-          <div class="saved-filter-group">
+          <div class="saved-filter-group filter-group--labeled">
+            <span class="filter-group-label">{{ t('filter_source') }}</span>
             <div class="filter-row">
               <button
                 v-for="option in visibleSourceOptions"
@@ -234,7 +266,22 @@ defineExpose({
               </button>
             </div>
           </div>
-          <div class="saved-filter-group">
+          <div v-if="showPrepFilter" class="saved-filter-group filter-group--labeled">
+            <span class="filter-group-label">{{ t('filter_method') }}</span>
+            <div class="filter-row">
+              <button
+                v-for="option in visiblePrepOptions"
+                :key="option.value"
+                class="type-pill"
+                :class="{ active: preparationFilter === option.value }"
+                @click="preparationFilter = option.value"
+              >
+                {{ option.label() }}
+              </button>
+            </div>
+          </div>
+          <div class="saved-filter-group filter-group--labeled">
+            <span class="filter-group-label">{{ t('filter_view') }}</span>
             <div class="filter-row">
               <button class="type-pill" :class="{ active: filterType === 'all' }" @click="filterType = 'all'">{{ t('filter_all') }}</button>
               <button class="type-pill" :class="{ active: filterType === 'favorites' }" @click="filterType = 'favorites'">{{ t('filter_favorites') }}</button>

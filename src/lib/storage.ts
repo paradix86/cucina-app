@@ -107,7 +107,17 @@ function isShoppingItem(value: unknown): value is ShoppingItem {
 }
 
 function normalizeStoredRecipe(recipe: RecipeInput): Recipe {
-  const preparationType = getPreparationType(recipe);
+  const rawSource = asString(recipe.source ?? recipe.fonte, 'web');
+  // Legacy data used 'bimby'/'classica'/'classic' as source values (they mean preparation type).
+  // Normalize these to 'manual' so source cleanly represents origin only.
+  const legacyPrepSource = rawSource === 'bimby' || rawSource === 'classica' || rawSource === 'classic';
+  const source = legacyPrepSource ? 'manual' : rawSource;
+
+  // Safety: old recipes with source='bimby' but no explicit preparationType
+  const basePreparationType = getPreparationType(recipe);
+  const preparationType: import('../types').PreparationType =
+    basePreparationType === 'classic' && rawSource === 'bimby' ? 'bimby' : basePreparationType;
+
   const id = asString(recipe.id);
   const name = asString(recipe.name ?? recipe.nome);
 
@@ -121,7 +131,7 @@ function normalizeStoredRecipe(recipe: RecipeInput): Recipe {
     category: asString(recipe.category ?? recipe.cat),
     time: asString(recipe.time ?? recipe.tempo),
     servings: asString(recipe.servings ?? recipe.porzioni),
-    source: asString(recipe.source ?? recipe.fonte, 'web'),
+    source,
     sourceDomain: recipe.sourceDomain || undefined,
     ingredients: asStringArray(recipe.ingredients ?? recipe.ingredienti),
     steps: asStringArray(recipe.steps),

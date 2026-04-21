@@ -1584,19 +1584,16 @@ input[type="number"] {
   padding: 0;
   font-size: 16px;
   font-family: var(--font);
-  line-height: 0;
+  line-height: 1;
 }
 .card-action-btn:focus-visible {
   outline: 2px solid color-mix(in srgb, var(--green) 72%, white 28%);
   outline-offset: 1px;
 }
 .card-action-glyph {
-  display: inline-flex;
-  width: 1em;
-  height: 1em;
-  align-items: center;
-  justify-content: center;
+  display: block;
   line-height: 1;
+  user-select: none;
 }
 .card-del:hover { background: var(--red-light); color: var(--red); }
 .card-fav:hover { background: var(--bg-secondary); color: var(--orange); }
@@ -1627,7 +1624,7 @@ input[type="number"] {
   margin-bottom: .75rem;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
 }
 .saved-filter-mobile-toggle-wrap {
   display: none;
@@ -3203,7 +3200,7 @@ mark {
   .saved-filter-panel.mobile-collapsible.is-mobile-open .saved-filter-content {
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 8px;
   }
   .filter-group--labeled {
     flex-direction: column;

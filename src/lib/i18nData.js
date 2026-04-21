@@ -306,6 +306,7 @@ export const TRANSLATIONS = {
 
     filter_favorites: 'Preferiti',
     filter_recent: 'Recenti',
+    filter_view: 'Vista',
     filter_all_sites: 'Tutti i siti',
     filter_site: 'Sito',
     favorite_add: 'Aggiungi ai preferiti',
@@ -628,6 +629,7 @@ export const TRANSLATIONS = {
 
     filter_favorites: 'Favorites',
     filter_recent: 'Recent',
+    filter_view: 'View',
     filter_all_sites: 'All sites',
     filter_site: 'Site',
     favorite_add: 'Add to favorites',
@@ -948,6 +950,7 @@ export const TRANSLATIONS = {
 
     filter_favorites: 'Favoriten',
     filter_recent: 'Kürzlich',
+    filter_view: 'Ansicht',
     filter_all_sites: 'Alle Webseiten',
     filter_site: 'Website',
     favorite_add: 'Zu Favoriten hinzufügen',
@@ -1268,6 +1271,7 @@ export const TRANSLATIONS = {
 
     filter_favorites: 'Favoris',
     filter_recent: 'Récents',
+    filter_view: 'Vue',
     filter_all_sites: 'Tous les sites',
     filter_site: 'Site',
     favorite_add: 'Ajouter aux favoris',
@@ -1588,6 +1592,7 @@ export const TRANSLATIONS = {
 
     filter_favorites: 'Favoritos',
     filter_recent: 'Recientes',
+    filter_view: 'Vista',
     filter_all_sites: 'Todos los sitios',
     filter_site: 'Sitio',
     favorite_add: 'Añadir a favoritos',
