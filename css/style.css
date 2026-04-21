@@ -858,6 +858,10 @@ input[type="number"] {
   align-items: center;
   flex-wrap: wrap;
 }
+.import-success-banner.is-info {
+  border-color: color-mix(in srgb, var(--border-md) 78%, var(--green) 22%);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--bg-secondary) 78%, var(--bg) 22%) 0%, var(--bg) 100%);
+}
 .import-success-kicker {
   display: inline-flex;
   margin-bottom: 4px;
@@ -866,6 +870,9 @@ input[type="number"] {
   letter-spacing: .08em;
   text-transform: uppercase;
   color: var(--green-text);
+}
+.import-success-banner.is-info .import-success-kicker {
+  color: var(--text-muted);
 }
 .import-success-actions {
   display: flex;
@@ -2918,6 +2925,26 @@ mark {
   margin-bottom: 1rem;
 }
 .add-row input[type="number"] { width: 100%; }
+.timer-settings-card {
+  margin-bottom: 1rem;
+}
+.timer-settings-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.timer-settings-head .btn-ghost {
+  min-height: 40px;
+}
+.timer-sound-controls {
+  margin-top: 12px;
+}
+.timer-sound-controls select {
+  width: min(320px, 100%);
+  min-height: 42px;
+}
 
 .timer-grid {
   display: grid;
@@ -3137,6 +3164,14 @@ mark {
   }
   .preview-actions .btn-primary,
   .preview-actions .btn-ghost {
+    width: 100%;
+  }
+  .timer-settings-head {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .timer-settings-head .btn-ghost,
+  .timer-sound-controls select {
     width: 100%;
   }
   .import-success-actions {

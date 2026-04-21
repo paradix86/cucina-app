@@ -48,8 +48,14 @@ function toggleManualMealOccasion(occasion) {
   }
 }
 
-function setSuccessNotice(message) {
-  successNotice.value = { message };
+function setSuccessNotice(options) {
+  successNotice.value = {
+    tone: options?.tone || 'success',
+    kicker: options?.kicker || t('import_success_banner_kicker'),
+    title: options?.title || t('import_success_banner_title'),
+    message: options?.message || '',
+    showGoHome: options?.showGoHome !== false,
+  };
 }
 
 function clearSuccessNotice() {
@@ -214,8 +220,20 @@ function importSelectedCollectionRecipes() {
   emit('toast', added ? t('guide_pack_import_ok', { n: added }) : t('guide_pack_import_none'), added ? 'success' : 'info');
   if (added) {
     selectedCollectionIds.value = [];
-    setSuccessNotice(t('guide_pack_import_ok', { n: added }));
+    setSuccessNotice({
+      tone: 'success',
+      title: t('import_collection_feedback_added_title'),
+      message: t('import_collection_feedback_added', { n: added }),
+      showGoHome: true,
+    });
+    return;
   }
+  setSuccessNotice({
+    tone: 'info',
+    title: t('import_collection_feedback_none_title'),
+    message: t('import_collection_feedback_none'),
+    showGoHome: false,
+  });
 }
 
 function quickImportFeaturedCollection() {
@@ -298,14 +316,22 @@ function saveManualRecipe() {
   emit('toast', t('manual_saved_ok'), 'success');
   manualForm.value = buildManualForm();
   showManualForm.value = false;
-  setSuccessNotice(t('manual_saved_ok'));
+  setSuccessNotice({
+    tone: 'success',
+    message: t('manual_saved_ok'),
+    showGoHome: true,
+  });
 }
 
 function savePreview() {
   const ok = savePreviewedRecipe();
   emit('toast', ok ? t('builtin_saved_ok') : t('builtin_already_saved'), ok ? 'success' : 'info');
   if (ok) {
-    setSuccessNotice(t('builtin_saved_ok'));
+    setSuccessNotice({
+      tone: 'success',
+      message: t('builtin_saved_ok'),
+      showGoHome: true,
+    });
   }
 }
 </script>
@@ -323,14 +349,14 @@ function savePreview() {
         </div>
       </div>
 
-      <div v-if="successNotice" class="card import-success-banner" aria-live="polite">
+      <div v-if="successNotice" class="card import-success-banner" :class="`is-${successNotice.tone}`" aria-live="polite">
         <div>
-          <span class="import-success-kicker">{{ t('import_success_banner_kicker') }}</span>
-          <h3>{{ t('import_success_banner_title') }}</h3>
+          <span class="import-success-kicker">{{ successNotice.kicker }}</span>
+          <h3>{{ successNotice.title }}</h3>
           <p class="muted-label">{{ successNotice.message }}</p>
         </div>
         <div class="import-success-actions">
-          <button class="btn-primary" @click="emit('go-home')">{{ t('import_success_open_book') }}</button>
+          <button v-if="successNotice.showGoHome" class="btn-primary" @click="emit('go-home')">{{ t('import_success_open_book') }}</button>
           <button class="btn-ghost" @click="clearSuccessNotice">{{ t('import_success_continue') }}</button>
         </div>
       </div>

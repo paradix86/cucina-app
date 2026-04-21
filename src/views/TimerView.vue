@@ -1,6 +1,7 @@
 <script setup>
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 import { useTimers } from '../composables/useTimers.js';
+import { useTimerAlerts } from '../composables/useTimerAlerts.js';
 import { t } from '../lib/i18n.js';
 
 const name = ref('');
@@ -8,6 +9,11 @@ const minutes = ref(5);
 const seconds = ref(0);
 
 const { timers, addTimer, toggleTimer, resetTimer, deleteTimer } = useTimers();
+const { timerSound, setTimerSound, previewTimerSound, timerSoundOptions } = useTimerAlerts();
+const soundOptions = computed(() => timerSoundOptions.map(value => ({
+  value,
+  label: t(`timer_sound_${value}`),
+})));
 
 function submitTimer() {
   const ok = addTimer(name.value, minutes.value, seconds.value);
@@ -21,6 +27,21 @@ function submitTimer() {
 
 <template>
   <section class="panel active">
+    <div class="card timer-settings-card">
+      <div class="timer-settings-head">
+        <div>
+          <h2>{{ t('timer_sound_title') }}</h2>
+          <p class="muted-label">{{ t('timer_sound_desc') }}</p>
+        </div>
+        <button class="btn-ghost" @click="previewTimerSound">{{ t('timer_sound_preview') }}</button>
+      </div>
+      <div class="timer-sound-controls">
+        <label class="sr-only" for="timer-sound-select">{{ t('timer_sound_label') }}</label>
+        <select id="timer-sound-select" :value="timerSound" @change="setTimerSound($event.target.value)">
+          <option v-for="option in soundOptions" :key="option.value" :value="option.value">{{ option.label }}</option>
+        </select>
+      </div>
+    </div>
     <div class="lbl-row">
       <span>{{ t('timer_label_name') }}</span>
       <span>{{ t('timer_label_min') }}</span>
