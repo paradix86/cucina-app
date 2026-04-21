@@ -9,6 +9,7 @@
   --green-text:   #085041;
   --orange:       #CC5500;
   --orange-light: #FFF5EF;
+  --star-gold:    #f5a623;
   --red:          #E24B4A;
   --red-light:    #FCEBEB;
   --yt-red:       #cc0000;
@@ -1565,7 +1566,7 @@ input[type="number"] {
   top: 9px;
   right: 9px;
   display: inline-flex;
-  align-items: stretch;
+  align-items: center;
   gap: 6px;
 }
 .card-action-btn {
@@ -1595,8 +1596,10 @@ input[type="number"] {
   line-height: 1;
   user-select: none;
 }
+.card-fav.is-fav { color: var(--star-gold); }
 .card-del:hover { background: var(--red-light); color: var(--red); }
-.card-fav:hover { background: var(--bg-secondary); color: var(--orange); }
+.card-fav:hover { background: var(--bg-secondary); color: var(--star-gold); }
+.card-fav.is-fav:hover { background: color-mix(in srgb, var(--star-gold) 12%, transparent); color: var(--star-gold); }
 
 /* ---- SAVED HEADER ---- */
 .saved-header {

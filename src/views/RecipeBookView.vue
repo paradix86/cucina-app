@@ -325,11 +325,16 @@ defineExpose({
         <div v-for="recipe in filteredRecipes" :key="recipe.id" class="ricetta-card" @click="openDetail(recipe)">
           <span class="card-src" :class="getPreparationInfo(recipe).cls">{{ getPreparationInfo(recipe).txt }}</span>
           <div class="card-actions">
-            <button class="card-fav card-action-btn" @click.stop="toggleFavorite(recipe.id)" :title="recipe.favorite ? t('favorite_remove') : t('favorite_add')">
-              <span class="card-action-glyph" aria-hidden="true">{{ recipe.favorite ? '★' : '☆' }}</span>
+            <button class="card-fav card-action-btn" :class="{ 'is-fav': recipe.favorite }" @click.stop="toggleFavorite(recipe.id)" :title="recipe.favorite ? t('favorite_remove') : t('favorite_add')">
+              <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" :fill="recipe.favorite ? 'currentColor' : 'none'" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+              </svg>
             </button>
             <button class="card-del card-action-btn btn-danger" @click.stop="confirmDelete(recipe.id)" title="✕">
-              <span class="card-action-glyph" aria-hidden="true">✕</span>
+              <svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                <line x1="18" y1="6" x2="6" y2="18"/>
+                <line x1="6" y1="6" x2="18" y2="18"/>
+              </svg>
             </button>
           </div>
           <div class="card-name" v-html="highlight(recipe.name || '', debouncedSearch.trim())"></div>
