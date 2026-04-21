@@ -194,6 +194,8 @@ Rispondi SOLO con un oggetto JSON valido, senza backtick, senza testo aggiuntivo
       return true;
     } catch (error: unknown) {
       const rawError = String((error as Error)?.message || error).trim();
+      const isDeadPage = source === 'web'
+        && (rawError.includes('GZ_PAGE_NOT_FOUND') || rawError.includes('WEB_FETCH_404'));
       const isWebImportLimit = source === 'web'
         && (rawError.includes('UNSUPPORTED_WEB_IMPORT') || rawError.includes('WEB_FETCH'));
       if (source === 'web') {
@@ -203,12 +205,21 @@ Rispondi SOLO con un oggetto JSON valido, senza backtick, senza testo aggiuntivo
           adapter: adapterLabel,
           stage,
           reason: rawError || t('import_error'),
-          hint: fetchedMarkdown && stage === 'parse-content' ? extractPageHeadingsHint(fetchedMarkdown) : null,
+          hint: fetchedMarkdown && stage === 'parse-content' && !isDeadPage
+            ? extractPageHeadingsHint(fetchedMarkdown)
+            : null,
         };
       } else {
         clearDiagnostics();
       }
-      setStatus(isWebImportLimit ? t('import_error_web_blocked') : t('import_error'), 'err');
+      setStatus(
+        isDeadPage
+          ? t('import_error_page_not_found')
+          : isWebImportLimit
+            ? t('import_error_web_blocked')
+            : t('import_error'),
+        'err',
+      );
       return false;
     } finally {
       loading.value = false;

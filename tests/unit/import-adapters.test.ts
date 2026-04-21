@@ -290,6 +290,66 @@ Versare le farine in una ciotola e aggiungere l'acqua calda.
 Lavorare l'impasto energicamente fino a ottenere una consistenza elastica.
 `;
 
+const GZ_MARKDOWN_MULTI_SECTION_PREPARATION = `# Lasagne alla Bolognese
+
+*   Difficoltà: **Media**
+*   Preparazione: **90 min**
+*   Cottura: **150 min**
+*   Dosi per: **6 persone**
+
+## PRESENTAZIONE
+
+Descrizione.
+
+## INGREDIENTI
+
+per la sfoglia[Semola di grano duro rimacinata](https://www.giallozafferano.it/) 175 g [Farina 00](https://www.giallozafferano.it/) 75 g [Spinaci](https://www.giallozafferano.it/) 125 g per il ragù[Macinato di manzo](https://www.giallozafferano.it/) 700 g [Passata di pomodoro](https://www.giallozafferano.it/) 350 g per la besciamella[Latte intero](https://www.giallozafferano.it/) 800 g [Burro](https://www.giallozafferano.it/) 50 g per la superficie[Parmigiano Reggiano DOP](https://www.giallozafferano.it/) 150 g
+
+[AGGIUNGI ALLA LISTA DELLA SPESA](https://www.giallozafferano.it/)
+
+## Ragù
+
+Preparate il soffritto e rosolate la carne.
+
+Unite passata e brodo, poi fate sobbollire a lungo.
+
+## Pasta fresca
+
+Impastate farina, semola, spinaci e uova.
+
+Stendete la sfoglia e ricavate i rettangoli.
+
+## Besciamella
+
+Sciogliete il burro, unite la farina e poi il latte.
+
+Mescolate fino a ottenere una salsa liscia.
+
+## Composizione
+
+Alternate strati di pasta, ragù, besciamella e parmigiano.
+
+Infornate fino a doratura.
+
+## Conservazione
+
+Conservare in frigo.
+`;
+
+const GZ_MARKDOWN_PAGE_NOT_FOUND = `Title: Pagina non trovata - Le ricette di GialloZafferano
+
+URL Source: https://ricette.giallozafferano.it/Fiori-di-zucca-fritti.html
+
+Warning: Target URL returned error 404: Not Found
+
+Markdown Content:
+# Pagina non trovata - Le ricette di GialloZafferano
+
+## ops... c'è stato un errore
+
+La pagina richiesta non è disponibile.
+`;
+
 describe('GialloZafferano adapter — ingredient parsing', () => {
   const adapter = getImportAdapterForDomain('giallozafferano.it')!;
   const url = 'https://ricette.giallozafferano.it/test.html';
@@ -333,5 +393,19 @@ describe('GialloZafferano adapter — ingredient parsing', () => {
     expect(result.ingredients.some(i => i.includes('Farina di grano saraceno'))).toBe(true);
     expect(result.ingredients.some(i => i.includes('Burro'))).toBe(true);
     expect(result.ingredients.some(i => /Attenzione|Edamam/i.test(i))).toBe(false);
+  });
+
+  it('supports multi-section preparation pages without a "Come preparare" heading', () => {
+    const result = adapter.parse(GZ_MARKDOWN_MULTI_SECTION_PREPARATION, url);
+    expect(result.name).toBe('Lasagne alla Bolognese');
+    expect(result.ingredients.length).toBeGreaterThanOrEqual(5);
+    expect(result.ingredients.some(i => i.includes('Macinato di manzo'))).toBe(true);
+    expect(result.steps.length).toBeGreaterThanOrEqual(6);
+    expect(result.steps.some(step => step.includes('Preparate il soffritto'))).toBe(true);
+    expect(result.steps.some(step => step.includes('Alternate strati di pasta'))).toBe(true);
+  });
+
+  it('classifies obvious GialloZafferano 404 pages as page-not-found instead of ingredient parser failures', () => {
+    expect(() => adapter.parse(GZ_MARKDOWN_PAGE_NOT_FOUND, url)).toThrowError('GZ_PAGE_NOT_FOUND');
   });
 });

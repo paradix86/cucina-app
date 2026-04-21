@@ -206,4 +206,26 @@ describe('giallozafferano.it — named adapter', () => {
     expect(result.source).toBe('web');
     expect(result.sourceDomain).toBe('giallozafferano.it');
   });
+
+  it('imports a multi-section preparation recipe without "Come preparare"', async () => {
+    const url = 'https://www.giallozafferano.it/ricetta/Lasagne-alla-Bolognese.html';
+    let result;
+    try {
+      result = await runImport(url);
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : String(e);
+      throw new Error(
+        `Import pipeline threw: ${msg}\nURL: ${url}\n` +
+        `(hint: if GZ_STEPS_NOT_FOUND — GZ section-heading assumptions may have regressed)`,
+      );
+    }
+
+    logResult(url, result.name, result.ingredients.length, result.steps.length, result.time ?? 'n.d.', result.preparationType);
+
+    expect(result.name.length, 'title should be non-empty').toBeGreaterThan(2);
+    expect(result.ingredients.length, 'should extract at least 5 ingredients').toBeGreaterThanOrEqual(5);
+    expect(result.steps.length, 'should extract at least 4 steps').toBeGreaterThanOrEqual(4);
+    expect(result.source).toBe('web');
+    expect(result.sourceDomain).toBe('giallozafferano.it');
+  });
 });

@@ -188,6 +188,20 @@ function cleanGialloZafferanoTitle(title: string): string {
     .trim();
 }
 
+function isGialloZafferanoDeadPage(markdown: string): boolean {
+  const md = normalizeImportText(markdown);
+  if (!md) return false;
+
+  const signals = [
+    /(?:^|\n)Title:\s*Pagina non trovata - Le ricette di GialloZafferano(?:\n|$)/i,
+    /(?:^|\n)#\s*Pagina non trovata - Le ricette di GialloZafferano(?:\n|$)/i,
+    /Warning:\s*Target URL returned error 404:\s*Not Found/i,
+    /(?:^|\n)##\s*ops\.\.\.\s*c['’]e stato un errore(?:\n|$)/i,
+  ];
+
+  return signals.filter(pattern => pattern.test(md)).length >= 2;
+}
+
 function parseGialloZafferanoIngredients(block: string): string[] {
   const cleanedBlock = normalizeImportText(
     (block || '')
@@ -216,21 +230,51 @@ function parseGialloZafferanoIngredients(block: string): string[] {
     .filter((v): v is string => Boolean(v));
 }
 
+function cleanGialloZafferanoHeading(heading: string): string {
+  return stripImportLinksAndImages(heading)
+    .replace(/^#+\s*/, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function isGialloZafferanoEditorialHeading(heading: string): boolean {
+  const cleaned = cleanGialloZafferanoHeading(heading);
+  return /^(?:conservazione|consiglio|sapevate che\.\.\.|sapevate che|curiosita|curiosità|ascolta la ricetta)$/i.test(cleaned);
+}
+
+function isGialloZafferanoPreparationHeading(heading: string): boolean {
+  const cleaned = cleanGialloZafferanoHeading(heading);
+  if (!cleaned) return false;
+  if (/^\[.*\]\(.*\)$/.test(heading.trim())) return false;
+  if (/^come preparare\b/i.test(cleaned)) return true;
+  if (/^(?:presentazione|ingredienti|ascolta la ricetta)$/i.test(cleaned)) return false;
+  if (isGialloZafferanoEditorialHeading(cleaned)) return false;
+  return true;
+}
+
 function parseGialloZafferanoAdapter(markdown: string, url: string): ImportPreviewRecipe {
   const md = normalizeImportText(markdown);
+  if (isGialloZafferanoDeadPage(md)) throw new Error('GZ_PAGE_NOT_FOUND');
   const titleMatch = md.match(/^#\s+(.+)$/m) || md.match(/^Title:\s*(.+)$/m);
   const difficultyMatch = md.match(/\*\s+Difficoltà:\s+\*\*(.*?)\*\*/i);
   const prepMatch = md.match(/\*\s+Preparazione:\s+\*\*(.*?)\*\*/i);
   const cookMatch = md.match(/\*\s+Cottura:\s+\*\*(.*?)\*\*/i);
   const servingsMatch = md.match(/\*\s+Dosi per:\s+\*\*(.*?)\*\*/i);
-  const stepsStart = md.indexOf('## Come preparare');
-  const stepsEndRaw = md.indexOf('## Conservazione', stepsStart);
-  const stepsEnd = stepsEndRaw === -1 ? md.length : stepsEndRaw;
-  if (stepsStart === -1) throw new Error('GZ_STEPS_NOT_FOUND');
-
   const ingredientsHeadingMatch = md.match(/^(?:##\s*)?INGREDIENTI\s*$/im);
   if (!ingredientsHeadingMatch || ingredientsHeadingMatch.index == null) throw new Error('GZ_INGREDIENTS_NOT_FOUND');
-  const ingredientsStart = ingredientsHeadingMatch.index + ingredientsHeadingMatch[ 0 ].length;
+  const ingredientsHeadingStart = ingredientsHeadingMatch.index;
+  const ingredientsStart = ingredientsHeadingStart + ingredientsHeadingMatch[ 0 ].length;
+
+  const sectionHeadings = [ ...md.matchAll(/^##\s+(.+)$/gm) ].map(match => ({
+    raw: match[ 1 ],
+    index: match.index ?? -1,
+  }));
+
+  const preparationHeading = sectionHeadings.find(heading => (
+    heading.index > ingredientsHeadingStart && isGialloZafferanoPreparationHeading(heading.raw)
+  ));
+  if (!preparationHeading || preparationHeading.index === -1) throw new Error('GZ_STEPS_NOT_FOUND');
+  const stepsStart = preparationHeading.index;
   if (ingredientsStart >= stepsStart) throw new Error('GZ_INGREDIENTS_NOT_FOUND');
 
   let ingredientsEnd = md.indexOf('[AGGIUNGI ALLA LISTA DELLA SPESA]', ingredientsStart);
@@ -242,6 +286,14 @@ function parseGialloZafferanoAdapter(markdown: string, url: string): ImportPrevi
     ingredientsEnd = prepInBlock !== -1 ? ingredientsStart + prepInBlock : stepsStart;
   }
   if (ingredientsEnd <= ingredientsStart) throw new Error('GZ_INGREDIENTS_NOT_FOUND');
+
+  const stepsEndHeading = sectionHeadings.find(heading => (
+    heading.index > stepsStart && (
+      isGialloZafferanoEditorialHeading(heading.raw) ||
+      /^\[.*\]\(.*\)$/.test(heading.raw.trim())
+    )
+  ));
+  const stepsEnd = stepsEndHeading?.index ?? md.length;
 
   const ingredients = parseGialloZafferanoIngredients(md.slice(ingredientsStart, ingredientsEnd));
   const steps = md
