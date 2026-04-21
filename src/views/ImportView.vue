@@ -6,6 +6,7 @@ import { getSourceDomainLabel, joinMetaParts, suggestMealOccasions, MEAL_OCCASIO
 import { t } from '../lib/i18n.js';
 import { useRecipeBookStore } from '../stores/recipeBook';
 import { DUEMME_VETTED_RECIPE_PACK } from '../lib/duemmeVettedPack.js';
+import { NINJA_VETTED_RECIPE_PACK } from '../lib/ninjaVettedPack.js';
 
 const emit = defineEmits(['toast', 'go-home']);
 const route = useRoute();
@@ -15,6 +16,7 @@ const recipeBookStore = useRecipeBookStore();
 const prepOptions = ['classic', 'bimby', 'airfryer'];
 const showManualForm = ref(false);
 const showCollectionBrowser = ref(false);
+const activeCollectionKey = ref('duemme');
 const selectedCollectionIds = ref([]);
 const selectedCollectionId = ref('');
 const urlInputRef = ref(null);
@@ -70,8 +72,41 @@ const manualMealOccasionSuggestions = computed(() => suggestMealOccasions({
   category: manualForm.value.category,
 }));
 const previewMealOccasionSuggestions = computed(() => previewRecipe.value ? suggestMealOccasions(previewRecipe.value) : []);
-const collectionRecipes = computed(() => DUEMME_VETTED_RECIPE_PACK);
-const duemmeFeaturedCount = computed(() => collectionRecipes.value.length);
+const curatedCollections = computed(() => ([
+  {
+    key: 'duemme',
+    title: t('import_duemme_feature_title'),
+    description: t('import_duemme_feature_desc'),
+    browseLabel: t('import_duemme_feature_browse'),
+    importAllLabel: t('import_duemme_feature_import_all', { n: DUEMME_VETTED_RECIPE_PACK.length }),
+    countLabel: t('import_duemme_feature_count', { n: DUEMME_VETTED_RECIPE_PACK.length }),
+    sourceLabel: t('import_duemme_feature_source'),
+    browserTitle: t('import_collection_duemme_title'),
+    browserDesc: t('import_collection_duemme_desc'),
+    recipes: DUEMME_VETTED_RECIPE_PACK,
+    accentClass: 'is-duemme',
+  },
+  {
+    key: 'ninja',
+    title: t('import_ninja_feature_title'),
+    description: t('import_ninja_feature_desc'),
+    browseLabel: t('import_ninja_feature_browse'),
+    importAllLabel: t('import_ninja_feature_import_all', { n: NINJA_VETTED_RECIPE_PACK.length }),
+    countLabel: t('import_ninja_feature_count', { n: NINJA_VETTED_RECIPE_PACK.length }),
+    sourceLabel: t('import_ninja_feature_source'),
+    browserTitle: t('import_collection_ninja_title'),
+    browserDesc: t('import_collection_ninja_desc'),
+    recipes: NINJA_VETTED_RECIPE_PACK,
+    accentClass: 'is-ninja',
+  },
+]));
+const featuredCollections = computed(() => curatedCollections.value.filter(collection => collection.recipes.length));
+const activeCollection = computed(() => (
+  curatedCollections.value.find(collection => collection.key === activeCollectionKey.value)
+  || featuredCollections.value[0]
+  || null
+));
+const collectionRecipes = computed(() => activeCollection.value?.recipes || []);
 const collectionSelectedCount = computed(() => selectedCollectionIds.value.length);
 const selectedCollectionRecipe = computed(() => {
   if (!selectedCollectionId.value) return collectionRecipes.value[0] || null;
@@ -86,6 +121,9 @@ const collectionPreviewMeta = computed(() => {
     selectedCollectionRecipe.value.difficolta,
   ]);
 });
+const activeCollectionTitle = computed(() => activeCollection.value?.browserTitle || t('import_collection_title'));
+const activeCollectionDesc = computed(() => activeCollection.value?.browserDesc || t('import_collection_desc'));
+const activeCollectionSource = computed(() => activeCollection.value?.sourceLabel || '');
 const previewMeta = computed(() => {
   if (!previewRecipe.value) return '';
   return joinMetaParts([
@@ -161,14 +199,22 @@ function closeManualForm() {
   showManualForm.value = false;
 }
 
-function openCollectionBrowser(options = {}) {
+function syncCollectionSelection(collectionKey = activeCollectionKey.value) {
+  const nextCollection = curatedCollections.value.find(collection => collection.key === collectionKey) || featuredCollections.value[0] || null;
+  const nextRecipes = nextCollection?.recipes || [];
+  activeCollectionKey.value = nextCollection?.key || '';
+  selectedCollectionIds.value = selectedCollectionIds.value.filter(id => nextRecipes.some(recipe => recipe.id === id));
+  if (!selectedCollectionId.value || !nextRecipes.some(recipe => recipe.id === selectedCollectionId.value)) {
+    selectedCollectionId.value = nextRecipes[0]?.id || '';
+  }
+}
+
+function openCollectionBrowser(collectionKey = activeCollectionKey.value, options = {}) {
   const { scroll = true } = options;
   clearSuccessNotice();
   showManualForm.value = false;
   showCollectionBrowser.value = true;
-  if (!selectedCollectionId.value && collectionRecipes.value.length) {
-    selectedCollectionId.value = collectionRecipes.value[0].id;
-  }
+  syncCollectionSelection(collectionKey);
   if (scroll) {
     scrollToSection('import-collection-browser');
   }
@@ -182,7 +228,7 @@ watch(() => route.query.start, rawMode => {
     return;
   }
   if (mode === 'collections') {
-    openCollectionBrowser({ scroll: true });
+    openCollectionBrowser(activeCollectionKey.value, { scroll: true });
     return;
   }
   if (mode === 'link') {
@@ -190,8 +236,26 @@ watch(() => route.query.start, rawMode => {
   }
 }, { immediate: true });
 
+watch(featuredCollections, collections => {
+  if (!collections.length) {
+    activeCollectionKey.value = '';
+    selectedCollectionId.value = '';
+    selectedCollectionIds.value = [];
+    return;
+  }
+  if (!collections.some(collection => collection.key === activeCollectionKey.value)) {
+    syncCollectionSelection(collections[0].key);
+    return;
+  }
+  syncCollectionSelection(activeCollectionKey.value);
+}, { immediate: true });
+
 function closeCollectionBrowser() {
   showCollectionBrowser.value = false;
+}
+
+function setActiveCollection(collectionKey) {
+  syncCollectionSelection(collectionKey);
 }
 
 function toggleCollectionSelection(recipeId) {
@@ -211,7 +275,7 @@ function clearCollectionSelection() {
 }
 
 function importSelectedCollectionRecipes() {
-  if (!selectedCollectionIds.value.length) return;
+  if (!selectedCollectionIds.value.length || !activeCollection.value) return;
   let added = 0;
   selectedCollectionIds.value.forEach(recipeId => {
     const recipe = collectionRecipes.value.find(item => item.id === recipeId);
@@ -237,7 +301,7 @@ function importSelectedCollectionRecipes() {
 }
 
 function quickImportFeaturedCollection() {
-  if (!collectionRecipes.value.length) return;
+  if (!activeCollection.value || !collectionRecipes.value.length) return;
   selectedCollectionIds.value = collectionRecipes.value.map(recipe => recipe.id);
   importSelectedCollectionRecipes();
 }
@@ -345,7 +409,7 @@ function savePreview() {
         <div class="import-start-actions">
           <button class="btn-primary" @click="startWithLink">{{ t('import_start_link') }}</button>
           <button class="btn-secondary btn-secondary-strong" @click="openManualForm({ focus: true })">{{ t('import_start_manual') }}</button>
-          <button class="btn-secondary" @click="openCollectionBrowser()">{{ t('import_start_collections') }}</button>
+          <button class="btn-secondary" @click="openCollectionBrowser(activeCollectionKey)">{{ t('import_start_collections') }}</button>
         </div>
       </div>
 
@@ -361,30 +425,49 @@ function savePreview() {
         </div>
       </div>
 
-      <div id="import-duemme-featured-card" class="card import-duemme-featured">
+      <div class="import-featured-grid">
+        <div
+          v-for="collection in featuredCollections"
+          :key="collection.key"
+          class="card import-duemme-featured"
+          :class="collection.accentClass"
+        >
         <div class="import-duemme-featured-head">
-          <span class="import-duemme-featured-kicker">{{ t('import_duemme_feature_kicker') }}</span>
-          <h2>{{ t('import_duemme_feature_title') }}</h2>
+          <span class="import-duemme-featured-kicker">{{ collection.key === 'ninja' ? t('import_ninja_feature_kicker') : t('import_duemme_feature_kicker') }}</span>
+          <h2>{{ collection.title }}</h2>
         </div>
-        <p class="muted-label import-section-subtitle">{{ t('import_duemme_feature_desc') }}</p>
+        <p class="muted-label import-section-subtitle">{{ collection.description }}</p>
         <div class="import-duemme-featured-meta">
-          <span class="chip-featured">{{ t('import_duemme_feature_count', { n: duemmeFeaturedCount }) }}</span>
-          <span class="chip-featured">{{ t('import_duemme_feature_source') }}</span>
+          <span class="chip-featured">{{ collection.countLabel }}</span>
+          <span class="chip-featured">{{ collection.sourceLabel }}</span>
         </div>
         <div class="import-duemme-featured-actions">
-          <button class="btn-secondary btn-secondary-strong" @click="openCollectionBrowser()">{{ t('import_duemme_feature_browse') }}</button>
-          <button class="btn-primary" @click="quickImportFeaturedCollection">{{ t('import_duemme_feature_import_all', { n: duemmeFeaturedCount }) }}</button>
+          <button class="btn-secondary btn-secondary-strong" @click="openCollectionBrowser(collection.key)">{{ collection.browseLabel }}</button>
+          <button class="btn-primary" @click="setActiveCollection(collection.key); quickImportFeaturedCollection()">{{ collection.importAllLabel }}</button>
+        </div>
         </div>
       </div>
 
-      <div v-if="showCollectionBrowser" id="import-collection-browser" class="card collection-browser">
+      <div v-if="showCollectionBrowser && activeCollection" id="import-collection-browser" class="card collection-browser">
         <div class="collection-browser-top">
           <div>
-            <h3>{{ t('import_collection_title') }}</h3>
-            <p class="muted-label">{{ t('import_collection_desc') }}</p>
-            <p class="muted-label">{{ t('import_duemme_feature_source') }}</p>
+            <h3>{{ activeCollectionTitle }}</h3>
+            <p class="muted-label">{{ activeCollectionDesc }}</p>
+            <p class="muted-label">{{ activeCollectionSource }}</p>
           </div>
           <button class="btn-ghost" @click="closeCollectionBrowser">{{ t('import_collection_close') }}</button>
+        </div>
+        <div class="collection-switcher" :aria-label="t('import_collection_switcher_label')">
+          <button
+            v-for="collection in featuredCollections"
+            :key="collection.key"
+            class="collection-switcher-btn"
+            :class="{ active: activeCollectionKey === collection.key }"
+            @click="setActiveCollection(collection.key)"
+          >
+            <span>{{ collection.key === 'ninja' ? t('import_collection_ninja_short') : t('import_collection_duemme_short') }}</span>
+            <small>{{ collection.recipes.length }}</small>
+          </button>
         </div>
         <div class="collection-browser-grid">
           <div class="collection-list">

@@ -1239,6 +1239,33 @@ input[type="number"] {
   gap: 10px;
   margin-bottom: 12px;
 }
+.collection-switcher {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.collection-switcher-btn {
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  border-radius: 999px;
+  min-height: 38px;
+  padding: 8px 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-weight: 600;
+}
+.collection-switcher-btn small {
+  color: var(--text-muted);
+  font-size: 11px;
+}
+.collection-switcher-btn.active {
+  border-color: color-mix(in srgb, var(--green) 40%, var(--border) 60%);
+  background: color-mix(in srgb, var(--green-soft) 55%, var(--bg) 45%);
+}
 .collection-browser-grid {
   display: grid;
   grid-template-columns: minmax(260px, 1fr) minmax(320px, 1.4fr);
@@ -1337,12 +1364,21 @@ input[type="number"] {
   gap: 8px;
 }
 
+.import-featured-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 12px;
+}
 .import-duemme-featured {
   border-color: color-mix(in srgb, var(--green) 32%, var(--border) 68%);
   background: linear-gradient(140deg, color-mix(in srgb, var(--green-soft) 72%, var(--bg) 28%), var(--bg));
   padding: 1rem;
   display: grid;
   gap: 10px;
+}
+.import-duemme-featured.is-ninja {
+  border-color: color-mix(in srgb, var(--orange) 30%, var(--border) 70%);
+  background: linear-gradient(140deg, color-mix(in srgb, var(--orange-light) 72%, var(--bg) 28%), var(--bg));
 }
 .import-duemme-featured-head {
   display: grid;
@@ -3378,6 +3414,9 @@ mark {
   }
   .collection-browser-actions .btn-primary {
     width: 100%;
+  }
+  .import-featured-grid {
+    grid-template-columns: 1fr;
   }
   .import-duemme-featured {
     padding: .9rem;
