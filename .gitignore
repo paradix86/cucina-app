@@ -49,3 +49,5 @@ vite.config.js.timestamp-*
 *.bak
 *.backup
 *~
+
+scripts/tmp/
