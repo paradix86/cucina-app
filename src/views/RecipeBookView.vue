@@ -126,12 +126,31 @@ async function confirmDelete(id) {
   }
 }
 
-function onImportBackup(event) {
+function onExportBackup() {
+  const count = store.exportBackup();
+  emit('toast', t('backup_export_ok', { n: count }), 'success');
+}
+
+async function onImportBackup(event) {
   const file = event.target.files?.[0];
   if (!file) return;
-  emit('toast', t('import_loading'));
-  store.importBackup(file).then(total => {
-    emit('toast', t('backup_import_ok', { n: total }), 'success');
+
+  const confirmed = requestConfirm
+    ? await requestConfirm({
+        title: t('backup_import_confirm_title'),
+        message: t('backup_import_confirm_msg'),
+        confirmLabel: t('confirm_confirm'),
+        cancelLabel: t('confirm_cancel'),
+      })
+    : true;
+
+  if (!confirmed) {
+    event.target.value = '';
+    return;
+  }
+
+  store.importBackup(file).then(({ added, total }) => {
+    emit('toast', t('backup_import_ok', { added, total }), 'success');
   }).catch(() => {
     emit('toast', t('backup_import_err'), 'error');
   }).finally(() => {
@@ -187,7 +206,7 @@ defineExpose({
         <span id="saved-count" class="muted-label">{{ savedCountLabel }}</span>
       </div>
       <div v-if="recipes.length" class="backup-actions">
-        <button class="btn-ghost" @click="store.exportBackup(); emit('toast', t('backup_export_ok'), 'success')">{{ t('backup_export') }}</button>
+        <button class="btn-ghost" @click="onExportBackup">{{ t('backup_export') }}</button>
         <label class="btn-ghost" style="display:inline-flex;align-items:center;justify-content:center;cursor:pointer">
           {{ t('backup_import') }}
           <input hidden type="file" accept="application/json,.json" @change="onImportBackup" />

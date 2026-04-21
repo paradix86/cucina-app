@@ -245,13 +245,15 @@ export function exportRecipeBook(): number {
   const a = document.createElement('a');
   const url = URL.createObjectURL(blob);
   a.href = url;
-  a.download = 'ricettario_backup.json';
+  a.download = `cucina_backup_${new Date().toISOString().slice(0, 10)}.json`;
   a.click();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
   return arr.length;
 }
 
-export function importRecipeBook(file: File): Promise<number> {
+export type ImportResult = { total: number; added: number };
+
+export function importRecipeBook(file: File): Promise<ImportResult> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = e => {
@@ -260,9 +262,11 @@ export function importRecipeBook(file: File): Promise<number> {
         if (!Array.isArray(arr)) throw new Error('Invalid format');
         const incoming = arr.map(normalizeStoredRecipe);
         const existing = loadRecipeBook();
+        const existingIds = new Set(existing.map(r => r.id));
+        const added = incoming.filter(r => !existingIds.has(r.id)).length;
         const merged = [ ...incoming, ...existing.filter(r => !incoming.find(a => a.id === r.id)) ];
         saveRecipeBook(merged);
-        resolve(merged.length);
+        resolve({ total: merged.length, added });
       } catch (err) {
         reject(err);
       }

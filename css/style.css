@@ -801,6 +801,12 @@ input[type="number"] {
   flex-direction: column;
   gap: 1rem;
 }
+.import-work-sections {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  align-items: start;
+}
 .import-box,
 .import-flow-card { margin-bottom: 0; }
 .import-start-card {
@@ -842,6 +848,33 @@ input[type="number"] {
 .import-section-subtitle {
   margin-top: 2px;
   margin-bottom: 0;
+}
+.import-success-banner {
+  border: 1px solid color-mix(in srgb, var(--green) 36%, var(--border) 64%);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--green-light) 48%, var(--bg) 52%) 0%, var(--bg) 100%);
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.import-success-kicker {
+  display: inline-flex;
+  margin-bottom: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--green-text);
+}
+.import-success-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.import-success-actions .btn-primary,
+.import-success-actions .btn-ghost {
+  min-height: 42px;
 }
 .source-pills-static .src-pill {
   cursor: default;
@@ -1188,8 +1221,9 @@ input[type="number"] {
 
 /* ---- IMPORT COLLECTIONS ---- */
 .collection-browser {
-  margin-top: 1rem;
   padding: 1rem;
+  border-color: color-mix(in srgb, var(--green) 24%, var(--border) 76%);
+  background: color-mix(in srgb, var(--bg-secondary) 62%, var(--bg) 38%);
 }
 .collection-browser-top {
   display: flex;
@@ -3069,6 +3103,9 @@ mark {
     align-items: stretch;
     gap: 10px;
   }
+  .import-work-sections {
+    grid-template-columns: 1fr;
+  }
   .import-start-actions {
     flex-direction: column;
   }
@@ -3100,6 +3137,14 @@ mark {
   }
   .preview-actions .btn-primary,
   .preview-actions .btn-ghost {
+    width: 100%;
+  }
+  .import-success-actions {
+    width: 100%;
+    flex-direction: column;
+  }
+  .import-success-actions .btn-primary,
+  .import-success-actions .btn-ghost {
     width: 100%;
   }
   .preview-meta-label {

@@ -20,6 +20,7 @@ const selectedCollectionId = ref('');
 const urlInputRef = ref(null);
 const tagInputRef = ref(null);
 const manualNameInputRef = ref(null);
+const successNotice = ref(null);
 function normalizeStringArray(value) {
   return Array.isArray(value)
     ? value.map(item => {
@@ -45,6 +46,14 @@ function toggleManualMealOccasion(occasion) {
   } else {
     manualForm.value.mealOccasion.splice(idx, 1);
   }
+}
+
+function setSuccessNotice(message) {
+  successNotice.value = { message };
+}
+
+function clearSuccessNotice() {
+  successNotice.value = null;
 }
 
 const previewIngredients = computed(() => normalizeStringArray(previewRecipe.value?.ingredients));
@@ -112,6 +121,7 @@ function scrollToSection(id) {
 
 function startWithLink() {
   showCollectionBrowser.value = false;
+  clearSuccessNotice();
   scrollToSection('import-link-card');
   nextTick(() => {
     if (urlInputRef.value && typeof urlInputRef.value.focus === 'function') {
@@ -131,6 +141,7 @@ function focusManualNameInput() {
 function openManualForm(options = {}) {
   const { scroll = true, focus = false } = options;
   showCollectionBrowser.value = false;
+  clearSuccessNotice();
   showManualForm.value = true;
   if (scroll) {
     scrollToSection('import-manual-card');
@@ -146,13 +157,14 @@ function closeManualForm() {
 
 function openCollectionBrowser(options = {}) {
   const { scroll = true } = options;
+  clearSuccessNotice();
   showManualForm.value = false;
   showCollectionBrowser.value = true;
   if (!selectedCollectionId.value && collectionRecipes.value.length) {
     selectedCollectionId.value = collectionRecipes.value[0].id;
   }
   if (scroll) {
-    scrollToSection('import-collections-card');
+    scrollToSection('import-collection-browser');
   }
 }
 
@@ -202,7 +214,7 @@ function importSelectedCollectionRecipes() {
   emit('toast', added ? t('guide_pack_import_ok', { n: added }) : t('guide_pack_import_none'), added ? 'success' : 'info');
   if (added) {
     selectedCollectionIds.value = [];
-    emit('go-home');
+    setSuccessNotice(t('guide_pack_import_ok', { n: added }));
   }
 }
 
@@ -286,14 +298,14 @@ function saveManualRecipe() {
   emit('toast', t('manual_saved_ok'), 'success');
   manualForm.value = buildManualForm();
   showManualForm.value = false;
-  emit('go-home');
+  setSuccessNotice(t('manual_saved_ok'));
 }
 
 function savePreview() {
   const ok = savePreviewedRecipe();
   emit('toast', ok ? t('builtin_saved_ok') : t('builtin_already_saved'), ok ? 'success' : 'info');
   if (ok) {
-    emit('go-home');
+    setSuccessNotice(t('builtin_saved_ok'));
   }
 }
 </script>
@@ -311,7 +323,19 @@ function savePreview() {
         </div>
       </div>
 
-      <div class="card import-duemme-featured">
+      <div v-if="successNotice" class="card import-success-banner" aria-live="polite">
+        <div>
+          <span class="import-success-kicker">{{ t('import_success_banner_kicker') }}</span>
+          <h3>{{ t('import_success_banner_title') }}</h3>
+          <p class="muted-label">{{ successNotice.message }}</p>
+        </div>
+        <div class="import-success-actions">
+          <button class="btn-primary" @click="emit('go-home')">{{ t('import_success_open_book') }}</button>
+          <button class="btn-ghost" @click="clearSuccessNotice">{{ t('import_success_continue') }}</button>
+        </div>
+      </div>
+
+      <div id="import-duemme-featured-card" class="card import-duemme-featured">
         <div class="import-duemme-featured-head">
           <span class="import-duemme-featured-kicker">{{ t('import_duemme_feature_kicker') }}</span>
           <h2>{{ t('import_duemme_feature_title') }}</h2>
@@ -327,7 +351,66 @@ function savePreview() {
         </div>
       </div>
 
-      <div id="import-link-card" class="import-box card">
+      <div v-if="showCollectionBrowser" id="import-collection-browser" class="card collection-browser">
+        <div class="collection-browser-top">
+          <div>
+            <h3>{{ t('import_collection_title') }}</h3>
+            <p class="muted-label">{{ t('import_collection_desc') }}</p>
+            <p class="muted-label">{{ t('import_duemme_feature_source') }}</p>
+          </div>
+          <button class="btn-ghost" @click="closeCollectionBrowser">{{ t('import_collection_close') }}</button>
+        </div>
+        <div class="collection-browser-grid">
+          <div class="collection-list">
+            <div class="collection-list-actions">
+              <button class="btn-ghost" @click="selectAllCollectionRecipes">{{ t('import_collection_select_all') }}</button>
+              <button class="btn-ghost" @click="clearCollectionSelection">{{ t('import_collection_clear') }}</button>
+            </div>
+            <div class="collection-list-items">
+              <label
+                v-for="recipe in collectionRecipes"
+                :key="recipe.id"
+                class="collection-item"
+                :class="{ active: selectedCollectionId === recipe.id }"
+              >
+                <input
+                  type="checkbox"
+                  :checked="selectedCollectionIds.includes(recipe.id)"
+                  @change="toggleCollectionSelection(recipe.id)"
+                />
+                <button class="collection-item-main" @click="selectedCollectionId = recipe.id">
+                  <span class="collection-item-name">{{ recipe.name }}</span>
+                  <span class="collection-item-meta">{{ joinMetaParts([recipe.category, recipe.time]) }}</span>
+                </button>
+              </label>
+            </div>
+          </div>
+          <div v-if="selectedCollectionRecipe" class="collection-preview">
+            <h4>{{ selectedCollectionRecipe.emoji || '🍴' }} {{ selectedCollectionRecipe.name }}</h4>
+            <p class="muted-label">{{ collectionPreviewMeta }}</p>
+            <div class="sec-label">{{ t('detail_ingredients') }}</div>
+            <ul class="ing-list collection-preview-list">
+              <li v-for="ingredient in selectedCollectionRecipe.ingredients" :key="ingredient">{{ ingredient }}</li>
+            </ul>
+            <div class="sec-label" style="margin-top:1rem">{{ t('detail_steps') }}</div>
+            <div class="collection-preview-steps">
+              <div v-for="(step, index) in selectedCollectionRecipe.steps" :key="`${selectedCollectionRecipe.id}-${index}`" class="step-row">
+                <span class="step-n">{{ index + 1 }}</span>
+                <p class="step-txt">{{ step }}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="collection-browser-bottom">
+          <span class="muted-label">{{ t('import_collection_selected', { n: collectionSelectedCount }) }}</span>
+          <div class="collection-browser-actions">
+            <button class="btn-primary" :disabled="!collectionSelectedCount" @click="importSelectedCollectionRecipes">{{ t('import_collection_import') }}</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="import-work-sections">
+        <div id="import-link-card" class="import-box card">
         <h2>{{ t('import_section_link_title') }}</h2>
         <p class="muted-label import-section-subtitle">{{ t('import_section_link_desc') }}</p>
         <p class="muted-label import-help-line">{{ t('import_section_link_helper') }}</p>
@@ -357,9 +440,9 @@ function savePreview() {
             </div>
           </details>
         </div>
-      </div>
+        </div>
 
-      <div id="import-manual-card" class="card import-flow-card" :class="{ 'import-manual-active': showManualForm }">
+        <div id="import-manual-card" class="card import-flow-card" :class="{ 'import-manual-active': showManualForm }">
         <div class="import-flow-head">
           <div>
             <h2>{{ t('import_section_manual_title') }}</h2>
@@ -473,76 +556,8 @@ function savePreview() {
           </div>
         </div>
       </div>
-
-      <div id="import-collections-card" class="card import-flow-card">
-        <div class="import-flow-head">
-          <div>
-            <h2>{{ t('import_section_collections_title') }}</h2>
-            <p class="muted-label import-section-subtitle">{{ t('import_section_collections_desc') }}</p>
-            <p class="muted-label import-help-line">{{ t('import_section_collections_helper') }}</p>
-          </div>
-          <button class="btn-secondary" id="collection-open" @click="openCollectionBrowser">{{ t('import_section_collections_browse') }}</button>
         </div>
       </div>
-    </div>
-
-    <div v-if="showCollectionBrowser" class="card collection-browser">
-      <div class="collection-browser-top">
-        <div>
-          <h3>{{ t('import_collection_title') }}</h3>
-          <p class="muted-label">{{ t('import_collection_desc') }}</p>
-          <p class="muted-label">{{ t('import_duemme_feature_source') }}</p>
-        </div>
-        <button class="btn-ghost" @click="closeCollectionBrowser">{{ t('import_collection_close') }}</button>
-      </div>
-      <div class="collection-browser-grid">
-        <div class="collection-list">
-          <div class="collection-list-actions">
-            <button class="btn-ghost" @click="selectAllCollectionRecipes">{{ t('import_collection_select_all') }}</button>
-            <button class="btn-ghost" @click="clearCollectionSelection">{{ t('import_collection_clear') }}</button>
-          </div>
-          <div class="collection-list-items">
-            <label
-              v-for="recipe in collectionRecipes"
-              :key="recipe.id"
-              class="collection-item"
-              :class="{ active: selectedCollectionId === recipe.id }"
-            >
-              <input
-                type="checkbox"
-                :checked="selectedCollectionIds.includes(recipe.id)"
-                @change="toggleCollectionSelection(recipe.id)"
-              />
-              <button class="collection-item-main" @click="selectedCollectionId = recipe.id">
-                <span class="collection-item-name">{{ recipe.name }}</span>
-                <span class="collection-item-meta">{{ joinMetaParts([recipe.category, recipe.time]) }}</span>
-              </button>
-            </label>
-          </div>
-        </div>
-        <div v-if="selectedCollectionRecipe" class="collection-preview">
-          <h4>{{ selectedCollectionRecipe.emoji || '🍴' }} {{ selectedCollectionRecipe.name }}</h4>
-          <p class="muted-label">{{ collectionPreviewMeta }}</p>
-          <div class="sec-label">{{ t('detail_ingredients') }}</div>
-          <ul class="ing-list collection-preview-list">
-            <li v-for="ingredient in selectedCollectionRecipe.ingredients" :key="ingredient">{{ ingredient }}</li>
-          </ul>
-          <div class="sec-label" style="margin-top:1rem">{{ t('detail_steps') }}</div>
-          <div class="collection-preview-steps">
-            <div v-for="(step, index) in selectedCollectionRecipe.steps" :key="`${selectedCollectionRecipe.id}-${index}`" class="step-row">
-              <span class="step-n">{{ index + 1 }}</span>
-              <p class="step-txt">{{ step }}</p>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="collection-browser-bottom">
-        <span class="muted-label">{{ t('import_collection_selected', { n: collectionSelectedCount }) }}</span>
-        <div class="collection-browser-actions">
-          <button class="btn-primary" :disabled="!collectionSelectedCount" @click="importSelectedCollectionRecipes">{{ t('import_collection_import') }}</button>
-        </div>
-      </div>
-    </div>
 
     <div v-if="previewRecipe" class="preview-box card" style="display:block">
       <h3 id="preview-title">{{ previewRecipe.emoji || '🍴' }} {{ previewRecipe.name }}</h3>

@@ -85,10 +85,10 @@ export const useRecipeBookStore = defineStore('recipeBook', () => {
     refresh();
   }
 
-  async function importBackup(file: File): Promise<number> {
-    const total = await importRecipeBook(file);
+  async function importBackup(file: File): Promise<{ total: number; added: number }> {
+    const result = await importRecipeBook(file);
     refresh();
-    return total;
+    return result;
   }
 
   function exportBackup(): number {
