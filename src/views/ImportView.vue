@@ -18,6 +18,7 @@ const showCollectionBrowser = ref(false);
 const selectedCollectionIds = ref([]);
 const selectedCollectionId = ref('');
 const urlInputRef = ref(null);
+const tagInputRef = ref(null);
 const manualNameInputRef = ref(null);
 function normalizeStringArray(value) {
   return Array.isArray(value)
@@ -563,8 +564,8 @@ function savePreview() {
             <span v-for="tag in previewRecipe.tags || []" :key="tag" class="preview-tag" :data-tag="tag">
               {{ tag }}<button class="tag-remove" @click="removeTag(tag)">×</button>
             </span>
-            <input id="preview-tag-input-vue" class="tag-add-input" type="text" :placeholder="t('import_tag_add_placeholder')" @keydown.enter.prevent="addTag" />
-            <button class="tag-add-btn" @click="addTag">+</button>
+            <input ref="tagInputRef" class="tag-add-input" type="text" :placeholder="t('import_tag_add_placeholder')" @keydown.enter.prevent="addTag(tagInputRef)" />
+            <button class="tag-add-btn" @click="addTag(tagInputRef)">+</button>
           </div>
         </div>
         <div class="preview-meta-row preview-meta-row--meal">

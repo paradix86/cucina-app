@@ -37,7 +37,7 @@ export function useImportFlow() {
 
   const canSave = computed(() => !!previewRecipe.value);
 
-  function setStatus(message: string, type: StatusState['type'] = ''): void {
+  function setStatus(message: string, type: StatusState[ 'type' ] = ''): void {
     status.value = { message, type };
   }
 
@@ -52,15 +52,15 @@ export function useImportFlow() {
   function normalizePreviewRecipe(recipe: ImportPreviewRecipe): ImportPreviewRecipe {
     const normalizeArray = (value: unknown) => Array.isArray(value)
       ? value.map(item => {
-          if (typeof item === 'string') return item;
-          if (item && typeof item === 'object') {
-            if (typeof (item as Record<string, unknown>).text === 'string') {
-              return (item as Record<string, unknown>).text;
-            }
-            return Object.values(item).filter(v => typeof v === 'string').join(' ');
+        if (typeof item === 'string') return item;
+        if (item && typeof item === 'object') {
+          if (typeof (item as Record<string, unknown>).text === 'string') {
+            return (item as Record<string, unknown>).text;
           }
-          return '';
-        }).map(item => item.trim()).filter(Boolean)
+          return Object.values(item).filter(v => typeof v === 'string').join(' ');
+        }
+        return '';
+      }).map(item => item.trim()).filter(Boolean)
       : [];
 
     return {
@@ -72,14 +72,14 @@ export function useImportFlow() {
     } as ImportPreviewRecipe;
   }
 
-  function addTag(): void {
-    const input = document.getElementById('preview-tag-input-vue') as HTMLInputElement | null;
+  function addTag(inputRef: any): void {
+    const input = inputRef?.value;
     if (!input || !previewRecipe.value) return;
     const value = input.value.trim();
     if (!value) return;
     const tags = new Set(previewRecipe.value.tags || []);
     tags.add(value);
-    previewRecipe.value = { ...previewRecipe.value, tags: [...tags] };
+    previewRecipe.value = { ...previewRecipe.value, tags: [ ...tags ] };
     input.value = '';
   }
 
@@ -101,7 +101,7 @@ export function useImportFlow() {
 
     const source = detectSource(nextUrl);
     if (source !== 'web' && !SOCIAL_IMPORT_ENABLED) {
-      setStatus(t('import_error_social_unavailable', { source: sourceMap[source] }), 'err');
+      setStatus(t('import_error_social_unavailable', { source: sourceMap[ source ] }), 'err');
       clearDiagnostics();
       return false;
     }
@@ -136,7 +136,7 @@ export function useImportFlow() {
 
       const prompt = `Sei un assistente culinario esperto. Analizza questo URL: ${nextUrl}
 
-Il link proviene da: ${sourceMap[source]}.
+Il link proviene da: ${sourceMap[ source ]}.
 
 Basandoti sull'URL e su tutto ciò che puoi dedurre (titolo, canale, stile del contenuto), estrai o CREA una ricetta plausibile e dettagliata in italiano.
 Se non riesci a ricavare la ricetta esatta, crea una ricetta realistica e gustosa ispirata al probabile contenuto del link.
@@ -156,8 +156,8 @@ Rispondi SOLO con un oggetto JSON valido, senza backtick, senza testo aggiuntivo
 
       const headers: Record<string, string> = { 'Content-Type': 'application/json' };
       if (ANTHROPIC_API_KEY) {
-        headers['x-api-key'] = ANTHROPIC_API_KEY;
-        headers['anthropic-version'] = '2023-06-01';
+        headers[ 'x-api-key' ] = ANTHROPIC_API_KEY;
+        headers[ 'anthropic-version' ] = '2023-06-01';
       }
 
       const response = await fetch('https://api.anthropic.com/v1/messages', {
@@ -166,7 +166,7 @@ Rispondi SOLO con un oggetto JSON valido, senza backtick, senza testo aggiuntivo
         body: JSON.stringify({
           model: 'claude-sonnet-4-20250514',
           max_tokens: 1000,
-          messages: [{ role: 'user', content: prompt }],
+          messages: [ { role: 'user', content: prompt } ],
         }),
       });
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -226,12 +226,12 @@ Rispondi SOLO con un oggetto JSON valido, senza backtick, senza testo aggiuntivo
 
   function togglePreviewMealOccasion(occasion: string): void {
     if (!previewRecipe.value) return;
-    const valid = ['Colazione', 'Pranzo', 'Cena', 'Spuntino'];
+    const valid = [ 'Colazione', 'Pranzo', 'Cena', 'Spuntino' ];
     if (!valid.includes(occasion)) return;
     const current = previewRecipe.value.mealOccasion || [];
     const updated = current.includes(occasion)
       ? current.filter(o => o !== occasion)
-      : [...current, occasion];
+      : [ ...current, occasion ];
     previewRecipe.value = { ...previewRecipe.value, mealOccasion: updated };
   }
 

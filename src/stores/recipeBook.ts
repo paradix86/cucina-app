@@ -1,5 +1,6 @@
 import { computed, ref } from 'vue';
 import { defineStore } from 'pinia';
+import { t } from '../lib/i18n.js';
 import {
   addRecipe,
   deleteRecipe,
@@ -32,10 +33,10 @@ export const useRecipeBookStore = defineStore('recipeBook', () => {
 
     const existingNames = new Set(recipes.value.map(recipe => (recipe.name || '').trim().toLowerCase()));
     const baseName = (original.name || '').trim();
-    let nextName = `${baseName} (copy)`;
+    let nextName = `${baseName} ${t('recipe_duplicate_suffix')}`;
     let suffix = 2;
     while (existingNames.has(nextName.toLowerCase())) {
-      nextName = `${baseName} (copy ${suffix})`;
+      nextName = `${baseName} ${t('recipe_duplicate_suffix')} ${suffix}`;
       suffix += 1;
     }
 
@@ -46,9 +47,9 @@ export const useRecipeBookStore = defineStore('recipeBook', () => {
       favorite: false,
       lastViewedAt: undefined,
       notes: '',
-      ingredients: [...(original.ingredients || [])],
-      steps: [...(original.steps || [])],
-      tags: [...(original.tags || [])],
+      ingredients: [ ...(original.ingredients || []) ],
+      steps: [ ...(original.steps || []) ],
+      tags: [ ...(original.tags || []) ],
     };
 
     const ok = addRecipe(duplicated);
@@ -95,7 +96,7 @@ export const useRecipeBookStore = defineStore('recipeBook', () => {
   }
 
   const sourceDomains = computed<string[]>(() =>
-    [...new Set(recipes.value.map(recipe => recipe.sourceDomain).filter((value): value is string => Boolean(value)))],
+    [ ...new Set(recipes.value.map(recipe => recipe.sourceDomain).filter((value): value is string => Boolean(value))) ],
   );
 
   return {
