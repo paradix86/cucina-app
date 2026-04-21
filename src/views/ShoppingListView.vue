@@ -2,7 +2,7 @@
 import { computed, inject, ref } from 'vue';
 import { storeToRefs } from 'pinia';
 import { useRouter } from 'vue-router';
-import { parseIngredient, formatQuantity } from '../lib/storage';
+import { parseIngredient, formatQuantity } from '../lib/ingredientUtils';
 import { useShoppingListStore } from '../stores/shoppingList';
 import { t } from '../lib/i18n.js';
 

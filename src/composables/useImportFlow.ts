@@ -16,7 +16,7 @@ import {
   importWebsiteRecipeWithFallbacks,
   suggestImportTags,
 } from '../lib/import/adapters';
-import { normalizePreparationTypeValue } from '../lib/storage';
+import { normalizePreparationTypeValue } from '../lib/ingredientUtils';
 import { t } from '../lib/i18n.js';
 import type { ImportDiagnostic, ImportPreviewRecipe, ImportSource, PreparationType, StatusState } from '../types';
 

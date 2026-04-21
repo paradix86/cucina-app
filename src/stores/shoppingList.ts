@@ -2,18 +2,20 @@ import { computed, ref } from 'vue';
 import { defineStore } from 'pinia';
 import {
   addShoppingListItemsWithScale,
-  assignSection,
   clearShoppingList,
-  getSectionI18nKey,
-  groupShoppingItems,
   loadShoppingList,
-  parseIngredient,
   removeShoppingListItemsByRecipe,
   removeShoppingListItem,
   saveShoppingList,
-  SHOPPING_SECTIONS,
   toggleShoppingListItem,
 } from '../lib/storage';
+import {
+  assignSection,
+  getSectionI18nKey,
+  groupShoppingItems,
+  parseIngredient,
+  SHOPPING_SECTIONS,
+} from '../lib/ingredientUtils';
 import type { Recipe, ShoppingGroup, ShoppingItem, ShoppingSection } from '../types';
 
 type SectionBucket = {

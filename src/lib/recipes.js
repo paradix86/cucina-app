@@ -1,4 +1,4 @@
-import { getPreparationType } from './storage';
+import { getPreparationType } from './ingredientUtils';
 import { t } from './i18n.js';
 import { detectBimbyAction, renderBimbyActionIcon } from './bimbyIcons.js';
 

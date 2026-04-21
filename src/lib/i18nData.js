@@ -1,6 +1,6 @@
 /**
- * i18n.js — Internationalisation system (it / en / de / fr / es)
- * Must be loaded FIRST before all other JS files.
+ * i18nData.js — Translation data and supported language list (it / en / de / fr / es)
+ * Consumed by src/lib/i18n.js — do not import directly elsewhere.
  */
 
 export const TRANSLATIONS = {
