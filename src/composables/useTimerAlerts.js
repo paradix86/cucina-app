@@ -11,7 +11,7 @@ const timerAlert = ref({
 const TIMER_SOUND_STORAGE_KEY = 'cucina_timer_sound';
 const TIMER_VOLUME_STORAGE_KEY = 'cucina_timer_volume';
 const TIMER_DURATION_STORAGE_KEY = 'cucina_timer_duration';
-const VALID_TIMER_SOUNDS = ['beep', 'bell', 'kitchen', 'chime', 'alarm', 'digital', 'doublebell', 'siren', 'phone', 'buzzer', 'retro', 'clockradio', 'silent'];
+const VALID_TIMER_SOUNDS = ['beep', 'bell', 'kitchen', 'chime', 'alarm', 'digital', 'doublebell', 'siren', 'phone', 'buzzer', 'retro', 'clockradio', 'silent', 'classic_bell', 'digital_alarm', 'pro_timer'];
 const selectedTimerSound = useLocalStorage(TIMER_SOUND_STORAGE_KEY, 'beep');
 const selectedTimerVolume = useLocalStorage(TIMER_VOLUME_STORAGE_KEY, 70);
 const selectedTimerDuration = useLocalStorage(TIMER_DURATION_STORAGE_KEY, 5);
@@ -24,7 +24,7 @@ function getAudioContext() {
   const Ctx = window.AudioContext || window.webkitAudioContext;
   if (!Ctx) return null;
   if (!audioContext) audioContext = new Ctx();
-  audioContext.resume().catch(() => {});
+  audioContext.resume().catch(() => { });
   return audioContext;
 }
 
@@ -156,6 +156,64 @@ function playSelectedTimerSound(
           playOscillatorStep(ctx, ctx.destination, { startAt: now + offset + 0.48, duration: 0.2, frequency: 720, endFrequency: 720, type: 'square', gain: gainOf(0.24) });
           playOscillatorStep(ctx, ctx.destination, { startAt: now + offset + 0.72, duration: 0.2, frequency: 960, endFrequency: 960, type: 'square', gain: gainOf(0.24) });
           playOscillatorStep(ctx, ctx.destination, { startAt: now + offset + 1.02, duration: 0.32, frequency: 1320, endFrequency: 1120, type: 'sawtooth', gain: gainOf(0.22) });
+        });
+        break;
+      case 'classic_bell':
+        schedulePatternRepeats(ctx, 1.0, totalDuration, offset => {
+          // Serie di rintocchi rapidi e metallici
+          for (let i = 0; i < 8; i++) {
+            playOscillatorStep(ctx, ctx.destination, {
+              startAt: now + offset + (i * 0.05),
+              duration: 0.04,
+              frequency: 2500,
+              type: 'sine',
+              gain: gainOf(0.2)
+            });
+          }
+        });
+        break;
+      case 'digital_alarm':
+        schedulePatternRepeats(ctx, 0.6, totalDuration, offset => {
+          // Due bip brevi e secchi
+          playOscillatorStep(ctx, ctx.destination, {
+            startAt: now + offset,
+            duration: 0.1,
+            frequency: 2048,
+            type: 'square',
+            gain: gainOf(0.15)
+          });
+          playOscillatorStep(ctx, ctx.destination, {
+            startAt: now + offset + 0.15,
+            duration: 0.1,
+            frequency: 2048,
+            type: 'square',
+            gain: gainOf(0.15)
+          });
+        });
+        break;
+      case 'pro_timer':
+        schedulePatternRepeats(ctx, 0.8, totalDuration, offset => {
+          playOscillatorStep(ctx, ctx.destination, {
+            startAt: now + offset,
+            duration: 0.08,
+            frequency: 1800,
+            type: 'square',
+            gain: gainOf(0.15)
+          });
+          playOscillatorStep(ctx, ctx.destination, {
+            startAt: now + offset + 0.1,
+            duration: 0.08,
+            frequency: 1800,
+            type: 'square',
+            gain: gainOf(0.15)
+          });
+          playOscillatorStep(ctx, ctx.destination, {
+            startAt: now + offset + 0.2,
+            duration: 0.2,
+            frequency: 2200,
+            type: 'square',
+            gain: gainOf(0.15)
+          });
         });
         break;
       case 'beep':
