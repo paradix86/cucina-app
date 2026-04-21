@@ -227,6 +227,8 @@ export const TRANSLATIONS = {
     cooking_done: 'Ricetta completata!',
     cooking_done_sub: 'Buon appetito!',
     cooking_step_timer: 'Timer passo',
+    cooking_keep_awake_label: 'Mantieni schermo attivo',
+    cooking_keep_awake_desc: 'Evita che lo schermo si spenga mentre segui la ricetta passo dopo passo.',
 
     // Timer
     timer_name_placeholder: 'Pasta, Sugo, Arrosto…',
@@ -550,6 +552,8 @@ export const TRANSLATIONS = {
     cooking_done: 'Recipe complete!',
     cooking_done_sub: 'Enjoy your meal!',
     cooking_step_timer: 'Step timer',
+    cooking_keep_awake_label: 'Keep screen awake',
+    cooking_keep_awake_desc: 'Prevent the screen from turning off while you follow the recipe step by step.',
 
     timer_name_placeholder: 'Pasta, Sauce, Roast…',
     timer_add: '+ Add',
@@ -868,6 +872,8 @@ export const TRANSLATIONS = {
     cooking_done: 'Rezept fertig!',
     cooking_done_sub: 'Guten Appetit!',
     cooking_step_timer: 'Schritt-Timer',
+    cooking_keep_awake_label: 'Bildschirm aktiv halten',
+    cooking_keep_awake_desc: 'Verhindert, dass sich der Bildschirm ausschaltet, während du das Rezept Schritt für Schritt befolgst.',
 
     timer_name_placeholder: 'Nudeln, Soße, Braten…',
     timer_add: '+ Hinzufügen',
@@ -1186,6 +1192,8 @@ export const TRANSLATIONS = {
     cooking_done: 'Recette terminée !',
     cooking_done_sub: 'Bon appétit !',
     cooking_step_timer: 'Minuteur étape',
+    cooking_keep_awake_label: 'Garder l’écran actif',
+    cooking_keep_awake_desc: 'Évite que l’écran ne s’éteigne pendant que vous suivez la recette étape par étape.',
 
     timer_name_placeholder: 'Pâtes, Sauce, Rôti…',
     timer_add: '+ Ajouter',
@@ -1504,6 +1512,8 @@ export const TRANSLATIONS = {
     cooking_done: '¡Receta completada!',
     cooking_done_sub: '¡Buen provecho!',
     cooking_step_timer: 'Temporizador del paso',
+    cooking_keep_awake_label: 'Mantener pantalla activa',
+    cooking_keep_awake_desc: 'Evita que la pantalla se apague mientras sigues la receta paso a paso.',
 
     timer_name_placeholder: 'Pasta, Salsa, Asado…',
     timer_add: '+ Añadir',

@@ -1,11 +1,12 @@
 <script setup>
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useWakeLock } from '@vueuse/core';
 import { extractStepSeconds, formatClock, getPreparationInfo } from '../lib/recipes.js';
 import { detectBimbyAction } from '../lib/bimbyIcons.js';
 import { t } from '../lib/i18n.js';
 import { useToasts } from '../composables/useToasts.js';
 import { useTimerAlerts } from '../composables/useTimerAlerts.js';
+import { useCookingPreferences } from '../composables/useCookingPreferences.js';
 import BimbyActionIcon from './BimbyActionIcon.vue';
 
 const props = defineProps({
@@ -21,7 +22,8 @@ const timerRunning = ref(false);
 let timerInterval = null;
 const { showToast } = useToasts();
 const { triggerTimerAlert } = useTimerAlerts();
-const { request: requestWakeLock, release: releaseWakeLock } = useWakeLock();
+const { keepScreenAwake } = useCookingPreferences();
+const { request: requestWakeLock, release: releaseWakeLock, isSupported: wakeLockSupported } = useWakeLock();
 
 const prepInfo = computed(() => getPreparationInfo(props.recipe));
 const currentStep = computed(() => props.recipe.steps?.[stepIndex.value] || '');
@@ -116,18 +118,53 @@ function nextStep() {
 
 function exitMode() {
   clearTimer();
-  releaseWakeLock().catch(() => {});
+  releaseCookingWakeLock();
   emit('exit');
 }
 
+async function acquireCookingWakeLock() {
+  if (!keepScreenAwake.value) return;
+  if (wakeLockSupported && wakeLockSupported.value === false) return;
+  try {
+    await requestWakeLock('screen');
+  } catch (error) {
+    console.warn('[cooking-mode] screen wake lock unavailable', error);
+  }
+}
+
+async function releaseCookingWakeLock() {
+  try {
+    await releaseWakeLock();
+  } catch (_) {
+    // Best effort only.
+  }
+}
+
+function handleVisibilityChange() {
+  if (document.visibilityState === 'visible') {
+    acquireCookingWakeLock();
+    return;
+  }
+  releaseCookingWakeLock();
+}
+
 setupStepTimer();
-requestWakeLock('screen').catch(() => {});
 onMounted(() => {
   window.scrollTo({ top: 0, behavior: 'instant' });
+  document.addEventListener('visibilitychange', handleVisibilityChange);
+  acquireCookingWakeLock();
 });
+watch(keepScreenAwake, enabled => {
+  if (enabled) {
+    acquireCookingWakeLock();
+    return;
+  }
+  releaseCookingWakeLock();
+}, { immediate: true });
 onBeforeUnmount(() => {
   clearTimer();
-  releaseWakeLock().catch(() => {});
+  document.removeEventListener('visibilitychange', handleVisibilityChange);
+  releaseCookingWakeLock();
 });
 </script>
 

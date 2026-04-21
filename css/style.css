@@ -3000,6 +3000,39 @@ mark {
   width: 100%;
   min-height: 42px;
 }
+.timer-toggle-card {
+  margin-top: 14px;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 12px;
+  align-items: start;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  cursor: pointer;
+}
+.timer-toggle-card input[type='checkbox'] {
+  width: 20px;
+  height: 20px;
+  margin-top: 2px;
+  accent-color: var(--green);
+}
+.timer-toggle-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.timer-toggle-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+}
+.timer-toggle-desc {
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--text-muted);
+}
 
 .timer-grid {
   display: grid;

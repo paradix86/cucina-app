@@ -2,6 +2,7 @@
 import { computed, ref } from 'vue';
 import { useTimers } from '../composables/useTimers.js';
 import { useTimerAlerts } from '../composables/useTimerAlerts.js';
+import { useCookingPreferences } from '../composables/useCookingPreferences.js';
 import { t } from '../lib/i18n.js';
 
 const name = ref('');
@@ -20,6 +21,7 @@ const {
   timerSoundOptions,
   timerDurationOptions,
 } = useTimerAlerts();
+const { keepScreenAwake, setKeepScreenAwake } = useCookingPreferences();
 const soundOptions = computed(() => {
   return timerSoundOptions
     .map(value => ({
@@ -80,6 +82,18 @@ function submitTimer() {
             </select>
           </div>
         </div>
+        <label class="timer-toggle-card" for="cooking-keep-awake-toggle">
+          <input
+            id="cooking-keep-awake-toggle"
+            type="checkbox"
+            :checked="keepScreenAwake"
+            @change="setKeepScreenAwake($event.target.checked)"
+          />
+          <div class="timer-toggle-copy">
+            <span class="timer-toggle-title">{{ t('cooking_keep_awake_label') }}</span>
+            <span class="timer-toggle-desc">{{ t('cooking_keep_awake_desc') }}</span>
+          </div>
+        </label>
       </div>
     </div>
     <div class="lbl-row">
