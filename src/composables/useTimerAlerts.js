@@ -9,8 +9,13 @@ const timerAlert = ref({
 });
 
 const TIMER_SOUND_STORAGE_KEY = 'cucina_timer_sound';
+const TIMER_VOLUME_STORAGE_KEY = 'cucina_timer_volume';
+const TIMER_DURATION_STORAGE_KEY = 'cucina_timer_duration';
 const VALID_TIMER_SOUNDS = ['beep', 'bell', 'kitchen', 'chime', 'alarm', 'digital', 'doublebell', 'siren', 'phone', 'buzzer', 'retro', 'clockradio', 'silent'];
 const selectedTimerSound = useLocalStorage(TIMER_SOUND_STORAGE_KEY, 'beep');
+const selectedTimerVolume = useLocalStorage(TIMER_VOLUME_STORAGE_KEY, 70);
+const selectedTimerDuration = useLocalStorage(TIMER_DURATION_STORAGE_KEY, 5);
+const VALID_TIMER_DURATIONS = [2, 5, 10];
 
 let audioContext = null;
 let closeTimeout = null;
@@ -47,77 +52,117 @@ function playOscillatorStep(ctx, destination, options) {
   osc.stop(startAt + duration);
 }
 
-function playSelectedTimerSound(soundId = selectedTimerSound.value) {
+function schedulePatternRepeats(ctx, cycleSeconds, totalSeconds, patternFn) {
+  const repeats = Math.max(1, Math.ceil(totalSeconds / cycleSeconds));
+  for (let index = 0; index < repeats; index += 1) {
+    patternFn(index * cycleSeconds);
+  }
+}
+
+function playSelectedTimerSound(
+  soundId = selectedTimerSound.value,
+  volume = Number(selectedTimerVolume.value) / 100,
+  durationSeconds = Number(selectedTimerDuration.value),
+) {
   try {
     if (soundId === 'silent') return;
     const ctx = getAudioContext();
     if (!ctx) return;
     const now = ctx.currentTime + 0.01;
+    const gainScale = Math.max(0, Math.min(1, Number(volume) || 0));
+    const totalDuration = VALID_TIMER_DURATIONS.includes(Number(durationSeconds))
+      ? Number(durationSeconds)
+      : 5;
+    const gainOf = base => Math.max(0.0001, base * gainScale);
 
     switch (soundId) {
       case 'bell':
-        playOscillatorStep(ctx, ctx.destination, { startAt: now, duration: 1.1, frequency: 1046, endFrequency: 784, type: 'triangle', gain: 0.16 });
-        playOscillatorStep(ctx, ctx.destination, { startAt: now + 0.08, duration: 0.95, frequency: 1568, endFrequency: 1174, type: 'sine', gain: 0.08 });
+        schedulePatternRepeats(ctx, 1.25, totalDuration, offset => {
+          playOscillatorStep(ctx, ctx.destination, { startAt: now + offset, duration: 1.1, frequency: 1046, endFrequency: 784, type: 'triangle', gain: gainOf(0.16) });
+          playOscillatorStep(ctx, ctx.destination, { startAt: now + offset + 0.08, duration: 0.95, frequency: 1568, endFrequency: 1174, type: 'sine', gain: gainOf(0.08) });
+        });
         break;
       case 'kitchen':
-        playOscillatorStep(ctx, ctx.destination, { startAt: now, duration: 0.13, frequency: 1240, endFrequency: 1080, type: 'square', gain: 0.18 });
-        playOscillatorStep(ctx, ctx.destination, { startAt: now + 0.2, duration: 0.13, frequency: 1240, endFrequency: 1080, type: 'square', gain: 0.18 });
-        playOscillatorStep(ctx, ctx.destination, { startAt: now + 0.4, duration: 0.16, frequency: 1480, endFrequency: 1320, type: 'square', gain: 0.2 });
+        schedulePatternRepeats(ctx, 0.72, totalDuration, offset => {
+          playOscillatorStep(ctx, ctx.destination, { startAt: now + offset, duration: 0.13, frequency: 1240, endFrequency: 1080, type: 'square', gain: gainOf(0.18) });
+          playOscillatorStep(ctx, ctx.destination, { startAt: now + offset + 0.2, duration: 0.13, frequency: 1240, endFrequency: 1080, type: 'square', gain: gainOf(0.18) });
+          playOscillatorStep(ctx, ctx.destination, { startAt: now + offset + 0.4, duration: 0.16, frequency: 1480, endFrequency: 1320, type: 'square', gain: gainOf(0.2) });
+        });
         break;
       case 'chime':
-        playOscillatorStep(ctx, ctx.destination, { startAt: now, duration: 0.55, frequency: 880, endFrequency: 1174, type: 'sine', gain: 0.14 });
-        playOscillatorStep(ctx, ctx.destination, { startAt: now + 0.24, duration: 0.7, frequency: 1174, endFrequency: 1568, type: 'sine', gain: 0.12 });
+        schedulePatternRepeats(ctx, 1.1, totalDuration, offset => {
+          playOscillatorStep(ctx, ctx.destination, { startAt: now + offset, duration: 0.55, frequency: 880, endFrequency: 1174, type: 'sine', gain: gainOf(0.14) });
+          playOscillatorStep(ctx, ctx.destination, { startAt: now + offset + 0.24, duration: 0.7, frequency: 1174, endFrequency: 1568, type: 'sine', gain: gainOf(0.12) });
+        });
         break;
       case 'alarm':
-        playOscillatorStep(ctx, ctx.destination, { startAt: now, duration: 0.22, frequency: 740, endFrequency: 940, type: 'sawtooth', gain: 0.22 });
-        playOscillatorStep(ctx, ctx.destination, { startAt: now + 0.26, duration: 0.22, frequency: 940, endFrequency: 740, type: 'sawtooth', gain: 0.22 });
-        playOscillatorStep(ctx, ctx.destination, { startAt: now + 0.52, duration: 0.22, frequency: 740, endFrequency: 940, type: 'sawtooth', gain: 0.22 });
+        schedulePatternRepeats(ctx, 0.82, totalDuration, offset => {
+          playOscillatorStep(ctx, ctx.destination, { startAt: now + offset, duration: 0.22, frequency: 740, endFrequency: 940, type: 'sawtooth', gain: gainOf(0.22) });
+          playOscillatorStep(ctx, ctx.destination, { startAt: now + offset + 0.26, duration: 0.22, frequency: 940, endFrequency: 740, type: 'sawtooth', gain: gainOf(0.22) });
+          playOscillatorStep(ctx, ctx.destination, { startAt: now + offset + 0.52, duration: 0.22, frequency: 740, endFrequency: 940, type: 'sawtooth', gain: gainOf(0.22) });
+        });
         break;
       case 'digital':
-        playOscillatorStep(ctx, ctx.destination, { startAt: now, duration: 0.1, frequency: 1680, endFrequency: 1500, type: 'square', gain: 0.18 });
-        playOscillatorStep(ctx, ctx.destination, { startAt: now + 0.14, duration: 0.1, frequency: 1680, endFrequency: 1500, type: 'square', gain: 0.18 });
-        playOscillatorStep(ctx, ctx.destination, { startAt: now + 0.28, duration: 0.1, frequency: 1680, endFrequency: 1500, type: 'square', gain: 0.18 });
-        playOscillatorStep(ctx, ctx.destination, { startAt: now + 0.5, duration: 0.16, frequency: 1220, endFrequency: 980, type: 'square', gain: 0.16 });
+        schedulePatternRepeats(ctx, 0.84, totalDuration, offset => {
+          playOscillatorStep(ctx, ctx.destination, { startAt: now + offset, duration: 0.1, frequency: 1680, endFrequency: 1500, type: 'square', gain: gainOf(0.18) });
+          playOscillatorStep(ctx, ctx.destination, { startAt: now + offset + 0.14, duration: 0.1, frequency: 1680, endFrequency: 1500, type: 'square', gain: gainOf(0.18) });
+          playOscillatorStep(ctx, ctx.destination, { startAt: now + offset + 0.28, duration: 0.1, frequency: 1680, endFrequency: 1500, type: 'square', gain: gainOf(0.18) });
+          playOscillatorStep(ctx, ctx.destination, { startAt: now + offset + 0.5, duration: 0.16, frequency: 1220, endFrequency: 980, type: 'square', gain: gainOf(0.16) });
+        });
         break;
       case 'doublebell':
-        playOscillatorStep(ctx, ctx.destination, { startAt: now, duration: 0.82, frequency: 988, endFrequency: 740, type: 'triangle', gain: 0.14 });
-        playOscillatorStep(ctx, ctx.destination, { startAt: now + 0.07, duration: 0.72, frequency: 1480, endFrequency: 1046, type: 'sine', gain: 0.08 });
-        playOscillatorStep(ctx, ctx.destination, { startAt: now + 0.92, duration: 0.82, frequency: 988, endFrequency: 740, type: 'triangle', gain: 0.14 });
-        playOscillatorStep(ctx, ctx.destination, { startAt: now + 0.99, duration: 0.72, frequency: 1480, endFrequency: 1046, type: 'sine', gain: 0.08 });
+        schedulePatternRepeats(ctx, 1.9, totalDuration, offset => {
+          playOscillatorStep(ctx, ctx.destination, { startAt: now + offset, duration: 0.82, frequency: 988, endFrequency: 740, type: 'triangle', gain: gainOf(0.14) });
+          playOscillatorStep(ctx, ctx.destination, { startAt: now + offset + 0.07, duration: 0.72, frequency: 1480, endFrequency: 1046, type: 'sine', gain: gainOf(0.08) });
+          playOscillatorStep(ctx, ctx.destination, { startAt: now + offset + 0.92, duration: 0.82, frequency: 988, endFrequency: 740, type: 'triangle', gain: gainOf(0.14) });
+          playOscillatorStep(ctx, ctx.destination, { startAt: now + offset + 0.99, duration: 0.72, frequency: 1480, endFrequency: 1046, type: 'sine', gain: gainOf(0.08) });
+        });
         break;
       case 'siren':
-        playOscillatorStep(ctx, ctx.destination, { startAt: now, duration: 0.32, frequency: 620, endFrequency: 1180, type: 'sawtooth', gain: 0.18 });
-        playOscillatorStep(ctx, ctx.destination, { startAt: now + 0.32, duration: 0.32, frequency: 1180, endFrequency: 620, type: 'sawtooth', gain: 0.18 });
-        playOscillatorStep(ctx, ctx.destination, { startAt: now + 0.64, duration: 0.32, frequency: 620, endFrequency: 1180, type: 'sawtooth', gain: 0.18 });
+        schedulePatternRepeats(ctx, 1.02, totalDuration, offset => {
+          playOscillatorStep(ctx, ctx.destination, { startAt: now + offset, duration: 0.32, frequency: 620, endFrequency: 1180, type: 'sawtooth', gain: gainOf(0.18) });
+          playOscillatorStep(ctx, ctx.destination, { startAt: now + offset + 0.32, duration: 0.32, frequency: 1180, endFrequency: 620, type: 'sawtooth', gain: gainOf(0.18) });
+          playOscillatorStep(ctx, ctx.destination, { startAt: now + offset + 0.64, duration: 0.32, frequency: 620, endFrequency: 1180, type: 'sawtooth', gain: gainOf(0.18) });
+        });
         break;
       case 'phone':
-        playOscillatorStep(ctx, ctx.destination, { startAt: now, duration: 0.18, frequency: 1320, endFrequency: 1180, type: 'triangle', gain: 0.16 });
-        playOscillatorStep(ctx, ctx.destination, { startAt: now + 0.22, duration: 0.18, frequency: 1568, endFrequency: 1320, type: 'triangle', gain: 0.16 });
-        playOscillatorStep(ctx, ctx.destination, { startAt: now + 0.62, duration: 0.18, frequency: 1320, endFrequency: 1180, type: 'triangle', gain: 0.16 });
-        playOscillatorStep(ctx, ctx.destination, { startAt: now + 0.84, duration: 0.18, frequency: 1568, endFrequency: 1320, type: 'triangle', gain: 0.16 });
+        schedulePatternRepeats(ctx, 1.14, totalDuration, offset => {
+          playOscillatorStep(ctx, ctx.destination, { startAt: now + offset, duration: 0.18, frequency: 1320, endFrequency: 1180, type: 'triangle', gain: gainOf(0.16) });
+          playOscillatorStep(ctx, ctx.destination, { startAt: now + offset + 0.22, duration: 0.18, frequency: 1568, endFrequency: 1320, type: 'triangle', gain: gainOf(0.16) });
+          playOscillatorStep(ctx, ctx.destination, { startAt: now + offset + 0.62, duration: 0.18, frequency: 1320, endFrequency: 1180, type: 'triangle', gain: gainOf(0.16) });
+          playOscillatorStep(ctx, ctx.destination, { startAt: now + offset + 0.84, duration: 0.18, frequency: 1568, endFrequency: 1320, type: 'triangle', gain: gainOf(0.16) });
+        });
         break;
       case 'buzzer':
-        playOscillatorStep(ctx, ctx.destination, { startAt: now, duration: 0.14, frequency: 980, endFrequency: 920, type: 'square', gain: 0.22 });
-        playOscillatorStep(ctx, ctx.destination, { startAt: now + 0.18, duration: 0.14, frequency: 980, endFrequency: 920, type: 'square', gain: 0.22 });
-        playOscillatorStep(ctx, ctx.destination, { startAt: now + 0.36, duration: 0.14, frequency: 980, endFrequency: 920, type: 'square', gain: 0.22 });
-        playOscillatorStep(ctx, ctx.destination, { startAt: now + 0.54, duration: 0.14, frequency: 980, endFrequency: 920, type: 'square', gain: 0.22 });
+        schedulePatternRepeats(ctx, 0.86, totalDuration, offset => {
+          playOscillatorStep(ctx, ctx.destination, { startAt: now + offset, duration: 0.14, frequency: 980, endFrequency: 920, type: 'square', gain: gainOf(0.22) });
+          playOscillatorStep(ctx, ctx.destination, { startAt: now + offset + 0.18, duration: 0.14, frequency: 980, endFrequency: 920, type: 'square', gain: gainOf(0.22) });
+          playOscillatorStep(ctx, ctx.destination, { startAt: now + offset + 0.36, duration: 0.14, frequency: 980, endFrequency: 920, type: 'square', gain: gainOf(0.22) });
+          playOscillatorStep(ctx, ctx.destination, { startAt: now + offset + 0.54, duration: 0.14, frequency: 980, endFrequency: 920, type: 'square', gain: gainOf(0.22) });
+        });
         break;
       case 'retro':
-        playOscillatorStep(ctx, ctx.destination, { startAt: now, duration: 0.16, frequency: 784, endFrequency: 784, type: 'square', gain: 0.17 });
-        playOscillatorStep(ctx, ctx.destination, { startAt: now + 0.18, duration: 0.16, frequency: 988, endFrequency: 988, type: 'square', gain: 0.17 });
-        playOscillatorStep(ctx, ctx.destination, { startAt: now + 0.36, duration: 0.16, frequency: 1174, endFrequency: 1174, type: 'square', gain: 0.17 });
-        playOscillatorStep(ctx, ctx.destination, { startAt: now + 0.62, duration: 0.22, frequency: 988, endFrequency: 784, type: 'square', gain: 0.18 });
+        schedulePatternRepeats(ctx, 1.02, totalDuration, offset => {
+          playOscillatorStep(ctx, ctx.destination, { startAt: now + offset, duration: 0.16, frequency: 784, endFrequency: 784, type: 'square', gain: gainOf(0.17) });
+          playOscillatorStep(ctx, ctx.destination, { startAt: now + offset + 0.18, duration: 0.16, frequency: 988, endFrequency: 988, type: 'square', gain: gainOf(0.17) });
+          playOscillatorStep(ctx, ctx.destination, { startAt: now + offset + 0.36, duration: 0.16, frequency: 1174, endFrequency: 1174, type: 'square', gain: gainOf(0.17) });
+          playOscillatorStep(ctx, ctx.destination, { startAt: now + offset + 0.62, duration: 0.22, frequency: 988, endFrequency: 784, type: 'square', gain: gainOf(0.18) });
+        });
         break;
       case 'clockradio':
-        playOscillatorStep(ctx, ctx.destination, { startAt: now, duration: 0.2, frequency: 720, endFrequency: 720, type: 'square', gain: 0.24 });
-        playOscillatorStep(ctx, ctx.destination, { startAt: now + 0.24, duration: 0.2, frequency: 960, endFrequency: 960, type: 'square', gain: 0.24 });
-        playOscillatorStep(ctx, ctx.destination, { startAt: now + 0.48, duration: 0.2, frequency: 720, endFrequency: 720, type: 'square', gain: 0.24 });
-        playOscillatorStep(ctx, ctx.destination, { startAt: now + 0.72, duration: 0.2, frequency: 960, endFrequency: 960, type: 'square', gain: 0.24 });
-        playOscillatorStep(ctx, ctx.destination, { startAt: now + 1.02, duration: 0.32, frequency: 1320, endFrequency: 1120, type: 'sawtooth', gain: 0.22 });
+        schedulePatternRepeats(ctx, 1.48, totalDuration, offset => {
+          playOscillatorStep(ctx, ctx.destination, { startAt: now + offset, duration: 0.2, frequency: 720, endFrequency: 720, type: 'square', gain: gainOf(0.24) });
+          playOscillatorStep(ctx, ctx.destination, { startAt: now + offset + 0.24, duration: 0.2, frequency: 960, endFrequency: 960, type: 'square', gain: gainOf(0.24) });
+          playOscillatorStep(ctx, ctx.destination, { startAt: now + offset + 0.48, duration: 0.2, frequency: 720, endFrequency: 720, type: 'square', gain: gainOf(0.24) });
+          playOscillatorStep(ctx, ctx.destination, { startAt: now + offset + 0.72, duration: 0.2, frequency: 960, endFrequency: 960, type: 'square', gain: gainOf(0.24) });
+          playOscillatorStep(ctx, ctx.destination, { startAt: now + offset + 1.02, duration: 0.32, frequency: 1320, endFrequency: 1120, type: 'sawtooth', gain: gainOf(0.22) });
+        });
         break;
       case 'beep':
       default:
-        playOscillatorStep(ctx, ctx.destination, { startAt: now, duration: 0.75, frequency: 880, endFrequency: 1320, type: 'sine', gain: 0.2 });
+        schedulePatternRepeats(ctx, 0.95, totalDuration, offset => {
+          playOscillatorStep(ctx, ctx.destination, { startAt: now + offset, duration: 0.75, frequency: 880, endFrequency: 1320, type: 'sine', gain: gainOf(0.2) });
+        });
         break;
     }
   } catch (_) {
@@ -139,6 +184,15 @@ export function useTimerAlerts() {
   const timerSound = computed(() => (
     VALID_TIMER_SOUNDS.includes(selectedTimerSound.value) ? selectedTimerSound.value : 'beep'
   ));
+  const timerVolume = computed(() => {
+    const next = Number(selectedTimerVolume.value);
+    return Number.isFinite(next) ? Math.min(100, Math.max(0, next)) : 70;
+  });
+  const timerDuration = computed(() => (
+    VALID_TIMER_DURATIONS.includes(Number(selectedTimerDuration.value))
+      ? Number(selectedTimerDuration.value)
+      : 5
+  ));
 
   function dismissTimerAlert() {
     if (closeTimeout) {
@@ -153,7 +207,7 @@ export function useTimerAlerts() {
   }
 
   function triggerTimerAlert(message, title = t('timer_alarm_title')) {
-    playSelectedTimerSound(timerSound.value);
+    playSelectedTimerSound(timerSound.value, timerVolume.value / 100, timerDuration.value);
     vibrateIfAvailable();
     timerAlert.value = {
       open: true,
@@ -170,17 +224,32 @@ export function useTimerAlerts() {
     selectedTimerSound.value = VALID_TIMER_SOUNDS.includes(value) ? value : 'beep';
   }
 
+  function setTimerVolume(value) {
+    const next = Number(value);
+    selectedTimerVolume.value = Number.isFinite(next) ? Math.min(100, Math.max(0, next)) : 70;
+  }
+
+  function setTimerDuration(value) {
+    const next = Number(value);
+    selectedTimerDuration.value = VALID_TIMER_DURATIONS.includes(next) ? next : 5;
+  }
+
   function previewTimerSound() {
-    playSelectedTimerSound(timerSound.value);
+    playSelectedTimerSound(timerSound.value, timerVolume.value / 100, timerDuration.value);
   }
 
   return {
     timerAlert,
     timerSound,
+    timerVolume,
+    timerDuration,
     timerSoundOptions: VALID_TIMER_SOUNDS,
+    timerDurationOptions: VALID_TIMER_DURATIONS,
     triggerTimerAlert,
     dismissTimerAlert,
     setTimerSound,
+    setTimerVolume,
+    setTimerDuration,
     previewTimerSound,
   };
 }

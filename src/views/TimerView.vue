@@ -9,10 +9,28 @@ const minutes = ref(5);
 const seconds = ref(0);
 
 const { timers, addTimer, toggleTimer, resetTimer, deleteTimer } = useTimers();
-const { timerSound, setTimerSound, previewTimerSound, timerSoundOptions } = useTimerAlerts();
-const soundOptions = computed(() => timerSoundOptions.map(value => ({
+const {
+  timerSound,
+  timerVolume,
+  timerDuration,
+  setTimerSound,
+  setTimerVolume,
+  setTimerDuration,
+  previewTimerSound,
+  timerSoundOptions,
+  timerDurationOptions,
+} = useTimerAlerts();
+const soundOptions = computed(() => {
+  return timerSoundOptions
+    .map(value => ({
+      value,
+      label: t(`timer_sound_${value}`),
+    }))
+    .sort((a, b) => a.label.localeCompare(b.label)); // Aggiunge l'ordinamento alfabetico
+});
+const durationOptions = computed(() => timerDurationOptions.map(value => ({
   value,
-  label: t(`timer_sound_${value}`),
+  label: t(`timer_duration_${value}`),
 })));
 
 function submitTimer() {
@@ -36,10 +54,32 @@ function submitTimer() {
         <button class="btn-ghost" @click="previewTimerSound">{{ t('timer_sound_preview') }}</button>
       </div>
       <div class="timer-sound-controls">
-        <label class="sr-only" for="timer-sound-select">{{ t('timer_sound_label') }}</label>
-        <select id="timer-sound-select" :value="timerSound" @change="setTimerSound($event.target.value)">
-          <option v-for="option in soundOptions" :key="option.value" :value="option.value">{{ option.label }}</option>
-        </select>
+        <div class="timer-settings-grid">
+          <div class="timer-setting-field">
+            <label for="timer-sound-select">{{ t('timer_sound_label') }}</label>
+            <select id="timer-sound-select" :value="timerSound" @change="setTimerSound($event.target.value)">
+              <option v-for="option in soundOptions" :key="option.value" :value="option.value">{{ option.label }}</option>
+            </select>
+          </div>
+          <div class="timer-setting-field">
+            <label for="timer-volume-range">{{ t('timer_volume_label') }} <span class="timer-setting-value">{{ timerVolume }}%</span></label>
+            <input
+              id="timer-volume-range"
+              type="range"
+              min="0"
+              max="100"
+              step="5"
+              :value="timerVolume"
+              @input="setTimerVolume($event.target.value)"
+            />
+          </div>
+          <div class="timer-setting-field">
+            <label for="timer-duration-select">{{ t('timer_duration_label') }}</label>
+            <select id="timer-duration-select" :value="timerDuration" @change="setTimerDuration($event.target.value)">
+              <option v-for="option in durationOptions" :key="option.value" :value="option.value">{{ option.label }}</option>
+            </select>
+          </div>
+        </div>
       </div>
     </div>
     <div class="lbl-row">

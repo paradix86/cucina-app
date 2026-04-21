@@ -2941,8 +2941,27 @@ mark {
 .timer-sound-controls {
   margin-top: 12px;
 }
-.timer-sound-controls select {
-  width: min(320px, 100%);
+.timer-settings-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+}
+.timer-setting-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.timer-setting-field label {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+.timer-setting-value {
+  color: var(--text);
+}
+.timer-sound-controls select,
+.timer-sound-controls input[type="range"] {
+  width: 100%;
   min-height: 42px;
 }
 
@@ -3173,6 +3192,9 @@ mark {
   .timer-settings-head .btn-ghost,
   .timer-sound-controls select {
     width: 100%;
+  }
+  .timer-settings-grid {
+    grid-template-columns: 1fr;
   }
   .import-success-actions {
     width: 100%;
