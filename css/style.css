@@ -2838,6 +2838,35 @@ input[type="number"] {
   border-radius: var(--radius-md);
   padding: 1rem;
 }
+.cooking-timer-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: .5rem;
+}
+.cooking-timer-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+.cooking-timer-edit-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  min-height: 28px;
+  font-size: 12px;
+  border: 0.5px solid var(--border-md);
+  border-radius: var(--radius-pill);
+  background: transparent;
+  cursor: pointer;
+  color: var(--text-muted);
+  font-family: var(--font);
+}
+.cooking-timer-edit-btn:hover { background: var(--bg-tertiary); }
 .cooking-timer-display {
   font-size: 52px;
   font-weight: 600;
@@ -2845,6 +2874,61 @@ input[type="number"] {
   font-variant-numeric: tabular-nums;
   color: var(--green);
   margin-bottom: .5rem;
+}
+.cooking-timer-display.timer-inactive {
+  color: var(--text-hint);
+  font-size: 40px;
+  letter-spacing: 1px;
+}
+.cooking-timer-edit {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: .25rem 0 .5rem;
+}
+.cooking-timer-edit-fields {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.cooking-timer-edit-field {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+.cooking-timer-input {
+  width: 68px;
+  text-align: center;
+  font-size: 36px;
+  font-weight: 600;
+  padding: 6px 4px;
+  border: 1.5px solid var(--border-md);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  font-variant-numeric: tabular-nums;
+  -moz-appearance: textfield;
+}
+.cooking-timer-input::-webkit-outer-spin-button,
+.cooking-timer-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.cooking-timer-input:focus { outline: 2px solid var(--green); outline-offset: 1px; }
+.cooking-timer-unit {
+  font-size: 11px;
+  color: var(--text-hint);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+.cooking-timer-sep {
+  font-size: 36px;
+  font-weight: 600;
+  color: var(--text-hint);
+  padding: 0 2px;
+  align-self: flex-start;
+  padding-top: 6px;
 }
 .cooking-timer-btns {
   display: flex;
@@ -2861,6 +2945,11 @@ input[type="number"] {
   cursor: pointer;
   color: var(--text);
   font-family: var(--font);
+}
+.cooking-timer-confirm-btn {
+  background: var(--green) !important;
+  color: white !important;
+  border-color: var(--green) !important;
 }
 .cooking-nav {
   display: flex;

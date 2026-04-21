@@ -20,6 +20,9 @@ const timerTotal = ref(0);
 const timerRemaining = ref(0);
 const timerRunning = ref(false);
 let timerInterval = null;
+const isEditingTimer = ref(false);
+const editMin = ref(0);
+const editSec = ref(0);
 const { showToast } = useToasts();
 const { triggerTimerAlert } = useTimerAlerts();
 const { keepScreenAwake } = useCookingPreferences();
@@ -64,10 +67,29 @@ function clearTimer() {
 
 function setupStepTimer() {
   clearTimer();
+  isEditingTimer.value = false;
   const seconds = extractStepSeconds(currentStep.value);
   if (seconds <= 0) return;
   timerTotal.value = seconds;
   timerRemaining.value = seconds;
+}
+
+function startEditTimer() {
+  editMin.value = Math.floor((timerTotal.value || 0) / 60);
+  editSec.value = (timerTotal.value || 0) % 60;
+  isEditingTimer.value = true;
+}
+
+function applyEditTimer() {
+  const total = (Number(editMin.value) || 0) * 60 + (Number(editSec.value) || 0);
+  timerRunning.value = false;
+  timerTotal.value = Math.max(0, total);
+  timerRemaining.value = timerTotal.value;
+  isEditingTimer.value = false;
+}
+
+function cancelEditTimer() {
+  isEditingTimer.value = false;
 }
 
 function ensureTimer() {
@@ -208,13 +230,43 @@ onBeforeUnmount(() => {
       </div>
     </div>
 
-    <div v-if="timerTotal > 0 && !isComplete" class="cooking-step-timer">
-      <div class="sec-label">{{ t('cooking_step_timer') }}</div>
-      <div class="cooking-timer-display" id="cooking-timer-display">{{ formatClock(timerRemaining) }}</div>
-      <div class="cooking-timer-btns">
-        <button id="cooking-timer-toggle" @click="toggleTimer">{{ timerRunning ? t('timer_pause') : t('timer_start') }}</button>
-        <button @click="resetTimer">{{ t('timer_reset') }}</button>
+    <div v-if="!isComplete" class="cooking-step-timer">
+      <div class="cooking-timer-header">
+        <span class="cooking-timer-label">{{ t('cooking_step_timer') }}</span>
+        <button v-if="!timerRunning && !isEditingTimer" class="cooking-timer-edit-btn" @click="startEditTimer">
+          <svg aria-hidden="true" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+          </svg>
+          {{ t('cooking_timer_edit') }}
+        </button>
       </div>
+      <template v-if="isEditingTimer">
+        <div class="cooking-timer-edit">
+          <div class="cooking-timer-edit-fields">
+            <label class="cooking-timer-edit-field">
+              <input class="cooking-timer-input" type="number" inputmode="numeric" pattern="[0-9]*" min="0" max="99" v-model.number="editMin" @keyup.enter="applyEditTimer" />
+              <span class="cooking-timer-unit">{{ t('timer_label_min') }}</span>
+            </label>
+            <span class="cooking-timer-sep">:</span>
+            <label class="cooking-timer-edit-field">
+              <input class="cooking-timer-input" type="number" inputmode="numeric" pattern="[0-9]*" min="0" max="59" v-model.number="editSec" @keyup.enter="applyEditTimer" />
+              <span class="cooking-timer-unit">{{ t('timer_label_sec') }}</span>
+            </label>
+          </div>
+          <div class="cooking-timer-btns">
+            <button class="cooking-timer-confirm-btn" @click="applyEditTimer">{{ t('cooking_timer_confirm') }}</button>
+            <button @click="cancelEditTimer">{{ t('cooking_timer_cancel') }}</button>
+          </div>
+        </div>
+      </template>
+      <template v-else>
+        <div class="cooking-timer-display" :class="{ 'timer-inactive': timerTotal === 0 }" id="cooking-timer-display">{{ timerTotal > 0 ? formatClock(timerRemaining) : '—' }}</div>
+        <div v-if="timerTotal > 0" class="cooking-timer-btns">
+          <button id="cooking-timer-toggle" @click="toggleTimer">{{ timerRunning ? t('timer_pause') : t('timer_start') }}</button>
+          <button @click="resetTimer">{{ t('timer_reset') }}</button>
+        </div>
+      </template>
     </div>
 
     <div class="cooking-nav">

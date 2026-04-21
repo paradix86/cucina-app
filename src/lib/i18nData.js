@@ -227,6 +227,9 @@ export const TRANSLATIONS = {
     cooking_done: 'Ricetta completata!',
     cooking_done_sub: 'Buon appetito!',
     cooking_step_timer: 'Timer passo',
+    cooking_timer_edit: 'Modifica',
+    cooking_timer_confirm: 'OK',
+    cooking_timer_cancel: 'Annulla',
     cooking_keep_awake_label: 'Mantieni schermo attivo',
     cooking_keep_awake_desc: 'Evita che lo schermo si spenga mentre segui la ricetta passo dopo passo.',
 
@@ -553,6 +556,9 @@ export const TRANSLATIONS = {
     cooking_done: 'Recipe complete!',
     cooking_done_sub: 'Enjoy your meal!',
     cooking_step_timer: 'Step timer',
+    cooking_timer_edit: 'Edit',
+    cooking_timer_confirm: 'OK',
+    cooking_timer_cancel: 'Cancel',
     cooking_keep_awake_label: 'Keep screen awake',
     cooking_keep_awake_desc: 'Prevent the screen from turning off while you follow the recipe step by step.',
 
@@ -874,6 +880,9 @@ export const TRANSLATIONS = {
     cooking_done: 'Rezept fertig!',
     cooking_done_sub: 'Guten Appetit!',
     cooking_step_timer: 'Schritt-Timer',
+    cooking_timer_edit: 'Bearbeiten',
+    cooking_timer_confirm: 'OK',
+    cooking_timer_cancel: 'Abbrechen',
     cooking_keep_awake_label: 'Bildschirm aktiv halten',
     cooking_keep_awake_desc: 'Verhindert, dass sich der Bildschirm ausschaltet, während du das Rezept Schritt für Schritt befolgst.',
 
@@ -1195,6 +1204,9 @@ export const TRANSLATIONS = {
     cooking_done: 'Recette terminée !',
     cooking_done_sub: 'Bon appétit !',
     cooking_step_timer: 'Minuteur étape',
+    cooking_timer_edit: 'Modifier',
+    cooking_timer_confirm: 'OK',
+    cooking_timer_cancel: 'Annuler',
     cooking_keep_awake_label: 'Garder l’écran actif',
     cooking_keep_awake_desc: 'Évite que l’écran ne s’éteigne pendant que vous suivez la recette étape par étape.',
 
@@ -1516,6 +1528,9 @@ export const TRANSLATIONS = {
     cooking_done: '¡Receta completada!',
     cooking_done_sub: '¡Buen provecho!',
     cooking_step_timer: 'Temporizador del paso',
+    cooking_timer_edit: 'Editar',
+    cooking_timer_confirm: 'OK',
+    cooking_timer_cancel: 'Cancelar',
     cooking_keep_awake_label: 'Mantener pantalla activa',
     cooking_keep_awake_desc: 'Evita que la pantalla se apague mientras sigues la receta paso a paso.',
 
