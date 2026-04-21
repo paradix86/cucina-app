@@ -11,7 +11,7 @@ const timerAlert = ref({
 const TIMER_SOUND_STORAGE_KEY = 'cucina_timer_sound';
 const TIMER_VOLUME_STORAGE_KEY = 'cucina_timer_volume';
 const TIMER_DURATION_STORAGE_KEY = 'cucina_timer_duration';
-const VALID_TIMER_SOUNDS = ['beep', 'bell', 'kitchen', 'chime', 'alarm', 'digital', 'doublebell', 'siren', 'phone', 'buzzer', 'retro', 'clockradio', 'silent', 'classic_bell', 'digital_alarm', 'pro_timer'];
+const VALID_TIMER_SOUNDS = ['beep', 'bell', 'kitchen', 'chime', 'alarm', 'digital', 'doublebell', 'siren', 'phone', 'buzzer', 'retro', 'clockradio', 'silent', 'classic_bell', 'digital_alarm', 'pro_timer', 'industrial_buzzer', 'emergency_beep', 'classic_panic'];
 const selectedTimerSound = useLocalStorage(TIMER_SOUND_STORAGE_KEY, 'beep');
 const selectedTimerVolume = useLocalStorage(TIMER_VOLUME_STORAGE_KEY, 70);
 const selectedTimerDuration = useLocalStorage(TIMER_DURATION_STORAGE_KEY, 5);
@@ -213,6 +213,48 @@ function playSelectedTimerSound(
             frequency: 2200,
             type: 'square',
             gain: gainOf(0.15)
+          });
+        });
+        break;
+      case 'industrial_buzzer':
+        schedulePatternRepeats(ctx, 0.4, totalDuration, offset => {
+          playOscillatorStep(ctx, ctx.destination, {
+            startAt: now + offset,
+            duration: 0.25,
+            frequency: 2800,
+            type: 'sawtooth',
+            gain: gainOf(0.25),
+          });
+        });
+        break;
+      case 'emergency_beep':
+        schedulePatternRepeats(ctx, 0.6, totalDuration, offset => {
+          [0, 0.1, 0.2, 0.3].forEach(tOffset => {
+            playOscillatorStep(ctx, ctx.destination, {
+              startAt: now + offset + tOffset,
+              duration: 0.05,
+              frequency: 3500,
+              type: 'square',
+              gain: gainOf(0.3),
+            });
+          });
+        });
+        break;
+      case 'classic_panic':
+        schedulePatternRepeats(ctx, 0.5, totalDuration, offset => {
+          playOscillatorStep(ctx, ctx.destination, {
+            startAt: now + offset,
+            duration: 0.2,
+            frequency: 2000,
+            type: 'square',
+            gain: gainOf(0.2),
+          });
+          playOscillatorStep(ctx, ctx.destination, {
+            startAt: now + offset + 0.2,
+            duration: 0.2,
+            frequency: 2500,
+            type: 'square',
+            gain: gainOf(0.2),
           });
         });
         break;
