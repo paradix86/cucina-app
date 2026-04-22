@@ -39,9 +39,9 @@ export function decodeImportEntities(value: string | null | undefined): string {
   return String(value || '')
     .replace(/&#39;|&apos;/g, "'")
     .replace(/&quot;/g, '"')
-    .replace(/&amp;/g, '&')
     .replace(/&nbsp;/g, ' ')
-    .replace(/&deg;/gi, '°');
+    .replace(/&deg;/gi, '°')
+    .replace(/&amp;/g, '&');
 }
 
 export function parseImportMinutes(value: string | null | undefined): number {
