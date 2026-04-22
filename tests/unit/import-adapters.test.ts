@@ -487,6 +487,417 @@ describe('GialloZafferano adapter — ingredient parsing', () => {
   });
 });
 
+// ─── Vegolosi fixtures ────────────────────────────────────────────────────────
+
+// Fixture 1: old h3 format — bullet ingredients, h3 section headings, Conservazione boundary
+const VEGOLOSI_OLD_H3_WITH_CONSERVAZIONE = `# Pasta al Pesto - Ricetta vegan - Vegolosi.it
+
+**Dosi per:** 4 persone
+
+### Ingredienti
+
+* 320 g pasta
+* 2 mazzetti basilico fresco
+* 30 g pinoli
+* 1 spicchio aglio
+* 3 cucchiai olio EVO
+
+### Si cucina
+
+Frullare il basilico con pinoli, aglio e olio fino a ottenere una crema liscia.
+
+Cuocere la pasta in abbondante acqua salata.
+
+Scolare al dente e condire con il pesto.
+
+### Conservazione
+
+Conservare in frigo per 2 giorni.`;
+
+// Fixture 2: new bold-text format — plain-text ingredients, **Preparazione** marker, **Step N** delimiters
+const VEGOLOSI_NEW_BOLD_FORMAT = `# Cheesecake ai Frutti di Bosco Vegana
+
+**Ingredienti per 8 persone:**
+
+200 g biscotti secchi vegani
+80 g burro di cocco
+400 g tofu vellutato
+100 ml sciroppo d'acero
+200 g frutti di bosco misti
+
+**Preparazione**
+
+**Step 1**
+
+Tritare i biscotti nel mixer e mescolare con il burro di cocco fuso.
+
+**Step 2**
+
+Frullare il tofu con lo sciroppo d'acero fino a ottenere una crema liscia.
+
+**Step 3**
+
+Distribuire la crema sulla base e decorare con i frutti di bosco.`;
+
+// Fixture 3: old h3 format without Conservazione — steps end at noise marker
+const VEGOLOSI_OLD_H3_NOISE_BOUNDARY = `# Zuppa di Lenticchie Rosse
+
+**Dosi per:** 4 persone
+
+### Ingredienti
+
+* 300 g lenticchie rosse
+* 1 cipolla
+* 2 carote
+* 1 litro brodo vegetale
+* sale e pepe q.b.
+
+### Preparazione
+
+Scaldare l'olio in una pentola e soffriggere la cipolla tritata.
+
+Aggiungere le carote a rondelle e le lenticchie sciacquate.
+
+Coprire con il brodo e cuocere per 25 minuti a fuoco medio.
+
+Iscriviti alla newsletter per ricevere nuove ricette ogni settimana.
+
+Questo contenuto promozionale non deve apparire nei passi.`;
+
+// Fixture 4: title containing both suffix patterns to strip
+const VEGOLOSI_TITLE_CLEANUP = `# Hummus di Ceci - Ricette vegane - Vegolosi.it
+
+### Ingredienti
+
+* 400 g ceci cotti
+* 2 cucchiai tahini
+* succo di 1 limone
+* 1 spicchio aglio
+* sale q.b.
+
+### Si cucina
+
+Frullare i ceci scolati con tahini, succo di limone e aglio.
+
+Aggiustare di sale e aggiungere un filo di olio EVO.
+
+Servire con paprika affumicata e pane pita.`;
+
+describe('Vegolosi adapter — old h3 format with Conservazione', () => {
+  const adapter = getImportAdapterForDomain('vegolosi.it')!;
+  const url = 'https://vegolosi.it/ricette-vegane/pasta-al-pesto/';
+
+  it('extracts ingredients from bullet list', () => {
+    const result = adapter.parse(VEGOLOSI_OLD_H3_WITH_CONSERVAZIONE, url);
+    expect(result.ingredients.length).toBeGreaterThanOrEqual(4);
+    expect(result.ingredients.some(i => i.includes('basilico'))).toBe(true);
+    expect(result.ingredients.some(i => i.includes('pinoli'))).toBe(true);
+  });
+
+  it('extracts steps and stops at Conservazione boundary', () => {
+    const result = adapter.parse(VEGOLOSI_OLD_H3_WITH_CONSERVAZIONE, url);
+    expect(result.steps.length).toBeGreaterThanOrEqual(2);
+    // Conservazione content must not bleed into steps
+    expect(result.steps.some(s => s.toLowerCase().includes('frigo'))).toBe(false);
+    expect(result.steps.some(s => s.includes('Frullare il basilico'))).toBe(true);
+  });
+
+  it('strips site suffix from title', () => {
+    const result = adapter.parse(VEGOLOSI_OLD_H3_WITH_CONSERVAZIONE, url);
+    expect(result.name).toBe('Pasta al Pesto');
+  });
+
+  it('reads servings from **Dosi per:** pattern', () => {
+    const result = adapter.parse(VEGOLOSI_OLD_H3_WITH_CONSERVAZIONE, url);
+    expect(result.servings).toBe('4');
+  });
+
+  it('sets source = web and sourceDomain = vegolosi.it', () => {
+    const result = adapter.parse(VEGOLOSI_OLD_H3_WITH_CONSERVAZIONE, url);
+    expect(result.source).toBe('web');
+    expect(result.sourceDomain).toBe('vegolosi.it');
+  });
+});
+
+describe('Vegolosi adapter — new bold-text format with Step N markers', () => {
+  const adapter = getImportAdapterForDomain('vegolosi.it')!;
+  const url = 'https://vegolosi.it/ricette-vegane/cheesecake-frutti-bosco/';
+
+  it('extracts ingredients from plain-text lines when no bullets are present', () => {
+    const result = adapter.parse(VEGOLOSI_NEW_BOLD_FORMAT, url);
+    expect(result.ingredients.length).toBeGreaterThanOrEqual(4);
+    expect(result.ingredients.some(i => i.includes('biscotti'))).toBe(true);
+    expect(result.ingredients.some(i => i.includes('tofu'))).toBe(true);
+  });
+
+  it('splits steps at **Step N** markers, not accumulating them into one block', () => {
+    const result = adapter.parse(VEGOLOSI_NEW_BOLD_FORMAT, url);
+    expect(result.steps.length).toBeGreaterThanOrEqual(3);
+    expect(result.steps.some(s => s.includes('biscotti'))).toBe(true);
+    expect(result.steps.some(s => s.includes('tofu'))).toBe(true);
+  });
+
+  it('reads servings from **Ingredienti per N persone:** pattern', () => {
+    const result = adapter.parse(VEGOLOSI_NEW_BOLD_FORMAT, url);
+    expect(result.servings).toBe('8');
+  });
+});
+
+describe('Vegolosi adapter — noise marker as steps boundary', () => {
+  const adapter = getImportAdapterForDomain('vegolosi.it')!;
+  const url = 'https://vegolosi.it/ricette-vegane/zuppa-lenticchie/';
+
+  it('stops extracting steps at "Iscriviti alla newsletter" noise marker', () => {
+    const result = adapter.parse(VEGOLOSI_OLD_H3_NOISE_BOUNDARY, url);
+    expect(result.steps.length).toBeGreaterThanOrEqual(2);
+    expect(result.steps.some(s => s.includes('newsletter'))).toBe(false);
+    expect(result.steps.some(s => s.includes('promozionale'))).toBe(false);
+  });
+
+  it('extracts the real steps before the noise marker', () => {
+    const result = adapter.parse(VEGOLOSI_OLD_H3_NOISE_BOUNDARY, url);
+    expect(result.steps.some(s => s.includes('cipolla'))).toBe(true);
+    expect(result.steps.some(s => s.includes('lenticchie'))).toBe(true);
+  });
+});
+
+describe('Vegolosi adapter — title cleanup', () => {
+  const adapter = getImportAdapterForDomain('vegolosi.it')!;
+  const url = 'https://vegolosi.it/ricette-vegane/hummus-di-ceci/';
+
+  it('strips "- Ricette vegane - Vegolosi.it" suffix from title', () => {
+    const result = adapter.parse(VEGOLOSI_TITLE_CLEANUP, url);
+    expect(result.name).toBe('Hummus di Ceci');
+  });
+
+  it('throws VEGOLOSI_PARSE_INCOMPLETE when ingredient section is missing', () => {
+    const noIngredients = `# Una Ricetta\n\n### Preparazione\n\nPasso uno.\n\nPasso due.`;
+    expect(() => adapter.parse(noIngredients, url)).toThrow('VEGOLOSI_PARSE_INCOMPLETE');
+  });
+});
+
+// ─── Vegolosi servings edge-case fixtures ────────────────────────────────────
+
+// No "persone" word after number — regex won't match, defaults to '4'
+const VEGOLOSI_DOSI_NO_PERSONE = `# Torta di Mele Vegana
+
+**Dosi per:** 4
+
+### Ingredienti
+
+* 300 g farina integrale
+* 3 mele
+* 100 ml olio di semi
+* 150 g zucchero di canna
+
+### Si cucina
+
+Sbucciare le mele e tagliarle a fettine sottili.
+
+Mescolare farina, zucchero e olio in una ciotola.
+
+Incorporare le mele e versare in uno stampo oleato.
+
+Infornare a 180° per 35 minuti.`;
+
+// "Ingredienti per N:" — colon before closing ** (regression: the colon-leak bug)
+const VEGOLOSI_INGREDIENTI_COLON_NO_PERSONE = `# Risotto ai Funghi
+
+**Ingredienti per 2:**
+
+200 g riso Carnaroli
+300 g funghi champignon
+1 scalogno
+750 ml brodo vegetale
+2 cucchiai olio EVO
+
+**Preparazione**
+
+**Step 1**
+
+Soffriggere lo scalogno in olio.
+
+**Step 2**
+
+Aggiungere i funghi e tostarli per 5 minuti.
+
+**Step 3**
+
+Tostare il riso, sfumare e aggiungere brodo a mestoli.`;
+
+// "Ingredienti per N persone:" — colon + persone (regression: combined form)
+const VEGOLOSI_INGREDIENTI_COLON_WITH_PERSONE = `# Gazpacho
+
+**Ingredienti per 6 persone:**
+
+1 kg pomodori maturi
+1 cetriolo
+1 peperone rosso
+2 spicchi aglio
+3 cucchiai olio EVO
+sale e aceto q.b.
+
+**Preparazione**
+
+**Step 1**
+
+Tagliare a pezzi tutte le verdure e frullarle insieme all'olio.
+
+**Step 2**
+
+Aggiustare di sale e aceto, refrigerare almeno 2 ore prima di servire.`;
+
+describe('Vegolosi adapter — servings edge cases', () => {
+  const adapter = getImportAdapterForDomain('vegolosi.it')!;
+  const url = 'https://vegolosi.it/ricette-vegane/test/';
+
+  it('falls back to default servings when **Dosi per:** has no persone word', () => {
+    const result = adapter.parse(VEGOLOSI_DOSI_NO_PERSONE, url);
+    // Regex won't capture "4" without "persone", so fallback default applies
+    expect(result.servings).toBe('4');
+  });
+
+  it('regression — **Ingredienti per N:** without persone does not leak colon into servings', () => {
+    // Bug was: [^*\n]+? captured "2:" → normalizeImportedServings produced "2 :"
+    const result = adapter.parse(VEGOLOSI_INGREDIENTI_COLON_NO_PERSONE, url);
+    expect(result.servings).toBe('2');
+    expect(result.servings).not.toContain(':');
+  });
+
+  it('regression — **Ingredienti per N persone:** with colon does not leak colon into servings', () => {
+    // Same colon-leak bug: "6 persone:" was being captured before the fix
+    const result = adapter.parse(VEGOLOSI_INGREDIENTI_COLON_WITH_PERSONE, url);
+    expect(result.servings).toBe('6');
+    expect(result.servings).not.toContain(':');
+  });
+
+  it('regression — title with singular "Ricetta vegan" suffix is stripped correctly', () => {
+    // Bug was: Ricetta(?:e)? could not match "Ricette"; fixed to Ricett[ae]
+    // Fixture 1 (VEGOLOSI_OLD_H3_WITH_CONSERVAZIONE) covers the singular form end-to-end.
+    // This inline fixture confirms the plural form too.
+    const md = `# Torta al Cioccolato - Ricette vegane - Vegolosi.it\n\n### Ingredienti\n\n* 200 g farina\n* 100 g cacao\n\n### Si cucina\n\nMescolare e infornare.`;
+    const result = adapter.parse(md, url);
+    expect(result.name).toBe('Torta al Cioccolato');
+    expect(result.name).not.toContain('Ricette');
+    expect(result.name).not.toContain('Vegolosi');
+  });
+});
+
+// ─── RicettePerBimby adapter fixtures ────────────────────────────────────────
+
+const RPB_MARKDOWN_COME_FARE = `# Budino al Cioccolato Bimby
+
+Difficoltà
+
+Facile
+
+Tempo totale
+
+20 min
+
+Quantità
+
+4 persone
+
+## Ingredienti
+
+* 500 ml latte intero
+* 50 g cacao amaro
+* 100 g zucchero
+* 30 g amido di mais
+
+## Come fare il budino al cioccolato bimby
+
+1. Inserire nel boccale latte, cacao, zucchero e amido: 8 min. 90°C vel. 4.
+2. Versare negli stampini e lasciare raffreddare in frigo per almeno 2 ore.`;
+
+const RPB_MARKDOWN_COME_CUCINARE = `# Zuppa di Verdure Bimby
+
+Difficoltà
+
+Facile
+
+Tempo totale
+
+30 min
+
+Quantità
+
+6 persone
+
+## Ingredienti
+
+* 2 zucchine
+* 2 carote
+* 1 patata
+* 1 cipolla
+* 1 litro brodo vegetale
+
+## Come cucinare la zuppa di verdure con il bimby
+
+1. Inserire la cipolla nel boccale e tritare: 5 sec. vel. 5.
+2. Aggiungere le verdure a tocchetti e il brodo: 25 min. 100°C vel. 1.
+3. Frullare a piacere: 20 sec. vel. 5.`;
+
+describe('RicettePerBimby adapter — "Come fare" heading variant', () => {
+  const adapter = getImportAdapterForDomain('ricetteperbimby.it')!;
+  const url = 'https://www.ricetteperbimby.it/ricette/budino-cioccolato/';
+
+  it('parses steps from "## Come fare …" section heading', () => {
+    const result = adapter.parse(RPB_MARKDOWN_COME_FARE, url);
+    expect(result.steps.length).toBeGreaterThanOrEqual(2);
+    expect(result.steps.some(s => s.includes('boccale'))).toBe(true);
+  });
+
+  it('extracts ingredients and metadata from "## Come fare" page', () => {
+    const result = adapter.parse(RPB_MARKDOWN_COME_FARE, url);
+    expect(result.name).toBe('Budino al Cioccolato Bimby');
+    expect(result.ingredients.length).toBeGreaterThanOrEqual(3);
+    expect(result.servings).toBe('4');
+    expect(result.preparationType).toBe('bimby');
+  });
+});
+
+describe('RicettePerBimby adapter — "Come cucinare" heading variant', () => {
+  const adapter = getImportAdapterForDomain('ricetteperbimby.it')!;
+  const url = 'https://www.ricetteperbimby.it/ricette/zuppa-verdure/';
+
+  it('parses steps from "## Come cucinare …" section heading', () => {
+    const result = adapter.parse(RPB_MARKDOWN_COME_CUCINARE, url);
+    expect(result.steps.length).toBeGreaterThanOrEqual(3);
+    expect(result.steps.some(s => s.includes('verdure'))).toBe(true);
+  });
+
+  it('extracts 6 servings from "Come cucinare" page', () => {
+    const result = adapter.parse(RPB_MARKDOWN_COME_CUCINARE, url);
+    expect(result.servings).toBe('6');
+  });
+});
+
+// ─── RBN title cleanup ────────────────────────────────────────────────────────
+
+const RBN_MARKDOWN_TITLE_HYPHEN = `# Risotto ai Funghi - Ricette-Bimby
+
+Tempo totale
+
+25 min
+
+Porzioni
+
+4
+
+### Ingredienti
+
+* 320 g riso Carnaroli
+* 300 g funghi misti
+* 1 scalogno
+
+### Preparazione
+
+1. Tritare lo scalogno nel boccale: 5 sec. vel. 5.
+2. Soffriggere con olio: 3 min. 100°C vel. 1.
+3. Aggiungere riso e funghi, cuocere con il brodo.`;
+
 describe('Ricette-Bimby.net adapter — step cleanup', () => {
   it('folds standalone parenthetical cooking notes into the previous step instead of leaving them as an isolated step', () => {
     const result = importWebsiteRecipeWithAdapters(
@@ -497,5 +908,13 @@ describe('Ricette-Bimby.net adapter — step cleanup', () => {
     expect(result.preparationType).toBe('bimby');
     expect(result.steps.some(step => step === '(Il passaggio del coperchio aiuterà al composto a gonfiarsi).')).toBe(false);
     expect(result.steps.some(step => step.includes('gonfiarsi'))).toBe(true);
+  });
+
+  it('strips "- Ricette-Bimby" hyphenated title suffix', () => {
+    const adapter = getImportAdapterForDomain('ricette-bimby.net')!;
+    const result = adapter.parse(RBN_MARKDOWN_TITLE_HYPHEN, 'https://ricette-bimby.net/risotto-funghi/');
+    expect(result.name).toBe('Risotto ai Funghi');
+    expect(result.name).not.toContain('Ricette');
+    expect(result.name).not.toContain('Bimby');
   });
 });

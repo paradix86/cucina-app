@@ -15,7 +15,7 @@ import {
 
 function cleanVegolosititle(title: string): string {
   return stripImportMarkdownNoise(title)
-    .replace(/\s*-\s*Ricetta(?:e)?\s+(?:vegan|vegane)\s*-?.*$/i, '')
+    .replace(/\s*-\s*Ricett[ae]\s+(?:vegan|vegane)\s*-?.*$/i, '')
     .replace(/\s*-\s*Vegolosi\.it\s*$/i, '')
     .trim();
 }
@@ -27,7 +27,7 @@ function parseVegolositAdapter(markdown: string, url: string): ImportPreviewReci
   // Servings: old "**Dosi per: N persone**" or new "**Ingredienti per N persone:**"
   const servingsMatch =
     md.match(/\*\*Dosi per:\*\*\s*([^\n]+person[ae]?)/i) ||
-    md.match(/\*\*Ingredienti per\s+([^*\n]+?)(?:\s*person[ae]?)?\*\*/i);
+    md.match(/\*\*Ingredienti per\s+([^*\n:]+?)(?:\s*person[ae]?)?:?\*\*/i);
 
   // Section starts: support both old h3 headings and new bold-text markers
   const ingredientsStart =
