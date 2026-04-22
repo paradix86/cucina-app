@@ -217,15 +217,20 @@ export function extractBimbyTaggedStep(stepText: string): string {
 
   if (!tags.length) return text;
 
-  const instruction = text
-    .replace(/(\d+\s*(?:sec(?:ondi?)?\.?|min(?:uti?)?\.?))/i, '')
-    .replace(/\bvel\.?\s*[0-9]+(?:\.[0-9]+)?/i, '')
-    .replace(/(?:\btemp\.?\s*|\b)\d{2,3}\s*°\s*[cf]?/i, '')
-    .replace(/\btemp(?:eratura)?\.?\s*Varoma\b/i, '')
-    .replace(/^[,;:\-\s]+/, '')
-    .replace(/\s*[,;:]+\s*\.\s*$/, '.')  // clean trailing ": ." artifacts e.g. "emulsionare: ." → "emulsionare."
-    .replace(/\s{2,}/g, ' ')
-    .trim();
+  let instruction = text;
+  let previousInstruction: string;
+  do {
+    previousInstruction = instruction;
+    instruction = instruction
+      .replace(/(\d+\s*(?:sec(?:ondi?)?\.?|min(?:uti?)?\.?))/i, '')
+      .replace(/\bvel\.?\s*[0-9]+(?:\.[0-9]+)?/i, '')
+      .replace(/(?:\btemp\.?\s*|\b)\d{2,3}\s*°\s*[cf]?/i, '')
+      .replace(/\btemp(?:eratura)?\.?\s*Varoma\b/i, '')
+      .replace(/^[,;:\-\s]+/, '')
+      .replace(/\s*[,;:]+\s*\.\s*$/, '.')  // clean trailing ": ." artifacts e.g. "emulsionare: ." → "emulsionare."
+      .replace(/\s{2,}/g, ' ')
+      .trim();
+  } while (instruction !== previousInstruction);
 
   const safeInstruction = instruction || text;
   return `${tags.join(' · ')} — ${safeInstruction}`;
