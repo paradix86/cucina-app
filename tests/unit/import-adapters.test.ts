@@ -350,6 +350,34 @@ Markdown Content:
 La pagina richiesta non è disponibile.
 `;
 
+const GZ_MARKDOWN_WITH_TEMPERATURE_AND_INLINE_IMAGE_REFS = `# Empanadas argentine
+
+*   Difficoltà: **Media**
+*   Preparazione: **60 min**
+*   Cottura: **60 min**
+*   Dosi per: **18 pezzi**
+
+## PRESENTAZIONE
+
+Descrizione.
+
+## INGREDIENTI
+
+[Farina 00](https://ricette.giallozafferano.it/) 210 g [Acqua](https://ricette.giallozafferano.it/) 70 g
+
+[AGGIUNGI ALLA LISTA DELLA SPESA](https://ricette.giallozafferano.it/Empanadas-argentine.html#)
+
+Preparazione
+
+## Come preparare le Empanadas argentine
+
+Dopo aver formato le empanadas riscaldate abbondante olio di semi in un pentolino fino alla temperatura di 160°. Friggete 1 o 2 pezzi per volta per 4-5 minuti 25. Quando saranno dorate, scolate le empanadas 26 e adagiatele su carta assorbente per eliminare l’olio in eccesso. Le vostre empanadas argentine sono pronte per essere gustate 27!
+
+## Conservazione
+
+Consumare subito.
+`;
+
 describe('GialloZafferano adapter — ingredient parsing', () => {
   const adapter = getImportAdapterForDomain('giallozafferano.it')!;
   const url = 'https://ricette.giallozafferano.it/test.html';
@@ -407,5 +435,13 @@ describe('GialloZafferano adapter — ingredient parsing', () => {
 
   it('classifies obvious GialloZafferano 404 pages as page-not-found instead of ingredient parser failures', () => {
     expect(() => adapter.parse(GZ_MARKDOWN_PAGE_NOT_FOUND, url)).toThrowError('GZ_PAGE_NOT_FOUND');
+  });
+
+  it('preserves temperatures and quantity ranges while removing inline image-reference numbers from steps', () => {
+    const result = adapter.parse(GZ_MARKDOWN_WITH_TEMPERATURE_AND_INLINE_IMAGE_REFS, url);
+    expect(result.steps).toHaveLength(1);
+    expect(result.steps[ 0 ]).toContain('temperatura di 160°');
+    expect(result.steps[ 0 ]).toContain('Friggete 1 o 2 pezzi per volta per 4-5 minuti.');
+    expect(result.steps[ 0 ]).not.toMatch(/\b25\b|\b26\b|\b27\b/);
   });
 });

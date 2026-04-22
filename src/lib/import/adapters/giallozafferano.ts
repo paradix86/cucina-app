@@ -83,6 +83,20 @@ function isGialloZafferanoPreparationHeading(heading: string): boolean {
   return true;
 }
 
+function cleanGialloZafferanoStep(step: string): string {
+  return normalizeImportText(
+    stripImportLinksAndImages(step)
+      // Remove GialloZafferano inline image-reference numbers like "strutto 1,"
+      // or "minuti 25." while preserving real quantities such as "160°",
+      // "1 o 2 pezzi" and "4-5 minuti".
+      .replace(
+        /(?<=\p{L})\s+\d{1,2}(?=(?:[.,;:!?](?:\s|$)|\s+(?:e|ed|poi|quindi|infine|dopodiche|dopodiché)\b))/gu,
+        '',
+      )
+      .replace(/\s+([.,;:!?])/g, '$1'),
+  );
+}
+
 function parseGialloZafferanoAdapter(markdown: string, url: string): ImportPreviewRecipe {
   const md = normalizeImportText(markdown);
   if (isGialloZafferanoDeadPage(md)) throw new Error('GZ_PAGE_NOT_FOUND');
@@ -130,7 +144,7 @@ function parseGialloZafferanoAdapter(markdown: string, url: string): ImportPrevi
   const steps = md
     .slice(stepsStart, stepsEnd)
     .split(/\n\s*\n/)
-    .map(stripImportMarkdownNoise)
+    .map(cleanGialloZafferanoStep)
     .filter(part => part && !part.startsWith('## ') && !part.startsWith('Image '))
     .filter(part => !/^Preparazione$/i.test(part));
 
