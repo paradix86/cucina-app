@@ -1,6 +1,6 @@
 # AGENTS.md
 
-This file helps agents (Codex, Claude Code, etc.) work consistently inside this repository.
+Extended reference for AI agents working in this repository. Start with `CLAUDE.md` for concise session guidance; this file provides the deeper context.
 
 ## Stack snapshot
 
@@ -24,6 +24,7 @@ This file helps agents (Codex, Claude Code, etc.) work consistently inside this 
 | `src/stores/shoppingList.ts` | Pinia store — shopping items, grouping, mutations |
 | `src/composables/useImportFlow.ts` | Per-instance import state and logic |
 | `src/composables/useTimers.js` | Global timer state |
+| `src/composables/useTimerAlerts.js` | Timer sound engine and alert modal state |
 | `src/lib/storage.ts` | localStorage CRUD + normalization + shopping parsing/grouping |
 | `src/lib/i18n.js` | `t('key')` translation function |
 | `src/lib/i18nData.js` | Translation strings (IT, EN, DE, FR, ES) |
@@ -32,8 +33,10 @@ This file helps agents (Codex, Claude Code, etc.) work consistently inside this 
 | `src/lib/import/web.ts` | Fetch readable page, failure inference |
 | `src/lib/import/adapters.ts` | Domain adapter registry, site parsers, generic fallback |
 | `src/types.ts` | Shared domain/import/storage TypeScript types |
+| `src/components/CookingModeView.vue` | Step-by-step cooking UI with per-step timer |
 | `public/sw.js` | Cache-first service worker |
 | `public/manifest.json` | PWA manifest |
+| `css/style.css` | All app styles, organized with `/* ---- Section ---- */` markers |
 
 ## Non-negotiables
 
@@ -47,22 +50,24 @@ This file helps agents (Codex, Claude Code, etc.) work consistently inside this 
 ## Editing guidelines
 
 - Prefer surgical, verifiable changes
-- Use `storeToRefs(store)` when destructuring Pinia state in composables or setup — Pinia's reactive proxy auto-unwraps refs, breaking `.value` usage otherwise
+- Use `storeToRefs(store)` when destructuring Pinia state in composables or setup
 - If touching `storage.ts`, check whether existing saved data will survive (migration/normalization logic lives there)
-- New UI should reuse existing classes and patterns — keep it touch-friendly
+- New UI should reuse existing CSS classes and design tokens (`var(--green)`, `var(--radius-md)`, etc.)
 - When adding a new route, add it to `src/router/index.js` and add a tab entry in `App.vue`
 - Keep `src/lib/` free of Vue imports — it holds pure logic only
-- Prefer typed contracts for domain-critical logic (stores, storage, import adapters/parsers)
-- Use VueUse only when it replaces custom boilerplate with clear value (no gratuitous adoption)
+- Use VueUse only when it replaces custom boilerplate with clear value
+- All styles go in `css/style.css` — do not add `<style>` blocks to components
+- Action icons in interactive card buttons must use inline SVG with `currentColor`, not Unicode glyphs
+- `i18nData.js` string values must use straight JS quotes (`'...'`) as delimiters; curly apostrophes inside values are fine but must not be used as JS string delimiters
 
 ## Verification workflow
 
 1. `npm run dev` to start the dev server
-2. Open the app in Playwright or browser
-3. If JS/CSS behavior seems stale: clear service workers and caches, reload, confirm fresh assets loaded
-4. Test the requested flow end to end
-5. Check browser console for errors
-6. Run `npm run build` to confirm the production build still passes
+2. Exercise the affected flow end to end in the browser
+3. If JS/CSS behavior seems stale: clear service workers and caches, reload, confirm fresh assets
+4. Check browser console for errors
+5. Run `npx vue-tsc --noEmit` when touching `.ts` files
+6. Run `npm run build` to confirm the production build passes
 
 ## Common pitfalls
 
@@ -71,43 +76,99 @@ This file helps agents (Codex, Claude Code, etc.) work consistently inside this 
 - **localStorage schema**: saved recipes may be in legacy Italian shape (`nome`, `cat`, `fonte`) or v3 English shape; `normalizeStoredRecipe()` in `storage.ts` handles this — do not bypass it
 - **HMR and Pinia**: during HMR, stale Pinia instances can produce momentary errors — these clear on full reload and are not real bugs
 - **Website import failures**: some sites block fetch or have variable page structure; check `src/lib/import/web.ts` and `adapters.ts` before adding site-specific hacks
-
-## Preferred implementation style
-
-- Small, readable functions
-- Pinia setup stores (function body, not options API) for new shared state
-- No abstraction layers for single-use logic
-- CSS stays in `css/style.css`, organized with commented sections
-- Import adapters stay isolated per domain in `src/lib/import/adapters.ts`
+- **i18n curly quotes**: the Edit tool can silently convert straight JS quote delimiters to curly typographic quotes when replacing French/Italian text. Always verify `i18nData.js` builds cleanly after editing that file
 
 ## When adding a feature
 
-- add i18n strings (all 5 languages)
-- add UI using existing patterns
-- wire persistence if needed (via Pinia store → `src/lib/storage.ts`)
-- verify touch/tablet behavior
-- verify console is clean
-- run `npx vue-tsc --noEmit` when touching TS modules
-- run `npm run build`
-- update docs if introducing a new functional area
+- Add i18n strings (all 5 languages)
+- Add UI using existing CSS patterns and design tokens
+- Wire persistence if needed (via Pinia store → `src/lib/storage.ts`)
+- Verify touch/tablet behavior
+- Verify console is clean
+- Run `npx vue-tsc --noEmit` when touching TS modules
+- Run `npm run build`
+- Update docs if introducing a new functional area
 
 ## When working on website import
 
-- normalize the domain via `normalizeSourceDomain()` in `src/lib/import/core.ts`
-- prefer a dedicated adapter for supported domains (`src/lib/import/adapters.ts`)
-- keep generic fallback behavior honest — do not over-claim coverage
-- persist `source`, `sourceDomain`, and `preparationType` consistently
-- do not break existing working adapters when adding new ones
+- Normalize the domain via `normalizeSourceDomain()` in `src/lib/import/core.ts`
+- Prefer a dedicated adapter for supported domains (`src/lib/import/adapters.ts`)
+- Keep generic fallback behavior honest — do not over-claim coverage
+- Persist `source`, `sourceDomain`, and `preparationType` consistently
+- Do not break existing working adapters when adding new ones
+- Run `import-quality-auditor` before merging
 
 ## Bimby icon policy freeze
 
-- Approved Bimby action keys are intentionally closed to:
-  - `reverse`
-  - `knead`
-  - `scissors`
-  - `cup`
-  - `open`
-  - `lock`
-- Do not casually add generic actions (for example `simmer`, `tare`) or broaden matching rules.
-- False positives are worse than missing icons.
-- Any action-set expansion requires explicit product review plus updates to `tests/unit/bimby-action-icons.test.ts`.
+The Bimby step-icon action set is intentionally closed to:
+- `reverse`, `knead`, `scissors`, `cup`, `open`, `lock`
+
+Do not add generic actions (e.g., `simmer`, `tare`) or broaden matching rules. False positives are worse than missing icons. Any action-set expansion requires explicit product review plus updates to `tests/unit/bimby-action-icons.test.ts`.
+
+---
+
+## Specialized subagents
+
+Three repo-specific subagents are registered in `.claude/agents/`. They are read-only auditors that produce structured findings reports — they do not make code changes.
+
+### `import-quality-auditor`
+
+**File**: `.claude/agents/import-quality-auditor.md`
+
+**Purpose**: Audits the URL import pipeline for adapter coverage, field normalization correctness, fixture quality, text normalization, and error handling robustness.
+
+**Invoke when**:
+- Adding or modifying an import adapter in `src/lib/import/adapters.ts`
+- A site import regression is reported
+- Touching `src/lib/import/web.ts` or `src/lib/import/core.ts`
+- Before merging any `src/lib/import/` change
+
+**Expected output**: Structured report covering each adapter, field normalization per adapter, fixture coverage gaps, and a merge-ready / needs-fixes recommendation.
+
+**Maintenance**: When adding a new adapter, verify the auditor's fixture-coverage check still applies (it reads `tests/unit/import-adapters.test.ts` and `tests/fixtures/`). If new fixture conventions are adopted, update the "Files to audit" list in the agent definition.
+
+---
+
+### `cooking-ux-reviewer`
+
+**File**: `.claude/agents/cooking-ux-reviewer.md`
+
+**Purpose**: Reviews cooking mode UX — timer visibility, edit affordance, mobile input quality, step navigation, accessibility, wake lock behavior, layout consistency, and i18n completeness for cooking-related keys.
+
+**Invoke when**:
+- Changing `src/components/CookingModeView.vue`
+- Modifying the step timer or `src/composables/useTimerAlerts.js`
+- Touching `src/composables/useCookingPreferences.js`
+- Adding or changing CSS in the `/* ---- Cooking mode ---- */` section of `css/style.css`
+
+**Expected output**: Structured review covering each dimension (timer, navigation, accessibility, i18n), with specific file and line references, and a ship-ready / needs-fixes recommendation.
+
+**Maintenance**: If new cooking-mode i18n keys are added, update the "i18n completeness" checklist in the agent definition. If new major features are added to cooking mode (e.g., multi-step sub-timers), update the agent's scope section accordingly.
+
+---
+
+### `ui-consistency-enforcer`
+
+**File**: `.claude/agents/ui-consistency-enforcer.md`
+
+**Purpose**: Enforces UI consistency across all views and components — i18n completeness in all 5 languages, touch target sizing, light/dark theme coverage, inline SVG icon usage, button and card markup patterns, CSS organization, and Pinia reactivity patterns.
+
+**Invoke when**:
+- Adding a new view (`src/views/`) or shared component (`src/components/`)
+- Making visual/CSS changes that affect more than one component
+- Verifying i18n completeness after adding several new keys
+- After a UX pass that touches buttons, cards, or action icons
+
+**Expected output**: Structured report covering each consistency dimension with file:line references, and a consistent / needs-fixes recommendation.
+
+**Maintenance**: When new design tokens are added to `:root` in `css/style.css`, verify the agent's "Theme coverage" check still correctly identifies which tokens are canonical. If new button variants are established, update the "Button and card patterns" section in the agent definition.
+
+---
+
+## Agent maintenance rules
+
+- Agent definitions live in `.claude/agents/` as Markdown files with YAML frontmatter
+- Agents are read-only auditors by convention — they should not be given write tools (`Edit`, `Write`, `Bash`) unless explicitly extending their scope
+- When a new functional area is added to the app, assess whether an existing agent's scope should be extended or a new agent is warranted
+- Keep agent `description` fields specific — they are used by the routing layer to decide whether to delegate a task to the agent
+- Do not duplicate audit logic across agents; each agent owns a distinct quality surface

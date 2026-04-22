@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+Primary guidance for Claude Code sessions in this repository. For extended reference (stack snapshot, key files, editing guidelines) see `AGENTS.md`.
 
 ## Commands
 
@@ -59,6 +59,7 @@ Hash history (`/#/route`) for static hosting compatibility. Add new routes in `s
 - Add site-specific logic as a dedicated adapter in `src/lib/import/adapters.ts`
 - Persist `source`, `sourceDomain`, and `preparationType` consistently
 - Do not break existing adapters
+- Run the `import-quality-auditor` agent before merging import changes
 
 ## Bimby icon policy
 
@@ -70,3 +71,16 @@ Approved Bimby action keys are intentionally frozen: `reverse`, `knead`, `scisso
 - **Pinia ref unwrapping**: `store.someRef` returns unwrapped value; `storeToRefs()` gives you the actual `Ref<T>`.
 - **HMR + Pinia**: momentary errors during hot reload are not real bugs — full reload clears them.
 - **Website import failures**: some sites block fetch or vary structure; check `web.ts` and `adapters.ts` before adding hacks.
+- **i18n curly quotes**: `i18nData.js` string values must use straight JS quotes (`'...'`) as delimiters. Curly typographic apostrophes (`'`) inside string values are fine; as delimiters they cause a parse error.
+
+## Specialized agents
+
+Three repo-specific subagents live in `.claude/agents/`. Invoke them when appropriate:
+
+| Agent | Invoke when |
+|---|---|
+| `import-quality-auditor` | Adding/modifying an import adapter; investigating a site import regression; before merging `src/lib/import/` changes |
+| `cooking-ux-reviewer` | Changing `CookingModeView.vue`, the step timer, timer composables, or cooking-related CSS |
+| `ui-consistency-enforcer` | Adding new views, components, or visual CSS changes; verifying i18n completeness |
+
+See `AGENTS.md` for full agent reference, including detailed trigger conditions and expected outputs.

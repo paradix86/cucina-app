@@ -109,7 +109,7 @@ Deployment is fully automated via `.github/workflows/deploy.yml`:
 
 If the repo is ever renamed or the Pages URL changes, update `base` in `vite.config.js` and verify the SW paths still work.
 
-### 7. Touch UX
+### 8. Touch UX
 
 The app is optimized for tablets and touchscreens. Avoid small tap targets or cramped layouts.
 
@@ -249,11 +249,23 @@ For any non-trivial change:
 - [ ] Playwright or targeted manual verification performed
 - [ ] `CACHE_NAME` bumped in `public/sw.js` if deployed cached assets changed
 
+## AI agents
+
+Three repo-specific subagents in `.claude/agents/` assist with quality checks. Run them before merging changes in their area:
+
+| Agent | Run before merging |
+|---|---|
+| `import-quality-auditor` | Any change to `src/lib/import/` |
+| `cooking-ux-reviewer` | Any change to `CookingModeView.vue`, timer composables, or cooking CSS |
+| `ui-consistency-enforcer` | New views, components, or visual CSS changes |
+
+See `AGENTS.md` for full details.
+
 ## Documentation
 
 If your change introduces a new functional area, workflow, persistence model, or import adapter, update the relevant docs:
 
 - `README.md`
-- `PROJECT_PLAN.md`
 - `AGENTS.md`
 - `CONTRIBUTING.md`
+- `CLAUDE.md` (if a new non-negotiable or pitfall is identified)

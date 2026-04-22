@@ -150,6 +150,19 @@ If runtime behavior looks stale in a deployed environment, clear service workers
 Deploy `dist/` to any static host (Netlify, Vercel static, GitHub Pages, etc.).  
 If hosting under a subpath, set `base` in `vite.config.js` accordingly.
 
+## AI Agent Infrastructure
+
+Three repo-specific Claude Code subagents are registered in `.claude/agents/`. They are read-only auditors invoked during development to catch issues before they land.
+
+| Agent | Trigger |
+|---|---|
+| `import-quality-auditor` | Before merging any change to `src/lib/import/` |
+| `cooking-ux-reviewer` | After changing cooking mode or the step timer |
+| `ui-consistency-enforcer` | After adding views, components, or visual CSS changes |
+
+See `AGENTS.md` for full trigger conditions, expected outputs, and maintenance rules.
+See `CLAUDE.md` for session-level coding guidance and non-negotiables.
+
 ## License
 
 CC BY-NC 4.0 
