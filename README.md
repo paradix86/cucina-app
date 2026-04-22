@@ -62,7 +62,7 @@ npm run test:unit -- --ui
 
 **Test coverage areas:**
 - **storage.ts** — recipe normalization, ingredient parsing (quantity/unit/name), shopping list grouping
-- **import/adapters.ts** — adapter selection, URL pattern matching, text normalization; JSON-LD / Schema.org structured data, WPRM extraction, malformed data handling
+- **import/adapters/** — adapter selection, URL pattern matching, text normalization (`index.ts`, `utils.ts`); site parsers (`giallozafferano.ts`, `ricetteperbimby.ts`, `ricettebimbynet.ts`, `vegolosi.ts`); JSON-LD / Schema.org structured data, WPRM extraction, malformed data handling (`jsonld.ts`); generic markdown fallback (`generic.ts`)
 - **import/core.ts** — domain extraction, source detection from URL
 - **import/duemmePack.ts** — markdown parsing, recipe extraction
 
@@ -96,7 +96,15 @@ src/
     import/
       core.ts
       web.ts
-      adapters.ts
+      adapters/
+        index.ts
+        utils.ts
+        giallozafferano.ts
+        ricetteperbimby.ts
+        ricettebimbynet.ts
+        vegolosi.ts
+        jsonld.ts
+        generic.ts
 public/
   sw.js
   manifest.json

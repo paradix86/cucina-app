@@ -28,7 +28,14 @@ npx vue-tsc --noEmit  # TypeScript check (run when touching .ts files)
 
 ### Import pipeline
 
-URL import flow: `useImportFlow.ts` → `src/lib/import/core.ts` (URL detection, domain normalization) → `src/lib/import/web.ts` (fetch via Jina Reader proxy) → `src/lib/import/adapters.ts` (domain-specific parsers + generic fallback). Unit tests live in `tests/unit/import-*.test.ts`.
+URL import flow: `useImportFlow.ts` → `src/lib/import/core.ts` (URL detection, domain normalization) → `src/lib/import/web.ts` (fetch via Jina Reader proxy) → `src/lib/import/adapters/` (domain-specific parsers + generic fallback). Unit tests live in `tests/unit/import-*.test.ts`.
+
+The adapters directory structure:
+- `adapters/index.ts` — registry, dispatch, public exports (same surface as former `adapters.ts`)
+- `adapters/utils.ts` — shared normalization, category, build helpers
+- `adapters/giallozafferano.ts`, `ricetteperbimby.ts`, `ricettebimbynet.ts`, `vegolosi.ts` — named site adapters
+- `adapters/jsonld.ts` — JSON-LD, WPRM, HTML meta extraction
+- `adapters/generic.ts` — generic markdown heading-scanner fallback
 
 ### Storage & schema
 
@@ -58,7 +65,7 @@ Hash history (`/#/route`) for static hosting compatibility. Add new routes in `s
 ## When working on website import
 
 - Normalize domain via `normalizeSourceDomain()` in `src/lib/import/core.ts`
-- Add site-specific logic as a dedicated adapter in `src/lib/import/adapters.ts`
+- Add site-specific logic as a dedicated adapter file in `src/lib/import/adapters/` and register it in `adapters/index.ts`
 - Persist `source`, `sourceDomain`, and `preparationType` consistently
 - Do not break existing adapters
 - Run the `import-quality-auditor` agent before merging import changes
@@ -73,7 +80,7 @@ Approved Bimby action keys are intentionally frozen: `reverse`, `knead`, `scisso
 - **Pinia ref unwrapping**: `store.someRef` returns unwrapped value; `storeToRefs()` gives you the actual `Ref<T>`.
 - **Storage write errors**: `saveRecipeBook` and `saveShoppingList` throw `StorageWriteError` on failure. Pinia stores catch this — do not add try/catch in views or composables above the store layer. If adding a new write path in a store, always wrap the save call with try/catch and call `onWriteError(e)` + `refresh()`.
 - **HMR + Pinia**: momentary errors during hot reload are not real bugs — full reload clears them.
-- **Website import failures**: some sites block fetch or vary structure; check `web.ts` and `adapters.ts` before adding hacks.
+- **Website import failures**: some sites block fetch or vary structure; check `web.ts` and the relevant file in `adapters/` before adding hacks.
 - **i18n curly quotes**: `i18nData.js` string values must use straight JS quotes (`'...'`) as delimiters. Curly typographic apostrophes (`'`) inside string values are fine; as delimiters they cause a parse error.
 
 ## Specialized agents

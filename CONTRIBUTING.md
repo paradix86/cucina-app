@@ -41,7 +41,7 @@ src/
     i18n.js            t() translation function
     i18nData.js        strings in 5 languages
     builtinData.js     built-in recipe dataset
-    import/            typed import pipeline (core.ts, web.ts, adapters.ts)
+    import/            typed import pipeline (core.ts, web.ts, adapters/)
 public/
   sw.js                service worker
   manifest.json        PWA manifest
@@ -158,11 +158,11 @@ Use the current v3 English shape for new work:
 The import pipeline in `src/lib/import/` follows this flow:
 
 1. Normalize domain via `normalizeSourceDomain()`
-2. Select a domain adapter if one exists (`adapters.ts`)
+2. Select a domain adapter if one exists (`adapters/index.ts`)
 3. Fall back to generic parser if no adapter matches
 4. Persist `source`, `sourceDomain`, `preparationType`, and suggested `tags`
 
-Adding a new adapter: add an entry to the adapter registry in `src/lib/import/adapters.ts` with a domain matcher and a parse function. Do not break existing adapters.
+Adding a new adapter: create a new file in `src/lib/import/adapters/` exporting a `WebsiteImportAdapter` object, then add it to the registry array in `adapters/index.ts`. Do not break existing adapters.
 
 ### Parser regression fixture policy
 

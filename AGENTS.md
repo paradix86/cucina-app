@@ -31,7 +31,11 @@ Extended reference for AI agents working in this repository. Start with `CLAUDE.
 | `src/lib/builtinData.js` | Built-in recipe dataset |
 | `src/lib/import/core.ts` | URL detection, source type, domain normalization |
 | `src/lib/import/web.ts` | Fetch readable page, failure inference |
-| `src/lib/import/adapters.ts` | Domain adapter registry, site parsers, generic fallback |
+| `src/lib/import/adapters/index.ts` | Adapter registry, dispatch, public exports |
+| `src/lib/import/adapters/utils.ts` | Shared normalization, category, build helpers |
+| `src/lib/import/adapters/{site}.ts` | Per-site parsers: giallozafferano, ricetteperbimby, ricettebimbynet, vegolosi |
+| `src/lib/import/adapters/jsonld.ts` | JSON-LD, WPRM, HTML meta extraction |
+| `src/lib/import/adapters/generic.ts` | Generic markdown heading-scanner fallback |
 | `src/types.ts` | Shared domain/import/storage TypeScript types |
 | `src/components/CookingModeView.vue` | Step-by-step cooking UI with per-step timer |
 | `public/sw.js` | Cache-first service worker |
@@ -76,7 +80,7 @@ Extended reference for AI agents working in this repository. Start with `CLAUDE.
 - **localStorage schema**: saved recipes may be in legacy Italian shape (`nome`, `cat`, `fonte`) or v3 English shape; `normalizeStoredRecipe()` in `storage.ts` handles this — do not bypass it
 - **Storage write errors**: `saveRecipeBook` and `saveShoppingList` throw `StorageWriteError` (exported from `storage.ts`) on quota-exceeded or any write failure. Both Pinia stores catch this in every mutation method. Do not add storage try/catch above the store layer. When adding a new write path in a store, wrap with try/catch, call the local `onWriteError(e)` helper, then call `refresh()`.
 - **HMR and Pinia**: during HMR, stale Pinia instances can produce momentary errors — these clear on full reload and are not real bugs
-- **Website import failures**: some sites block fetch or have variable page structure; check `src/lib/import/web.ts` and `adapters.ts` before adding site-specific hacks
+- **Website import failures**: some sites block fetch or have variable page structure; check `src/lib/import/web.ts` and the relevant file in `src/lib/import/adapters/` before adding site-specific hacks
 - **i18n curly quotes**: the Edit tool can silently convert straight JS quote delimiters to curly typographic quotes when replacing French/Italian text. Always verify `i18nData.js` builds cleanly after editing that file
 
 ## When adding a feature
@@ -93,7 +97,7 @@ Extended reference for AI agents working in this repository. Start with `CLAUDE.
 ## When working on website import
 
 - Normalize the domain via `normalizeSourceDomain()` in `src/lib/import/core.ts`
-- Prefer a dedicated adapter for supported domains (`src/lib/import/adapters.ts`)
+- Prefer a dedicated adapter file in `src/lib/import/adapters/` for supported domains; register it in `adapters/index.ts`
 - Keep generic fallback behavior honest — do not over-claim coverage
 - Persist `source`, `sourceDomain`, and `preparationType` consistently
 - Do not break existing working adapters when adding new ones
@@ -119,7 +123,7 @@ Three repo-specific subagents are registered in `.claude/agents/`. They are read
 **Purpose**: Audits the URL import pipeline for adapter coverage, field normalization correctness, fixture quality, text normalization, and error handling robustness.
 
 **Invoke when**:
-- Adding or modifying an import adapter in `src/lib/import/adapters.ts`
+- Adding or modifying an import adapter in `src/lib/import/adapters/`
 - A site import regression is reported
 - Touching `src/lib/import/web.ts` or `src/lib/import/core.ts`
 - Before merging any `src/lib/import/` change
