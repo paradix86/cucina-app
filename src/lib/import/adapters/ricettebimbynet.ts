@@ -1,4 +1,5 @@
 import type { ImportPreviewRecipe, WebsiteImportAdapter } from '../../../types';
+import { normalizeSourceDomain } from '../core';
 import {
   normalizeImportText,
   stripImportMarkdownNoise,
@@ -10,6 +11,7 @@ import {
   inferImportEmoji,
   normalizeImportedServings,
   parseImportMinutes,
+  suggestImportTags,
   buildImportedRecipe,
   extractBimbyTaggedStep,
 } from './utils';
@@ -111,6 +113,7 @@ function parseRicetteBimbyNetAdapter(markdown: string, url: string): ImportPrevi
   const localCategory = extractNearbyCategorySignal(md, cleanTitle);
   const category = normalizeImportCategory(localCategory || inferImportCategoryFromTitleAndText(cleanTitle, prepBlock));
   const total = totalTimeMatch ? stripImportLinksAndImages(totalTimeMatch[ 1 ]).trim() : '';
+  const domain = normalizeSourceDomain(url);
 
   return buildImportedRecipe(url, {
     name: cleanTitle,
@@ -122,6 +125,7 @@ function parseRicetteBimbyNetAdapter(markdown: string, url: string): ImportPrevi
     steps,
     timerMinutes: parseImportMinutes(total),
     preparationType: 'bimby',
+    tags: suggestImportTags(domain, 'bimby', category, cleanTitle),
   });
 }
 

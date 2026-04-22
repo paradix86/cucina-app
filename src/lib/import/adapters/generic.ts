@@ -8,6 +8,7 @@ import {
   inferImportCategoryFromTitleAndText,
   inferImportEmoji,
   inferImportPreparationType,
+  suggestImportTags,
   buildImportedRecipe,
 } from './utils';
 
@@ -42,12 +43,14 @@ export function parseGenericReadableRecipe(markdown: string, url: string): Impor
 
   const domain = normalizeSourceDomain(url);
   const category = normalizeImportCategory(inferImportCategoryFromTitleAndText(titleMatch[ 1 ], stepsSection[ 1 ]));
+  const preparationType = inferImportPreparationType(md, domain);
   return buildImportedRecipe(url, {
     name: stripImportMarkdownNoise(titleMatch[ 1 ]).trim(),
     category,
     emoji: inferImportEmoji(category),
     ingredients,
     steps,
-    preparationType: inferImportPreparationType(md, domain),
+    preparationType,
+    tags: suggestImportTags(domain, preparationType, category, titleMatch[ 1 ]),
   });
 }

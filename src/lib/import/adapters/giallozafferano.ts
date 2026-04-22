@@ -1,4 +1,5 @@
 import type { ImportPreviewRecipe, WebsiteImportAdapter } from '../../../types';
+import { normalizeSourceDomain } from '../core';
 import {
   normalizeImportText,
   stripImportMarkdownNoise,
@@ -9,6 +10,7 @@ import {
   inferImportEmoji,
   normalizeImportedServings,
   parseImportMinutes,
+  suggestImportTags,
   buildImportedRecipe,
 } from './utils';
 
@@ -156,6 +158,7 @@ function parseGialloZafferanoAdapter(markdown: string, url: string): ImportPrevi
   const localCategory = extractNearbyCategorySignal(md, cleanTitle);
   const presentationSection = (md.match(/## PRESENTAZIONE\s*\n([\s\S]*?)(?:\n##\s*|$)/i) || [])[ 1 ] || '';
   const category = normalizeImportCategory(localCategory || inferImportCategoryFromTitleAndText(cleanTitle, presentationSection));
+  const domain = normalizeSourceDomain(url);
 
   return buildImportedRecipe(url, {
     name: cleanTitle,
@@ -168,6 +171,7 @@ function parseGialloZafferanoAdapter(markdown: string, url: string): ImportPrevi
     steps,
     timerMinutes: parseImportMinutes(cook),
     preparationType: 'classic',
+    tags: suggestImportTags(domain, 'classic', category, cleanTitle),
   });
 }
 

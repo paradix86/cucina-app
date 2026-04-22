@@ -1,4 +1,5 @@
 import type { ImportPreviewRecipe, WebsiteImportAdapter } from '../../../types';
+import { normalizeSourceDomain } from '../core';
 import {
   normalizeImportText,
   stripImportMarkdownNoise,
@@ -8,6 +9,7 @@ import {
   inferImportCategoryFromTitleAndText,
   inferImportEmoji,
   normalizeImportedServings,
+  suggestImportTags,
   buildImportedRecipe,
 } from './utils';
 
@@ -158,6 +160,7 @@ function parseVegolositAdapter(markdown: string, url: string): ImportPreviewReci
   const localCategory = extractNearbyCategorySignal(md, cleanTitle);
   const category = normalizeImportCategory(localCategory || inferImportCategoryFromTitleAndText(cleanTitle, stepsRaw));
   const servings = servingsMatch ? normalizeImportedServings(servingsMatch[ 1 ], '4') : '4';
+  const domain = normalizeSourceDomain(url);
 
   return buildImportedRecipe(url, {
     name: cleanTitle,
@@ -167,6 +170,7 @@ function parseVegolositAdapter(markdown: string, url: string): ImportPreviewReci
     steps,
     servings,
     preparationType: 'classic',
+    tags: suggestImportTags(domain, 'classic', category, cleanTitle),
   });
 }
 
