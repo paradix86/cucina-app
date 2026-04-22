@@ -24,6 +24,12 @@ const exportableItems = computed(() => {
   return remaining.length ? remaining : items.value;
 });
 
+function localizedShoppingUnit(unit, qty) {
+  if (unit === 'pieces') return t(Math.abs(qty) === 1 ? 'shopping_unit_piece_one' : 'shopping_unit_piece_many');
+  if (unit === 'eggs') return t(Math.abs(qty) === 1 ? 'shopping_unit_egg_one' : 'shopping_unit_egg_many');
+  return unit;
+}
+
 async function clearList() {
   if (!items.value.length) return;
   const confirmed = requestConfirm
@@ -42,7 +48,7 @@ function contributionLabel(group, item) {
   if (group.groupType !== 'numeric') return item.text;
   const parsed = parseIngredient(item.text);
   if (!parsed.parsedQty || !parsed.parsedUnit) return item.text;
-  return `${formatQuantity(parsed.parsedQty)} ${parsed.parsedUnit}`;
+  return `${formatQuantity(parsed.parsedQty)} ${localizedShoppingUnit(parsed.parsedUnit, parsed.parsedQty)}`;
 }
 
 function checkedCount(group) {
@@ -76,7 +82,7 @@ function groupPrimaryLabel(group) {
 
 function groupQuantityLabel(group) {
   if (group.groupType !== 'numeric') return '';
-  return `${group.displayQty} ${group.unit}`.trim();
+  return `${group.displayQty} ${localizedShoppingUnit(group.unit, Number(group.totalQty || group.displayQty || 0))}`.trim();
 }
 
 function groupCompletionPercent(group) {
@@ -156,7 +162,7 @@ function filteredGroupQuantityLabel(group) {
   if ([ 'ml', 'l' ].includes(group.unit)) {
     return total >= 1000 ? `${formatQuantity(total / 1000)} l` : `${formatQuantity(total)} ml`;
   }
-  return `${formatQuantity(total)} ${group.unit}`.trim();
+  return `${formatQuantity(total)} ${localizedShoppingUnit(group.unit, total)}`.trim();
 }
 
 function linesForExportGroup(group) {

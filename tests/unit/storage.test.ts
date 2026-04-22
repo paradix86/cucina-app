@@ -211,6 +211,11 @@ describe('assignSection', () => {
     expect(assignSection('salsa di soia')).toBe('fats_oils_spices');
   });
 
+  it('should assign obvious produce variants to vegetables_fruit', () => {
+    expect(assignSection('zucchina o melanzane grigliate')).toBe('vegetables_fruit');
+    expect(assignSection('cipollotto fresco')).toBe('vegetables_fruit');
+  });
+
   it('should handle case insensitivity', () => {
     expect(assignSection('CHICKEN')).toBe('proteins');
     expect(assignSection('Pasta')).toBe('carbs');
@@ -345,6 +350,30 @@ describe('groupShoppingItems', () => {
     expect(result.grouped[ 0 ].baseName).toBe('sale');
     expect(result.grouped[ 0 ].displayName).toBe('sale');
     expect(result.grouped[ 0 ].items).toHaveLength(5);
+  });
+
+  it('should collapse obvious olive oil variants into a single shopping group', () => {
+    const items: ShoppingItem[] = [
+      { id: '1', text: "olio extravergine d'oliva", checked: false, createdAt: Date.now() },
+      { id: '2', text: 'olio evo', checked: false, createdAt: Date.now() },
+      { id: '3', text: 'olio di oliva', checked: false, createdAt: Date.now() },
+    ];
+    const result = groupShoppingItems(items);
+    expect(result.grouped).toHaveLength(1);
+    expect(result.grouped[ 0 ].baseName).toBe('olio di oliva');
+    expect(result.grouped[ 0 ].items).toHaveLength(3);
+  });
+
+  it('should collapse obvious pepper variants into a single shopping group', () => {
+    const items: ShoppingItem[] = [
+      { id: '1', text: 'pepe nero', checked: false, createdAt: Date.now() },
+      { id: '2', text: 'pepe', checked: false, createdAt: Date.now() },
+      { id: '3', text: 'pepe macinato', checked: false, createdAt: Date.now() },
+    ];
+    const result = groupShoppingItems(items);
+    expect(result.grouped).toHaveLength(1);
+    expect(result.grouped[ 0 ].baseName).toBe('pepe');
+    expect(result.grouped[ 0 ].items).toHaveLength(3);
   });
 
   it('should handle empty list', () => {

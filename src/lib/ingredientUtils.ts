@@ -125,8 +125,9 @@ function normalizeGroupingKeyName(name: string): string {
   if (!normalized) return '';
 
   if (/\bsalsa di soia\b/i.test(normalized)) return 'salsa di soia';
+  if (/\bolio\s+(?:evo|extravergine(?:\s+d['’]oliva|\s+di\s+oliva)?|d['’]oliva|di\s+oliva)\b/i.test(normalized)) return "olio di oliva";
   if (/\bsale\b/i.test(normalized)) return 'sale';
-  if (/^pepe(?:\s+nero)?\b/i.test(normalized)) return 'pepe';
+  if (/\bpepe(?:\s+nero)?\b/i.test(normalized)) return 'pepe';
 
   const parts = normalized.split(' ');
   if (parts.length) parts[ 0 ] = GROUPING_SINGULAR_MAP[parts[ 0 ]] || parts[ 0 ];
@@ -290,9 +291,9 @@ const SECTION_KEYWORDS: Record<ShoppingSectionId, string[]> = {
     'potato', 'patata', 'cracker',
   ],
   'vegetables_fruit': [
-    'carrot', 'carota', 'onion', 'cipolla', 'garlic', 'aglio',
+    'carrot', 'carota', 'onion', 'cipolla', 'cipollotto', 'garlic', 'aglio',
     'tomato', 'pomodoro', 'pomodori', 'pelati', 'lettuce', 'lattuga', 'spinach', 'spinaci', 'broccoli',
-    'cabbage', 'cavolo', 'zucchini', 'zucca', 'peperone', 'eggplant', 'melanzana',
+    'cabbage', 'cavolo', 'zucchini', 'zucchina', 'zucca', 'peperone', 'eggplant', 'melanzana',
     'banana', 'apple', 'mela', 'orange', 'arancia', 'lemon', 'limone', 'limoni',
     'strawberry', 'fragola', 'blueberry', 'mirtillo', 'grape', 'uva', 'pear', 'pera',
     'cucumber', 'cetriolo', 'pumpkin', 'bean', 'fagiolo', 'pea', 'pisello',
