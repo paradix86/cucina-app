@@ -75,6 +75,54 @@ function normalizeName(name: string): string {
   return n;
 }
 
+const GROUPING_LEADING_DESCRIPTOR_RE = /^(?:spicch(?:io|i)|cloves?|ramett(?:o|i)|fett(?:a|e)|fogli(?:a|e)|cucchiai(?:ni)?|cucchiain(?:o|i)|pezz(?:o|i|etto|etti)|filett(?:o|i)|ciuff(?:o|i)|mazzett(?:o|i))\s+(?:di\s+|d['’])?/i;
+const GROUPING_SINGULAR_MAP: Record<string, string> = {
+  uova: 'uovo',
+  patate: 'patata',
+  cipolle: 'cipolla',
+  limoni: 'limone',
+  arance: 'arancia',
+  carote: 'carota',
+  zucchine: 'zucchina',
+  melanzane: 'melanzana',
+  mele: 'mela',
+  pere: 'pera',
+  banane: 'banana',
+  pomodori: 'pomodoro',
+  peperoni: 'peperone',
+  funghi: 'fungo',
+  porri: 'porro',
+  cetrioli: 'cetriolo',
+  olive: 'oliva',
+  capperi: 'cappero',
+  scalogni: 'scalogno',
+  onions: 'onion',
+  potatoes: 'potato',
+  tomatoes: 'tomato',
+  carrots: 'carrot',
+  peppers: 'pepper',
+  lemons: 'lemon',
+  apples: 'apple',
+  pears: 'pear',
+  bananas: 'banana',
+  eggs: 'egg',
+  cloves: 'clove',
+};
+
+function normalizeGroupingKeyName(name: string): string {
+  let normalized = normalizeName(name)
+    .replace(/[()]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  normalized = normalized.replace(GROUPING_LEADING_DESCRIPTOR_RE, '').trim();
+  if (!normalized) return '';
+
+  const parts = normalized.split(' ');
+  if (parts.length) parts[ 0 ] = GROUPING_SINGULAR_MAP[parts[ 0 ]] || parts[ 0 ];
+  return parts.join(' ').trim();
+}
+
 // ── Quantity unit conversion ──────────────────────────────────────────────
 
 function toBaseUnits(qty: number | null, unit: ParsedIngredientUnit | null): number | null {
@@ -325,12 +373,13 @@ export function groupShoppingItems(items: ShoppingItem[]): GroupedShoppingItemsR
   parseResults.forEach(item => {
     const parsed = item.parsed;
     if (parsed.confidence === 'high' && parsed.parsedName && parsed.parsedUnit) {
-      const key = `${parsed.parsedName}__${parsed.parsedUnit}`;
+      const normalizedGroupName = normalizeGroupingKeyName(parsed.parsedName) || parsed.parsedName;
+      const key = `${normalizedGroupName}__${parsed.parsedUnit}`;
       if (!numericGroups[ key ]) {
         numericGroups[ key ] = {
           groupType: 'numeric',
           groupKey: key,
-          name: parsed.parsedName,
+          name: normalizedGroupName,
           unit: parsed.parsedUnit,
           items: [],
           baseTotal: 0,
@@ -339,7 +388,7 @@ export function groupShoppingItems(items: ShoppingItem[]): GroupedShoppingItemsR
       numericGroups[ key ].baseTotal += toBaseUnits(parsed.parsedQty, parsed.parsedUnit) || 0;
       numericGroups[ key ].items.push(item);
     } else {
-      const exactKey = normalizeName(item.text);
+      const exactKey = normalizeGroupingKeyName(item.text);
       if (!exactKey) {
         ungrouped.push(item);
         return;

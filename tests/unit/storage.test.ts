@@ -309,6 +309,28 @@ describe('groupShoppingItems', () => {
     expect(result.grouped[ 0 ].items).toHaveLength(2);
   });
 
+  it('should merge obvious singular/plural shopping variants for non-numeric ingredients', () => {
+    const items: ShoppingItem[] = [
+      { id: '1', text: 'spicchio aglio', checked: false, createdAt: Date.now() },
+      { id: '2', text: 'spicchi aglio', checked: false, createdAt: Date.now() },
+    ];
+    const result = groupShoppingItems(items);
+    expect(result.grouped).toHaveLength(1);
+    expect(result.grouped[ 0 ].baseName).toBe('aglio');
+    expect(result.grouped[ 0 ].items).toHaveLength(2);
+  });
+
+  it('should merge numeric ingredients using normalized grouping keys', () => {
+    const items: ShoppingItem[] = [
+      { id: '1', text: '2 patate', checked: false, createdAt: Date.now() },
+      { id: '2', text: '3 patata', checked: false, createdAt: Date.now() },
+    ];
+    const result = groupShoppingItems(items);
+    expect(result.grouped).toHaveLength(1);
+    expect(result.grouped[ 0 ].items).toHaveLength(2);
+    expect(result.grouped[ 0 ].totalQty).toBe(5);
+  });
+
   it('should handle empty list', () => {
     const result = groupShoppingItems([]);
     expect(result.grouped).toHaveLength(0);

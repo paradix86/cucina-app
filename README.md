@@ -13,7 +13,7 @@ Tablet-friendly cooking app built with Vue 3 + Vite.
 - **Import**: URL import with adapter-based website parsing, diagnostics, metadata preview/edit before save
 - **Manual Import**: structured form to create recipes without a URL
 - **Built-in Recipes**: curated dataset with preparation-type filtering
-- **Shopping List**: add ingredients from recipes, smart grouping (numeric + exact), per-recipe contribution breakdown, section assignment
+- **Shopping List**: add ingredients from recipes, smart grouping (numeric + exact + near-duplicate normalization), clearer per-recipe provenance, plain-text copy/share export, section assignment
 - **Cooking Mode**: step-by-step fullscreen mode with per-step timer
 - **Timers**: multiple parallel timers with toast completion feedback
 - **Theme + i18n**: light/dark/system theme, IT/EN/DE/FR/ES translations

@@ -2104,6 +2104,33 @@ input[type="number"] {
   padding: 4px 10px;
   font-variant-numeric: tabular-nums;
 }
+.shopping-toolbar {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  margin: 0 0 14px;
+  padding: 10px 12px;
+  border: 1px solid color-mix(in srgb, var(--border) 82%, transparent);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--bg-secondary) 70%, var(--bg) 30%);
+}
+.shopping-toolbar-note {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.45;
+}
+.shopping-toolbar-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.shopping-toolbar-btn {
+  min-height: 42px;
+  padding-inline: 14px;
+  white-space: nowrap;
+}
 .shopping-list-rows {
   display: flex;
   flex-direction: column;
@@ -2129,6 +2156,12 @@ input[type="number"] {
   cursor: pointer;
   min-height: 44px;
 }
+.shopping-item-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
 .shopping-item-checkbox {
   width: 22px;
   height: 22px;
@@ -2143,13 +2176,13 @@ input[type="number"] {
 }
 .shopping-item.is-checked .shopping-item-text {
   text-decoration: line-through;
-  text-decoration-thickness: 1px;
-  text-decoration-color: color-mix(in srgb, var(--text-hint) 42%, transparent);
-  color: var(--text-muted);
+  text-decoration-thickness: 2px;
+  text-decoration-color: color-mix(in srgb, var(--green) 38%, var(--text-hint) 62%);
+  color: color-mix(in srgb, var(--text-muted) 88%, var(--bg) 12%);
 }
 .shopping-item.is-checked {
-  background: color-mix(in srgb, var(--bg-secondary) 70%, var(--bg) 30%);
-  border-color: color-mix(in srgb, var(--border) 74%, transparent);
+  background: color-mix(in srgb, var(--green-light) 18%, var(--bg) 82%);
+  border-color: color-mix(in srgb, var(--green) 28%, var(--border) 72%);
 }
 .shopping-remove {
   min-width: 42px;
@@ -2249,6 +2282,11 @@ input[type="number"] {
   border-color: color-mix(in srgb, var(--green) 44%, var(--border) 56%);
   background: color-mix(in srgb, var(--green-light) 20%, var(--bg) 80%);
 }
+.shopping-grouped-item.is-checked .shopping-item-total-name {
+  text-decoration: line-through;
+  text-decoration-thickness: 2px;
+  text-decoration-color: color-mix(in srgb, var(--green) 36%, var(--text-hint) 64%);
+}
 .shopping-grouped-item.is-checked .shopping-item-total,
 .shopping-grouped-item.is-checked .shopping-group-progress,
 .shopping-grouped-item.is-checked .shopping-item-sub {
@@ -2304,11 +2342,38 @@ input[type="number"] {
   font-size: 11px;
   letter-spacing: .01em;
   color: var(--text-muted);
+  line-height: 1.4;
 }
 .shopping-group-side {
   display: flex;
   align-items: stretch;
   gap: 6px;
+}
+.shopping-state-pill {
+  min-height: 38px;
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+  border: 1px solid color-mix(in srgb, var(--border) 82%, transparent);
+  background: color-mix(in srgb, var(--bg-secondary) 72%, var(--bg) 28%);
+  color: var(--text-muted);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .03em;
+  text-transform: uppercase;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+}
+.shopping-state-pill.is-partial {
+  color: color-mix(in srgb, var(--green) 62%, var(--text) 38%);
+  border-color: color-mix(in srgb, var(--green) 28%, var(--border) 72%);
+  background: color-mix(in srgb, var(--green-light) 34%, var(--bg) 66%);
+}
+.shopping-state-pill.is-checked {
+  color: var(--green-text);
+  border-color: color-mix(in srgb, var(--green) 42%, var(--border) 58%);
+  background: color-mix(in srgb, var(--green-light) 52%, var(--bg) 48%);
 }
 .shopping-group-progress {
   font-size: 10px;
@@ -2326,6 +2391,10 @@ input[type="number"] {
   background: color-mix(in srgb, var(--bg-secondary) 72%, var(--bg) 28%);
   padding: 3px 7px 4px;
   gap: 3px;
+}
+.shopping-grouped-item.is-checked .shopping-group-progress {
+  border-color: color-mix(in srgb, var(--green) 28%, var(--border) 72%);
+  background: color-mix(in srgb, var(--green-light) 38%, var(--bg) 62%);
 }
 .shopping-group-progress-value {
   line-height: 1;
@@ -2390,6 +2459,7 @@ input[type="number"] {
   letter-spacing: .02em;
   margin-bottom: 0;
   font-variant-numeric: tabular-nums;
+  padding-inline: 2px;
 }
 .shopping-group-contribution {
   display: flex;
@@ -2429,7 +2499,7 @@ input[type="number"] {
 .shopping-group-contribution .contrib-recipe {
   font-size: 11px;
   color: var(--text-muted);
-  font-weight: 500;
+  font-weight: 560;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: normal;
@@ -2437,8 +2507,8 @@ input[type="number"] {
 .shopping-group-contribution.is-checked .contrib-qty,
 .shopping-group-contribution.is-checked .contrib-recipe {
   text-decoration: line-through;
-  text-decoration-thickness: 1px;
-  text-decoration-color: color-mix(in srgb, var(--text-hint) 44%, transparent);
+  text-decoration-thickness: 2px;
+  text-decoration-color: color-mix(in srgb, var(--green) 34%, var(--text-hint) 66%);
   color: var(--text-hint);
 }
 .shopping-group-contribution.is-checked .shopping-contrib-state {
@@ -2484,6 +2554,17 @@ input[type="number"] {
   .shopping-card {
     padding: .95rem .85rem 1.25rem;
   }
+  .shopping-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 10px;
+  }
+  .shopping-toolbar-actions {
+    width: 100%;
+  }
+  .shopping-toolbar-btn {
+    flex: 1 1 140px;
+  }
   .shopping-header {
     margin-bottom: 1rem;
     gap: 10px;
@@ -2508,6 +2589,10 @@ input[type="number"] {
   .shopping-group-toggle {
     min-height: 40px;
     padding: 3px 10px;
+  }
+  .shopping-state-pill {
+    min-height: 40px;
+    padding-inline: 9px;
   }
   .shopping-group-progress {
     min-width: 49px;
