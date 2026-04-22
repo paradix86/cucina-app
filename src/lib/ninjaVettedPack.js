@@ -1,5 +1,8 @@
-import vettedSubset from '../content/ninja/vetted_subset.json';
+let _cache = null;
 
-export const NINJA_VETTED_RECIPE_PACK = Array.isArray(vettedSubset?.recipes)
-  ? vettedSubset.recipes
-  : [];
+export async function getNinjaVettedPack() {
+  if (_cache) return _cache;
+  const mod = await import('../content/ninja/vetted_subset.json');
+  _cache = Array.isArray(mod.default?.recipes) ? mod.default.recipes : [];
+  return _cache;
+}

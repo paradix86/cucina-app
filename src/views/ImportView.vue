@@ -1,17 +1,24 @@
 <script setup>
-import { computed, nextTick, ref, watch } from 'vue';
+import { computed, nextTick, onMounted, ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import { useImportFlow } from '../composables/useImportFlow';
 import { getSourceDomainLabel, joinMetaParts, suggestMealOccasions, MEAL_OCCASION_OPTIONS } from '../lib/recipes.js';
 import { t } from '../lib/i18n.js';
 import { useRecipeBookStore } from '../stores/recipeBook';
 import { DUEMME_VETTED_RECIPE_PACK } from '../lib/duemmeVettedPack.js';
-import { NINJA_VETTED_RECIPE_PACK } from '../lib/ninjaVettedPack.js';
+import { getNinjaVettedPack } from '../lib/ninjaVettedPack.js';
 
 const emit = defineEmits(['toast', 'go-home']);
 const route = useRoute();
 const { url, loading, status, diagnostic, previewRecipe, importRecipeFromUrl, updatePreparationType, togglePreviewMealOccasion, savePreviewedRecipe, discardPreview, removeTag, addTag, socialImportAvailable } = useImportFlow();
 const recipeBookStore = useRecipeBookStore();
+
+const ninjaPackData = ref([]);
+const ninjaPackLoading = ref(true);
+onMounted(async () => {
+  ninjaPackData.value = await getNinjaVettedPack();
+  ninjaPackLoading.value = false;
+});
 
 const prepOptions = ['classic', 'bimby', 'airfryer'];
 const showManualForm = ref(false);
@@ -91,16 +98,17 @@ const curatedCollections = computed(() => ([
     title: t('import_ninja_feature_title'),
     description: t('import_ninja_feature_desc'),
     browseLabel: t('import_ninja_feature_browse'),
-    importAllLabel: t('import_ninja_feature_import_all', { n: NINJA_VETTED_RECIPE_PACK.length }),
-    countLabel: t('import_ninja_feature_count', { n: NINJA_VETTED_RECIPE_PACK.length }),
+    importAllLabel: t('import_ninja_feature_import_all', { n: ninjaPackData.value.length }),
+    countLabel: t('import_ninja_feature_count', { n: ninjaPackData.value.length }),
     sourceLabel: t('import_ninja_feature_source'),
     browserTitle: t('import_collection_ninja_title'),
     browserDesc: t('import_collection_ninja_desc'),
-    recipes: NINJA_VETTED_RECIPE_PACK,
+    recipes: ninjaPackData.value,
+    loading: ninjaPackLoading.value,
     accentClass: 'is-ninja',
   },
 ]));
-const featuredCollections = computed(() => curatedCollections.value.filter(collection => collection.recipes.length));
+const featuredCollections = computed(() => curatedCollections.value.filter(collection => collection.recipes.length || collection.loading));
 const activeCollection = computed(() => (
   curatedCollections.value.find(collection => collection.key === activeCollectionKey.value)
   || featuredCollections.value[0]
@@ -442,8 +450,8 @@ function savePreview() {
           <span class="chip-featured">{{ collection.sourceLabel }}</span>
         </div>
         <div class="import-duemme-featured-actions">
-          <button class="btn-secondary btn-secondary-strong" @click="openCollectionBrowser(collection.key)">{{ collection.browseLabel }}</button>
-          <button class="btn-primary" @click="setActiveCollection(collection.key); quickImportFeaturedCollection()">{{ collection.importAllLabel }}</button>
+          <button class="btn-secondary btn-secondary-strong" :disabled="collection.loading" @click="openCollectionBrowser(collection.key)">{{ collection.browseLabel }}</button>
+          <button class="btn-primary" :disabled="collection.loading" @click="setActiveCollection(collection.key); quickImportFeaturedCollection()">{{ collection.importAllLabel }}</button>
         </div>
         </div>
       </div>
@@ -466,7 +474,7 @@ function savePreview() {
             @click="setActiveCollection(collection.key)"
           >
             <span>{{ collection.key === 'ninja' ? t('import_collection_ninja_short') : t('import_collection_duemme_short') }}</span>
-            <small>{{ collection.recipes.length }}</small>
+            <small>{{ collection.loading ? '…' : collection.recipes.length }}</small>
           </button>
         </div>
         <div class="collection-browser-grid">
