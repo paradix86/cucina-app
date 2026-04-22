@@ -64,7 +64,12 @@ function updateCache(request, response) {
 self.addEventListener('fetch', event => {
   // Solo GET; ignora richieste API Anthropic (sempre live)
   if (event.request.method !== 'GET') return;
-  if (event.request.url.includes('api.anthropic.com')) return;
+  try {
+    const requestUrl = new URL(event.request.url);
+    if (requestUrl.hostname === 'api.anthropic.com') return;
+  } catch (_) {
+    // Se l'URL non è valido, continua con la normale gestione SW
+  }
 
   if (isNavigationRequest(event.request)) {
     event.respondWith(
