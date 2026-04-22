@@ -1,4 +1,7 @@
 export type PreparationType = 'classic' | 'bimby' | 'airfryer';
+export type PlannerDayId = 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday';
+export type PlannerMealSlot = 'breakfast' | 'lunch' | 'dinner';
+export type WeeklyPlanner = Record<PlannerDayId, Record<PlannerMealSlot, string | null>>;
 
 export interface Recipe {
   id: string;

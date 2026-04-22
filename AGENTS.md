@@ -22,6 +22,7 @@ Extended reference for AI agents working in this repository. Start with `CLAUDE.
 | `src/router/index.js` | Route definitions (hash history) |
 | `src/stores/recipeBook.ts` | Pinia store — recipe array, mutations, computed |
 | `src/stores/shoppingList.ts` | Pinia store — shopping items, grouping, mutations |
+| `src/stores/weeklyPlanner.ts` | Pinia store — weekly meal-plan slots and mutations |
 | `src/composables/useImportFlow.ts` | Per-instance import state and logic |
 | `src/composables/useTimers.js` | Global timer state + interval/visibility lifecycle |
 | `src/composables/useTimerAlerts.js` | Timer sound engine and alert modal state |

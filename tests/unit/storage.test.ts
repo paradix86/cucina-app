@@ -10,8 +10,13 @@ import {
 } from '../../src/lib/ingredientUtils';
 import {
   addRecipe,
+  clearWeeklyPlanner,
   loadRecipeBook,
+  loadWeeklyPlanner,
+  saveWeeklyPlanner,
+  updateWeeklyPlannerSlot,
 } from '../../src/lib/storage';
+import { createEmptyWeeklyPlanner } from '../../src/lib/planner';
 import type { Recipe, ShoppingItem, ParsedIngredient } from '../../src/types';
 
 // Mock localStorage for testing
@@ -452,5 +457,42 @@ describe('meal occasion normalization', () => {
     addRecipe({ ...BASE_RECIPE, id: 'mo-7', mealOccasion: [ 'colazione', 'PRANZO' ] });
     const saved = loadRecipeBook().find(r => r.id === 'mo-7');
     expect(saved?.mealOccasion).toBeUndefined();
+  });
+});
+
+describe('weekly planner persistence', () => {
+  it('loads an empty normalized planner by default', () => {
+    const plan = loadWeeklyPlanner();
+    expect(plan.monday.breakfast).toBeNull();
+    expect(plan.sunday.dinner).toBeNull();
+  });
+
+  it('persists recipe ids by day and slot', () => {
+    updateWeeklyPlannerSlot('monday', 'lunch', 'recipe-123');
+    const plan = loadWeeklyPlanner();
+    expect(plan.monday.lunch).toBe('recipe-123');
+    expect(plan.monday.breakfast).toBeNull();
+  });
+
+  it('normalizes partial planner payloads on save', () => {
+    saveWeeklyPlanner({
+      monday: { breakfast: 'a', lunch: null, dinner: null },
+    } as any);
+    const plan = loadWeeklyPlanner();
+    expect(plan.monday.breakfast).toBe('a');
+    expect(plan.tuesday.lunch).toBeNull();
+    expect(plan.sunday.dinner).toBeNull();
+  });
+
+  it('clears the weekly planner back to an empty state', () => {
+    saveWeeklyPlanner({
+      ...createEmptyWeeklyPlanner(),
+      friday: { breakfast: 'one', lunch: 'two', dinner: 'three' },
+    });
+    clearWeeklyPlanner();
+    const plan = loadWeeklyPlanner();
+    expect(plan.friday.breakfast).toBeNull();
+    expect(plan.friday.lunch).toBeNull();
+    expect(plan.friday.dinner).toBeNull();
   });
 });

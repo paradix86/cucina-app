@@ -14,6 +14,7 @@ Tablet-friendly cooking app built with Vue 3 + Vite.
 - **Manual Import**: structured form to create recipes without a URL
 - **Built-in Recipes**: curated dataset with preparation-type filtering
 - **Shopping List**: add ingredients from recipes, smart grouping (numeric + exact + near-duplicate normalization), clearer per-recipe provenance, plain-text copy/share export, section assignment
+- **Weekly Planner**: plan breakfast, lunch, and dinner across 7 days using recipes from your recipe book
 - **Cooking Mode**: step-by-step fullscreen mode with per-step timer
 - **Timers**: multiple parallel timers with toast completion feedback
 - **Theme + i18n**: light/dark/system theme, IT/EN/DE/FR/ES translations
@@ -81,6 +82,7 @@ src/
   stores/
     recipeBook.ts
     shoppingList.ts
+    weeklyPlanner.ts
   composables/
     useImportFlow.ts
     useTimers.js

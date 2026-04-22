@@ -10,19 +10,23 @@
  * are the repository layer above this; views should not import from here directly.
  */
 import type {
+  PlannerDayId,
   PreparationType,
   Recipe,
   ShoppingItem,
+  WeeklyPlanner,
 } from '../types';
 import {
   getPreparationType,
   normalizePreparationTypeValue,
   scaleShoppingIngredientText,
 } from './ingredientUtils';
+import { createEmptyWeeklyPlanner, normalizeWeeklyPlanner } from './planner';
 
 export const STORAGE_KEY = 'cucina_recipebook_v3';
 export const STORAGE_KEY_V2 = 'cucina_ricettario_v2';
 export const SHOPPING_LIST_KEY = 'cucina_shopping_list_v1';
+export const WEEKLY_PLANNER_KEY = 'cucina_weekly_planner_v1';
 
 type LegacyV2Recipe = {
   id?: string;
@@ -319,6 +323,33 @@ export function saveShoppingList(items: ShoppingItem[]): void {
     console.warn('localStorage write failed:', e);
     throw new StorageWriteError(SHOPPING_LIST_KEY, e);
   }
+}
+
+// ── Weekly planner CRUD ───────────────────────────────────────────────────
+
+export function loadWeeklyPlanner(): WeeklyPlanner {
+  const raw = parseJson<unknown>(localStorage.getItem(WEEKLY_PLANNER_KEY) || '{}', {});
+  return normalizeWeeklyPlanner(raw);
+}
+
+export function saveWeeklyPlanner(plan: WeeklyPlanner): void {
+  try {
+    localStorage.setItem(WEEKLY_PLANNER_KEY, JSON.stringify(normalizeWeeklyPlanner(plan)));
+  } catch (e) {
+    console.warn('localStorage write failed:', e);
+    throw new StorageWriteError(WEEKLY_PLANNER_KEY, e);
+  }
+}
+
+export function updateWeeklyPlannerSlot(day: PlannerDayId, slot: keyof WeeklyPlanner[PlannerDayId], recipeId: string | null): WeeklyPlanner {
+  const current = loadWeeklyPlanner();
+  current[day][slot] = recipeId && recipeId.trim() ? recipeId.trim() : null;
+  saveWeeklyPlanner(current);
+  return current;
+}
+
+export function clearWeeklyPlanner(): void {
+  saveWeeklyPlanner(createEmptyWeeklyPlanner());
 }
 
 export function addShoppingListItems(items: string[], recipeMeta: RecipeMeta = {}): number {

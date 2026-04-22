@@ -21,7 +21,7 @@ npx vue-tsc --noEmit  # TypeScript check (run when touching .ts files)
 ### Layer separation (critical)
 
 - `src/lib/` — Pure logic, **no Vue imports**. Fully unit-testable. Covers storage, i18n, import pipeline, ingredient parsing.
-- `src/stores/` — Pinia setup stores (shared reactive state). `recipeBook.ts`, `shoppingList.ts`.
+- `src/stores/` — Pinia setup stores (shared reactive state). `recipeBook.ts`, `shoppingList.ts`, `weeklyPlanner.ts`.
 - `src/composables/` — Vue composition functions wrapping stores/lib logic for views.
 - `src/views/` — One component per route (hash-based: `/#/route`).
 - `src/components/` — Shared UI components.

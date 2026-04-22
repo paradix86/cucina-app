@@ -15,6 +15,7 @@ import { useTimerAlerts } from './composables/useTimerAlerts.js';
 import { initServiceWorkerUpdates } from './composables/useServiceWorker.js';
 import { useRecipeBookStore } from './stores/recipeBook';
 import { useShoppingListStore } from './stores/shoppingList';
+import { useWeeklyPlannerStore } from './stores/weeklyPlanner';
 
 const router = useRouter();
 const cookingRecipe = ref(null);
@@ -31,6 +32,7 @@ let confirmResolver = null;
 const { showToast } = useToasts();
 const recipeBook = useRecipeBookStore();
 const shoppingList = useShoppingListStore();
+const weeklyPlanner = useWeeklyPlannerStore();
 const timers = useTimers();
 const { timerAlert, dismissTimerAlert } = useTimerAlerts();
 
@@ -39,6 +41,7 @@ const tabs = computed(() => [
   { path: '/import',      label: t('nav_import') },
   { path: '/recipes',     label: t('nav_recipes') },
   { path: '/shopping-list', label: t('nav_shopping') },
+  { path: '/planner',     label: t('nav_planner') },
   { path: '/timer',       label: t('nav_timer') },
   { path: '/guides',      label: t('nav_guides') },
 ]);
@@ -80,6 +83,7 @@ function goHome() {
   cookingRecipe.value = null;
   recipeBook.refresh();
   shoppingList.refresh();
+  weeklyPlanner.refresh();
   currentView.value?.goHome?.();
   router.push('/recipe-book').catch(() => {});
 }
