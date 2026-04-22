@@ -3421,11 +3421,20 @@ mark {
   border-radius: var(--radius-md);
   background: var(--bg);
   overflow: hidden;
+  /* slot-type left border: set by data-slot attribute */
+  border-left-width: 3px;
 }
+.planner-slot-card[data-slot="breakfast"] { border-left-color: #d97706; }
+.planner-slot-card[data-slot="lunch"]     { border-left-color: #0d9488; }
+.planner-slot-card[data-slot="dinner"]    { border-left-color: #6366f1; }
 .planner-slot-card.is-filled {
   border-color: var(--green-soft);
+  border-left-color: inherit; /* keep slot-type color on filled cards */
   background: color-mix(in srgb, var(--green) 4%, var(--bg));
 }
+.planner-slot-card[data-slot="breakfast"].is-filled { border-left-color: #d97706; }
+.planner-slot-card[data-slot="lunch"].is-filled     { border-left-color: #0d9488; }
+.planner-slot-card[data-slot="dinner"].is-filled    { border-left-color: #6366f1; }
 .planner-slot-card.is-missing {
   border-color: color-mix(in srgb, var(--red) 30%, var(--border-md));
   background: color-mix(in srgb, var(--red) 4%, var(--bg));
@@ -3445,12 +3454,35 @@ mark {
   cursor: pointer;
   font-family: var(--font);
 }
+/* Empty slot CTA: dashed border, centered, clearly interactive */
+.planner-slot-card:not(.is-filled):not(.is-missing) .planner-slot-main {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  min-height: 56px;
+  border: 1.5px dashed var(--border-md);
+  border-radius: var(--radius-sm);
+  margin: 8px;
+  width: calc(100% - 16px);
+  box-sizing: border-box;
+  color: var(--text-muted);
+  transition: border-color 0.15s, color 0.15s;
+}
+.planner-slot-card:not(.is-filled):not(.is-missing) .planner-slot-main:hover {
+  border-color: var(--green-soft);
+  color: var(--green);
+}
 .planner-slot-label {
   font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
   color: var(--text-muted);
+}
+/* In empty CTA mode, the label sits inline with the + icon */
+.planner-slot-card:not(.is-filled):not(.is-missing) .planner-slot-label {
+  color: inherit;
 }
 .planner-slot-name {
   font-size: 17px;
@@ -3463,6 +3495,34 @@ mark {
   color: var(--text-muted);
   line-height: 1.4;
 }
+.planner-slot-add-icon {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 1.5px solid currentColor;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  line-height: 1;
+}
+/* Week progress dots */
+.planner-week-dots {
+  display: flex;
+  gap: 4px;
+  align-items: flex-end;
+}
+.planner-week-dot {
+  width: 8px;
+  height: 24px;
+  border-radius: 4px;
+  background: var(--border-md);
+  transition: background 0.2s;
+}
+.planner-week-dot.fill-1 { background: color-mix(in srgb, var(--green) 40%, var(--border-md)); }
+.planner-week-dot.fill-2 { background: color-mix(in srgb, var(--green) 70%, var(--border-md)); }
+.planner-week-dot.fill-3 { background: var(--green); }
 .planner-slot-actions {
   display: flex;
   flex-wrap: wrap;

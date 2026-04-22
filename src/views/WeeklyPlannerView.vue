@@ -175,6 +175,15 @@ function isSuggested(recipe: Recipe) {
           <span class="planner-summary-value">{{ plannedMealsCount }}/{{ totalSlots }}</span>
           <span class="planner-summary-label">{{ t('planner_summary_label') }}</span>
         </div>
+        <div class="planner-week-dots" :aria-label="t('planner_summary_label')">
+          <span
+            v-for="day in weekDays"
+            :key="day.id"
+            class="planner-week-dot"
+            :class="`fill-${day.filledCount}`"
+            :title="day.label"
+          />
+        </div>
         <button
           v-if="plannedMealsCount > 0"
           class="btn-ghost planner-clear-week"
@@ -271,6 +280,7 @@ function isSuggested(recipe: Recipe) {
               v-for="slot in day.slots"
               :key="slot.id"
               class="planner-slot-card"
+              :data-slot="slot.id"
               :class="{
                 'is-filled': slot.recipe,
                 'is-missing': slot.missing,
@@ -278,10 +288,18 @@ function isSuggested(recipe: Recipe) {
               }"
             >
               <button class="planner-slot-main" @click="openPicker(day.id, slot.id)">
-                <span class="planner-slot-label">{{ slot.label }}</span>
-                <span v-if="slot.recipe" class="planner-slot-name">{{ slot.recipe.name }}</span>
-                <span v-else-if="slot.missing" class="planner-slot-name">{{ t('planner_missing_recipe') }}</span>
-                <span v-else class="planner-slot-empty">{{ t('planner_empty_slot') }}</span>
+                <template v-if="slot.recipe">
+                  <span class="planner-slot-label">{{ slot.label }}</span>
+                  <span class="planner-slot-name">{{ slot.recipe.name }}</span>
+                </template>
+                <template v-else-if="slot.missing">
+                  <span class="planner-slot-label">{{ slot.label }}</span>
+                  <span class="planner-slot-name">{{ t('planner_missing_recipe') }}</span>
+                </template>
+                <template v-else>
+                  <span class="planner-slot-add-icon" aria-hidden="true">+</span>
+                  <span class="planner-slot-label">{{ slot.label }}</span>
+                </template>
                 <span v-if="slot.recipe?.time" class="planner-slot-meta">{{ slot.recipe.time }}</span>
                 <span
                   v-else-if="slot.recipe?.mealOccasion?.length"

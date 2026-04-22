@@ -532,10 +532,15 @@ function savePreview() {
         <p class="muted-label import-section-subtitle">{{ t('import_section_link_desc') }}</p>
         <p class="muted-label import-help-line">{{ t('import_section_link_helper') }}</p>
         <p v-if="!socialImportAvailable" class="muted-label import-help-line">{{ t('import_social_unavailable_hint') }}</p>
+        <p class="muted-label import-help-line">{{ t('import_supported_sites_label') }}</p>
         <div class="source-pills source-pills-static">
+          <span class="src-pill web">cucchiaio.it</span>
+          <span class="src-pill web">misya.info</span>
+          <span class="src-pill web">fattoincasadabenedetta.it</span>
+          <span class="src-pill web">ricette-bimby.net</span>
           <span class="src-pill web">ricetteperbimby.it</span>
           <span class="src-pill web">giallozafferano.it</span>
-          <span class="src-pill web">{{ t('source_web') }}</span>
+          <span class="src-pill web">{{ t('import_supported_sites_more') }}</span>
         </div>
         <div class="url-row">
           <input ref="urlInputRef" v-model="url" type="url" :placeholder="t('import_placeholder')" />

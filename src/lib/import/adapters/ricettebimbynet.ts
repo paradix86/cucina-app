@@ -20,6 +20,34 @@ function cleanRicetteBimbyNetTitle(title: string): string {
     .trim();
 }
 
+function foldStandaloneParentheticalNotes(steps: string[]): string[] {
+  return steps.reduce<string[]>((acc, step) => {
+    const trimmed = step.trim();
+    if (/^\([^()]+\)\.?$/.test(trimmed) && acc.length) {
+      acc[acc.length - 1] = `${acc[acc.length - 1]} ${trimmed}`.replace(/\s+/g, ' ').trim();
+      return acc;
+    }
+    acc.push(trimmed);
+    return acc;
+  }, []);
+}
+
+function restorePerLatoTiming(step: string, rawStep: string): string {
+  const perSideMatch = rawStep.match(/(\d+\s*(?:sec(?:ondi?)?\.?|min(?:uti?)?\.?))\s+per lato/i);
+  if (!perSideMatch || !step.includes('—') || !/\bper lato\b/i.test(step)) return step;
+  const normalizedTime = perSideMatch[1]
+    .replace(/sec(?:ondi?)?\.?/i, 'sec')
+    .replace(/min(?:uti?)?\.?/i, 'min')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  const [tagPart, textPart] = step.split(' — ');
+  if (!textPart || new RegExp(`${normalizedTime}\\s+per lato`, 'i').test(textPart)) return step;
+
+  const patchedText = textPart.replace(/\blasciare cuocere\s+per lato\b/i, `lasciare cuocere ${normalizedTime} per lato`);
+  return `${tagPart} — ${patchedText}`.replace(/\s+/g, ' ').trim();
+}
+
 function parseRicetteBimbyNetAdapter(markdown: string, url: string): ImportPreviewRecipe {
   const md = normalizeImportText(markdown);
   const titleMatch = md.match(/^#\s+(.+)$/m);
@@ -45,7 +73,7 @@ function parseRicetteBimbyNetAdapter(markdown: string, url: string): ImportPrevi
   const prepEndRel = prepTail.search(/^###?\s+(?:Note|Commenti|Lascia un commento|Articoli correlati)\b/m);
   const prepBlock = prepEndRel >= 0 ? prepTail.slice(0, prepEndRel) : prepTail;
   let currentSection = '';
-  const steps = prepBlock
+  const steps = foldStandaloneParentheticalNotes(prepBlock
     .split('\n')
     .map(line => line.trim())
     .filter(Boolean)
@@ -61,7 +89,7 @@ function parseRicetteBimbyNetAdapter(markdown: string, url: string): ImportPrevi
       // Strip leading step-counter digit that some sites embed in the step text itself
       // e.g. markdown "1. 1 Mettere nel boccale..." → strip the inner "1 "
       const rawStep = stepMatch[ 1 ].replace(/^\d{1,2}\s+(?=[A-Za-zÀ-ÿ(])/, '');
-      const cleaned = extractBimbyTaggedStep(rawStep);
+      const cleaned = restorePerLatoTiming(extractBimbyTaggedStep(rawStep), rawStep);
       if (!cleaned) return acc;
       // "Preparazione" is the default main cooking section — prefix adds no value
       const contextSection = currentSection && !/^preparazione$/i.test(currentSection) ? currentSection : '';
@@ -75,7 +103,7 @@ function parseRicetteBimbyNetAdapter(markdown: string, url: string): ImportPrevi
       }
       acc.push(contextSection ? `${contextSection}: ${cleaned}` : cleaned);
       return acc;
-    }, []);
+    }, []));
 
   if (!titleMatch || !ingredients.length || !steps.length) throw new Error('RBN_PARSE_INCOMPLETE');
 

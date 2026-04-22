@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   getImportAdapterForDomain,
   getImportAdapterForUrl,
+  importWebsiteRecipeWithAdapters,
   normalizeImportText,
   stripImportLinksAndImages,
   stripImportMarkdownNoise,
@@ -378,6 +379,46 @@ Dopo aver formato le empanadas riscaldate abbondante olio di semi in un pentolin
 Consumare subito.
 `;
 
+const RBN_MARKDOWN_WITH_STANDALONE_PARENTHESES_NOTE = `# Pancake allo yogurt Bimby
+
+Tempo totale
+
+15 min
+
+Porzioni
+
+4
+
+### Ingredienti
+
+* 190 gr farina 00
+* 150 gr yogurt greco
+* 2 uova
+
+### Preparazione
+
+1. 1
+
+Mettere nel boccale le uova, lo yogurt, l'olio, il latte e la vaniglia, emulsionare: 30 sec. vel. 4.
+
+2. 2
+
+Unire la farina, lo zucchero, il lievito, il bicarbonato e il sale, amalgamare: 20 sec. vel. 3.
+
+3. 3
+
+Riscaldare una piastra o una padella, spennellare il fondo con del burro, versare un mestolino di composto e lasciare cuocere 2 minuti per lato coperti con un coperchio.
+
+4. 4 (Il passaggio del coperchio aiuterà al composto a gonfiarsi).
+
+5. 5
+
+I pancake allo yogurt bimby sono pronti per essere serviti.
+
+### Note
+
+Fine.`;
+
 describe('GialloZafferano adapter — ingredient parsing', () => {
   const adapter = getImportAdapterForDomain('giallozafferano.it')!;
   const url = 'https://ricette.giallozafferano.it/test.html';
@@ -443,5 +484,18 @@ describe('GialloZafferano adapter — ingredient parsing', () => {
     expect(result.steps[ 0 ]).toContain('temperatura di 160°');
     expect(result.steps[ 0 ]).toContain('Friggete 1 o 2 pezzi per volta per 4-5 minuti.');
     expect(result.steps[ 0 ]).not.toMatch(/\b25\b|\b26\b|\b27\b/);
+  });
+});
+
+describe('Ricette-Bimby.net adapter — step cleanup', () => {
+  it('folds standalone parenthetical cooking notes into the previous step instead of leaving them as an isolated step', () => {
+    const result = importWebsiteRecipeWithAdapters(
+      RBN_MARKDOWN_WITH_STANDALONE_PARENTHESES_NOTE,
+      'https://ricette-bimby.net/pancake-allo-yogurt-bimby/',
+    );
+
+    expect(result.preparationType).toBe('bimby');
+    expect(result.steps.some(step => step === '(Il passaggio del coperchio aiuterà al composto a gonfiarsi).')).toBe(false);
+    expect(result.steps.some(step => step.includes('gonfiarsi'))).toBe(true);
   });
 });
