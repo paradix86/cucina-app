@@ -12,7 +12,6 @@ updates:
     open-pull-requests-limit: 5
     labels:
       - "dependencies"
-      - "frontend"
     commit-message:
       prefix: "deps"
     groups:
@@ -22,6 +21,10 @@ updates:
         update-types:
           - "minor"
           - "patch"
+    ignore:
+      - dependency-name: "*"
+        update-types:
+          - "version-update:semver-major"
 
   - package-ecosystem: "github-actions"
     directory: "/"
@@ -29,6 +32,17 @@ updates:
       interval: "weekly"
     labels:
       - "dependencies"
-      - "github-actions"
+      - "ci"
     commit-message:
       prefix: "ci"
+    groups:
+      github-actions-minor-patch:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
+    ignore:
+      - dependency-name: "*"
+        update-types:
+          - "version-update:semver-major"
