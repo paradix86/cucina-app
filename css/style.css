@@ -3408,8 +3408,17 @@ mark {
   align-items: flex-start;
   gap: 10px;
 }
+.planner-summary-actions,
+.planner-day-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
 .planner-day-clear,
-.planner-clear-week {
+.planner-clear-week,
+.planner-day-shopping,
+.planner-week-shopping {
   min-height: 40px;
 }
 .planner-slot-list {
@@ -3563,6 +3572,10 @@ mark {
     width: 100%;
     justify-content: space-between;
   }
+  .planner-summary-actions,
+  .planner-day-actions {
+    width: 100%;
+  }
   .planner-summary-stat {
     text-align: left;
   }
@@ -3577,6 +3590,8 @@ mark {
     flex-direction: column;
   }
   .planner-slot-action,
+  .planner-day-shopping,
+  .planner-week-shopping,
   .planner-day-clear,
   .planner-clear-week {
     width: 100%;

@@ -6,6 +6,7 @@ import { t } from '../lib/i18n.js';
 import { PLANNER_DAYS, PLANNER_MEAL_SLOTS } from '../lib/planner';
 import { useToasts } from '../composables/useToasts.js';
 import { useRecipeBookStore } from '../stores/recipeBook';
+import { useShoppingListStore } from '../stores/shoppingList';
 import { useWeeklyPlannerStore } from '../stores/weeklyPlanner';
 import type { PlannerDayId, PlannerMealSlot, Recipe } from '../types';
 
@@ -16,6 +17,7 @@ type PlannerSelection = {
 
 const router = useRouter();
 const recipeBook = useRecipeBookStore();
+const shoppingList = useShoppingListStore();
 const plannerStore = useWeeklyPlannerStore();
 const { showToast } = useToasts();
 
@@ -77,6 +79,13 @@ const pickerRecipes = computed(() => {
 
 const weekDays = computed(() => {
   return PLANNER_DAYS.map(day => {
+    const plannedRecipes = PLANNER_MEAL_SLOTS
+      .map(slot => {
+        const recipeId = plan.value[day][slot];
+        return recipeId ? recipeMap.value.get(recipeId) || null : null;
+      })
+      .filter((recipe): recipe is Recipe => Boolean(recipe));
+
     const slots = PLANNER_MEAL_SLOTS.map(slot => {
       const recipeId = plan.value[day][slot];
       const recipe = recipeId ? recipeMap.value.get(recipeId) || null : null;
@@ -93,9 +102,14 @@ const weekDays = computed(() => {
       id: day,
       label: t(`planner_day_${day}`),
       filledCount: slots.filter(slot => slot.recipeId).length,
+      plannedRecipes,
       slots,
     };
   });
+});
+
+const plannedWeekRecipes = computed(() => {
+  return weekDays.value.flatMap(day => day.plannedRecipes);
 });
 
 function openPicker(day: PlannerDayId, slot: PlannerMealSlot) {
@@ -144,6 +158,32 @@ function clearWeek() {
   }
 }
 
+function addRecipesToShoppingList(recipesToAdd: Recipe[]) {
+  let addedRecipes = 0;
+
+  recipesToAdd.forEach(recipe => {
+    const addedIngredients = shoppingList.addRecipeIngredients(recipe);
+    if (addedIngredients > 0) {
+      addedRecipes += 1;
+    }
+  });
+
+  if (addedRecipes > 0) {
+    showToast(t('planner_added_to_shopping_toast', { n: addedRecipes }), 'success');
+  }
+}
+
+function addDayToShopping(day: PlannerDayId) {
+  const dayPlan = weekDays.value.find(entry => entry.id === day);
+  if (!dayPlan?.plannedRecipes.length) return;
+  addRecipesToShoppingList(dayPlan.plannedRecipes);
+}
+
+function addWeekToShopping() {
+  if (!plannedWeekRecipes.value.length) return;
+  addRecipesToShoppingList(plannedWeekRecipes.value);
+}
+
 function openRecipe(recipeId: string) {
   router.push(`/recipe-book/${recipeId}`).catch(() => {});
 }
@@ -184,13 +224,21 @@ function isSuggested(recipe: Recipe) {
             :title="day.label"
           />
         </div>
-        <button
-          v-if="plannedMealsCount > 0"
-          class="btn-ghost planner-clear-week"
-          @click="clearWeek"
-        >
-          {{ t('planner_clear_week') }}
-        </button>
+        <div v-if="plannedMealsCount > 0" class="planner-summary-actions">
+          <button
+            v-if="plannedWeekRecipes.length"
+            class="btn-secondary planner-week-shopping"
+            @click="addWeekToShopping"
+          >
+            {{ t('planner_add_week_to_shopping') }}
+          </button>
+          <button
+            class="btn-ghost planner-clear-week"
+            @click="clearWeek"
+          >
+            {{ t('planner_clear_week') }}
+          </button>
+        </div>
       </div>
     </div>
 
@@ -266,13 +314,21 @@ function isSuggested(recipe: Recipe) {
               <h2>{{ day.label }}</h2>
               <p class="muted-label">{{ t('planner_day_progress', { filled: day.filledCount, total: 3 }) }}</p>
             </div>
-            <button
-              v-if="day.filledCount > 0"
-              class="btn-ghost planner-day-clear"
-              @click="clearDay(day.id)"
-            >
-              {{ t('planner_clear_day') }}
-            </button>
+            <div v-if="day.filledCount > 0" class="planner-day-actions">
+              <button
+                v-if="day.plannedRecipes.length"
+                class="btn-secondary planner-day-shopping"
+                @click="addDayToShopping(day.id)"
+              >
+                {{ t('planner_add_day_to_shopping') }}
+              </button>
+              <button
+                class="btn-ghost planner-day-clear"
+                @click="clearDay(day.id)"
+              >
+                {{ t('planner_clear_day') }}
+              </button>
+            </div>
           </div>
 
           <div class="planner-slot-list">

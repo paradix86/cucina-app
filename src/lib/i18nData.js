@@ -135,6 +135,9 @@ export const TRANSLATIONS = {
     planner_slot_cleared_toast: 'Slot del planner svuotato.',
     planner_day_cleared_toast: 'Giorno del planner svuotato.',
     planner_week_cleared_toast: 'Planner settimanale svuotato.',
+    planner_add_day_to_shopping: 'Aggiungi giorno alla lista spesa',
+    planner_add_week_to_shopping: 'Aggiungi settimana alla lista spesa',
+    planner_added_to_shopping_toast: '{n} ricette aggiunte alla lista spesa.',
 
     // Import
     import_title: 'Importa una ricetta da link',
@@ -534,6 +537,9 @@ export const TRANSLATIONS = {
     planner_slot_cleared_toast: 'Planner slot cleared.',
     planner_day_cleared_toast: 'Planner day cleared.',
     planner_week_cleared_toast: 'Weekly planner cleared.',
+    planner_add_day_to_shopping: 'Add day to shopping list',
+    planner_add_week_to_shopping: 'Add week to shopping list',
+    planner_added_to_shopping_toast: '{n} recipes added to the shopping list.',
 
     import_title: 'Import a recipe from a link',
     import_desc: 'Paste a YouTube, TikTok, Instagram or any recipe website link.',
@@ -927,6 +933,9 @@ export const TRANSLATIONS = {
     planner_slot_cleared_toast: 'Planer-Slot geleert.',
     planner_day_cleared_toast: 'Planer-Tag geleert.',
     planner_week_cleared_toast: 'Wochenplan geleert.',
+    planner_add_day_to_shopping: 'Tag zur Einkaufsliste hinzufügen',
+    planner_add_week_to_shopping: 'Woche zur Einkaufsliste hinzufügen',
+    planner_added_to_shopping_toast: '{n} Rezepte zur Einkaufsliste hinzugefügt.',
 
     import_title: 'Rezept von Link importieren',
     import_desc: 'Füge einen YouTube-, TikTok-, Instagram- oder Rezeptwebsite-Link ein.',
@@ -1319,6 +1328,9 @@ export const TRANSLATIONS = {
     planner_slot_cleared_toast: 'Créneau vidé.',
     planner_day_cleared_toast: 'Jour vidé.',
     planner_week_cleared_toast: 'Planning hebdomadaire vidé.',
+    planner_add_day_to_shopping: 'Ajouter le jour à la liste de courses',
+    planner_add_week_to_shopping: 'Ajouter la semaine à la liste de courses',
+    planner_added_to_shopping_toast: '{n} recettes ajoutées à la liste de courses.',
 
     import_title: 'Importer une recette depuis un lien',
     import_desc: 'Collez un lien YouTube, TikTok, Instagram ou tout site de recettes.',
@@ -1711,6 +1723,9 @@ export const TRANSLATIONS = {
     planner_slot_cleared_toast: 'Bloque del planificador vaciado.',
     planner_day_cleared_toast: 'Día vaciado.',
     planner_week_cleared_toast: 'Plan semanal vaciado.',
+    planner_add_day_to_shopping: 'Añadir día a la lista de compra',
+    planner_add_week_to_shopping: 'Añadir semana a la lista de compra',
+    planner_added_to_shopping_toast: '{n} recetas añadidas a la lista de compra.',
 
     import_title: 'Importar una receta desde un enlace',
     import_desc: 'Pega un enlace de YouTube, TikTok, Instagram o cualquier sitio de recetas.',
