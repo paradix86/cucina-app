@@ -84,6 +84,30 @@ function parseDurationIsoMinutes(iso: string | undefined | null): number {
   return h * 60 + m;
 }
 
+/** Convert total minutes to a human-readable time string ("30 min", "1h", "1h 30 min"). */
+function minutesToTimeString(total: number): string {
+  if (!total) return '';
+  const h = Math.floor(total / 60);
+  const m = total % 60;
+  if (h && m) return `${h}h ${m} min`;
+  if (h) return `${h}h`;
+  return `${m} min`;
+}
+
+/**
+ * Extract site-provided keywords from a JSON-LD keywords field.
+ * Handles both comma-separated strings and string arrays.
+ */
+function extractJsonLdKeywords(raw: unknown): string[] {
+  if (typeof raw === 'string') {
+    return raw.split(/[,;|]+/).map(k => normalizeImportText(k).trim()).filter(Boolean);
+  }
+  if (Array.isArray(raw)) {
+    return (raw as unknown[]).map(k => normalizeImportText(String(k)).trim()).filter(Boolean);
+  }
+  return [];
+}
+
 function normalizeJsonLdServings(raw: unknown): string {
   if (raw == null) return '';
   const val = Array.isArray(raw) ? raw[ 0 ] : raw;
@@ -225,9 +249,11 @@ function parseJsonLdRecipeNode(node: Record<string, unknown>, url: string, fallb
   const steps = extractJsonLdInstructionSteps(node.recipeInstructions);
   if (!steps.length) throw new Error('JSONLD_NO_STEPS');
 
-  const timeIso = String(node.totalTime || node.cookTime || node.prepTime || '');
-  const time = parseDurationIso(timeIso) || 'n.d.';
-  const timerMinutes = parseDurationIsoMinutes(timeIso);
+  // Fix 1: sum prepTime + cookTime when totalTime is absent
+  const totalMinutes = parseDurationIsoMinutes(String(node.totalTime || ''))
+    || (parseDurationIsoMinutes(String(node.prepTime || '')) + parseDurationIsoMinutes(String(node.cookTime || '')));
+  const time = minutesToTimeString(totalMinutes) || 'n.d.';
+  const timerMinutes = totalMinutes;
 
   const servings = normalizeJsonLdServings(node.recipeYield) || '4';
 
@@ -242,6 +268,11 @@ function parseJsonLdRecipeNode(node: Record<string, unknown>, url: string, fallb
   const fullText = ingredients.join(' ') + ' ' + steps.join(' ');
   const preparationType = inferImportPreparationType(fullText, domain);
 
+  // Fix 2: merge site-provided keywords with domain-inferred tags (deduplicated)
+  const siteKeywords = extractJsonLdKeywords(node.keywords);
+  const baseTags = suggestImportTags(domain, preparationType, category, name);
+  const tags = [ ...new Set([ ...baseTags, ...siteKeywords ]) ];
+
   return buildImportedRecipe(url, {
     name,
     category,
@@ -252,7 +283,7 @@ function parseJsonLdRecipeNode(node: Record<string, unknown>, url: string, fallb
     steps,
     timerMinutes,
     preparationType,
-    tags: suggestImportTags(domain, preparationType, category, name),
+    tags,
   });
 }
 
@@ -349,6 +380,18 @@ function buildWprmRecipe(
   const fullText = ingredients.join(' ') + ' ' + steps.join(' ');
   const preparationType = inferImportPreparationType(fullText, domain);
 
+  // Fix 2: extract WPRM tags (array of {name} objects or strings)
+  const rawWprmTags = Array.isArray(recipe.tags) ? (recipe.tags as unknown[]) : [];
+  const siteKeywords = rawWprmTags
+    .map(t => {
+      if (t && typeof t === 'object') return String((t as Record<string, unknown>).name || '');
+      return String(t || '');
+    })
+    .map(s => normalizeImportText(s).trim())
+    .filter(Boolean);
+  const baseTags = suggestImportTags(domain, preparationType, category, name);
+  const tags = [ ...new Set([ ...baseTags, ...siteKeywords ]) ];
+
   return buildImportedRecipe(url, {
     name,
     category,
@@ -359,7 +402,7 @@ function buildWprmRecipe(
     steps,
     timerMinutes: totalTime,
     preparationType,
-    tags: suggestImportTags(domain, preparationType, category, name),
+    tags,
   });
 }
 

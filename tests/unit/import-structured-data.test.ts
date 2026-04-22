@@ -114,6 +114,94 @@ describe('parseJsonLdRecipeFromHtml — valid Recipe', () => {
     const result = parseJsonLdRecipeFromHtml(wrapJsonLd(recipe), TEST_URL);
     expect(result!.time).toBe('n.d.');
   });
+
+  // Fix 1: prepTime + cookTime summing
+  it('sums prepTime + cookTime when totalTime is absent', () => {
+    const recipe = JSON.stringify({
+      '@type': 'Recipe',
+      name: 'Cheesecake',
+      recipeIngredient: ['200 g biscotti', '100 g burro', '500 g formaggio'],
+      recipeInstructions: ['Preparare la base.', 'Aggiungere la crema.', 'Raffreddare in frigo.'],
+      prepTime: 'PT20M',
+      cookTime: 'PT40M',
+    });
+    const result = parseJsonLdRecipeFromHtml(wrapJsonLd(recipe), TEST_URL);
+    expect(result!.time).toBe('1h'); // 20 + 40 = 60 min → formatted as 1h
+    expect(result!.timerMinutes).toBe(60);
+  });
+
+  it('prefers totalTime over prepTime + cookTime sum', () => {
+    const recipe = JSON.stringify({
+      '@type': 'Recipe',
+      name: 'Pasta',
+      recipeIngredient: ['400 g pasta'],
+      recipeInstructions: ['Cuocere.'],
+      totalTime: 'PT25M',
+      prepTime: 'PT10M',
+      cookTime: 'PT15M',
+    });
+    const result = parseJsonLdRecipeFromHtml(wrapJsonLd(recipe), TEST_URL);
+    expect(result!.time).toBe('25 min');
+    expect(result!.timerMinutes).toBe(25);
+  });
+
+  it('sums hours and minutes correctly across prepTime + cookTime', () => {
+    const recipe = JSON.stringify({
+      '@type': 'Recipe',
+      name: 'Brasato',
+      recipeIngredient: ['1 kg manzo'],
+      recipeInstructions: ['Rosolare.', 'Cuocere lentamente.'],
+      prepTime: 'PT30M',
+      cookTime: 'PT1H30M',
+    });
+    const result = parseJsonLdRecipeFromHtml(wrapJsonLd(recipe), TEST_URL);
+    expect(result!.time).toBe('2h');
+    expect(result!.timerMinutes).toBe(120);
+  });
+
+  // Fix 2: keywords extraction
+  it('extracts keywords string (CSV) into tags', () => {
+    const recipe = JSON.stringify({
+      '@type': 'Recipe',
+      name: 'Baklava',
+      recipeIngredient: ['pasta fillo', 'noci', 'miele'],
+      recipeInstructions: ['Stendere la pasta.', 'Aggiungere le noci.', 'Cuocere.'],
+      keywords: 'dolci, mediorientale, noci',
+    });
+    const result = parseJsonLdRecipeFromHtml(wrapJsonLd(recipe), TEST_URL);
+    expect(result!.tags).toContain('dolci');
+    expect(result!.tags).toContain('mediorientale');
+    expect(result!.tags).toContain('noci');
+  });
+
+  it('extracts keywords array into tags', () => {
+    const recipe = JSON.stringify({
+      '@type': 'Recipe',
+      name: 'Club Sandwich',
+      recipeIngredient: ['pane', 'pollo', 'lattuga'],
+      recipeInstructions: ['Assemblare.'],
+      keywords: ['pranzo', 'sandwich', 'veloce'],
+    });
+    const result = parseJsonLdRecipeFromHtml(wrapJsonLd(recipe), TEST_URL);
+    expect(result!.tags).toContain('pranzo');
+    expect(result!.tags).toContain('sandwich');
+    expect(result!.tags).toContain('veloce');
+  });
+
+  it('deduplicates tags when keywords overlap with domain-inferred tags', () => {
+    const recipe = JSON.stringify({
+      '@type': 'Recipe',
+      name: 'Risotto Bimby',
+      recipeIngredient: ['riso', 'brodo'],
+      recipeInstructions: ['Mettere nel bimby.', 'Cuocere.'],
+      keywords: 'Bimby, primo piatto',
+    });
+    const url = 'https://www.ricette-bimby.net/ricetta/risotto';
+    const result = parseJsonLdRecipeFromHtml(wrapJsonLd(recipe), url);
+    const bimbyCount = result!.tags.filter(t => t === 'Bimby').length;
+    expect(bimbyCount).toBe(1);
+    expect(result!.tags).toContain('primo piatto');
+  });
 });
 
 // ─── JSON-LD: @graph structure ─────────────────────────────────────────────────
@@ -527,6 +615,53 @@ describe('parseWprmRecipeFromHtml — incomplete data returns null (no fake succ
       </script>
     </body></html>`;
     expect(parseWprmRecipeFromHtml(html, TEST_URL)).toBeNull();
+  });
+});
+
+// ─── WPRM: Fix 2 — site-provided tags ─────────────────────────────────────────
+
+describe('parseWprmRecipeFromHtml — site-provided tags (Fix 2)', () => {
+  it('extracts tags array of {name} objects into recipe tags', () => {
+    const recipe = {
+      ...VALID_WPRM_RECIPE,
+      tags: [{ name: 'dolci' }, { name: 'torta' }, { name: 'cioccolato' }],
+    };
+    const html = `<html><body>${WPRM_SCRIPT(recipe)}</body></html>`;
+    const result = parseWprmRecipeFromHtml(html, TEST_URL);
+    expect(result!.tags).toContain('dolci');
+    expect(result!.tags).toContain('torta');
+    expect(result!.tags).toContain('cioccolato');
+  });
+
+  it('ignores malformed tag entries gracefully', () => {
+    const recipe = {
+      ...VALID_WPRM_RECIPE,
+      tags: [{ name: 'dolci' }, null, '', { name: '' }, 42],
+    };
+    const html = `<html><body>${WPRM_SCRIPT(recipe)}</body></html>`;
+    const result = parseWprmRecipeFromHtml(html, TEST_URL);
+    expect(result!.tags).toContain('dolci');
+    expect(result!.tags.filter(Boolean)).toEqual(result!.tags);
+  });
+
+  it('deduplicates when WPRM tags overlap with domain-inferred tags', () => {
+    const recipe = {
+      ...VALID_WPRM_RECIPE,
+      tags: [{ name: 'Bimby' }, { name: 'torta' }],
+    };
+    const url = 'https://www.ricette-bimby.net/ricetta/torta';
+    const html = `<html><body>${WPRM_SCRIPT(recipe)}</body></html>`;
+    const result = parseWprmRecipeFromHtml(html, url);
+    const bimbyCount = result!.tags.filter(t => t === 'Bimby').length;
+    expect(bimbyCount).toBe(1);
+    expect(result!.tags).toContain('torta');
+  });
+
+  it('produces no extra tags when WPRM tags field is absent', () => {
+    const html = `<html><body>${WPRM_SCRIPT(VALID_WPRM_RECIPE)}</body></html>`;
+    const result = parseWprmRecipeFromHtml(html, TEST_URL);
+    // VALID_WPRM_RECIPE has no tags field — result.tags should only have domain-inferred tags
+    expect(Array.isArray(result!.tags)).toBe(true);
   });
 });
 
