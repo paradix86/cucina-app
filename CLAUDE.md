@@ -80,6 +80,7 @@ Approved Bimby action keys are intentionally frozen: `reverse`, `knead`, `scisso
 - **Pinia ref unwrapping**: `store.someRef` returns unwrapped value; `storeToRefs()` gives you the actual `Ref<T>`.
 - **Storage write errors**: `saveRecipeBook` and `saveShoppingList` throw `StorageWriteError` on failure. Pinia stores catch this — do not add try/catch in views or composables above the store layer. If adding a new write path in a store, always wrap the save call with try/catch and call `onWriteError(e)` + `refresh()`.
 - **HMR + Pinia**: momentary errors during hot reload are not real bugs — full reload clears them.
+- **Timer lifecycle**: `useTimers.js` owns its singleton interval lifecycle, page-visibility catch-up, and HMR/test cleanup. Keep that explicit cleanup behavior when changing timers.
 - **Website import failures**: some sites block fetch or vary structure; check `web.ts` and the relevant file in `adapters/` before adding hacks.
 - **i18n curly quotes**: `i18nData.js` string values must use straight JS quotes (`'...'`) as delimiters. Curly typographic apostrophes (`'`) inside string values are fine; as delimiters they cause a parse error.
 

@@ -23,7 +23,7 @@ Extended reference for AI agents working in this repository. Start with `CLAUDE.
 | `src/stores/recipeBook.ts` | Pinia store — recipe array, mutations, computed |
 | `src/stores/shoppingList.ts` | Pinia store — shopping items, grouping, mutations |
 | `src/composables/useImportFlow.ts` | Per-instance import state and logic |
-| `src/composables/useTimers.js` | Global timer state |
+| `src/composables/useTimers.js` | Global timer state + interval/visibility lifecycle |
 | `src/composables/useTimerAlerts.js` | Timer sound engine and alert modal state |
 | `src/lib/storage.ts` | localStorage CRUD + normalization + shopping parsing/grouping |
 | `src/lib/i18n.js` | `t('key')` translation function |
@@ -80,6 +80,7 @@ Extended reference for AI agents working in this repository. Start with `CLAUDE.
 - **localStorage schema**: saved recipes may be in legacy Italian shape (`nome`, `cat`, `fonte`) or v3 English shape; `normalizeStoredRecipe()` in `storage.ts` handles this — do not bypass it
 - **Storage write errors**: `saveRecipeBook` and `saveShoppingList` throw `StorageWriteError` (exported from `storage.ts`) on quota-exceeded or any write failure. Both Pinia stores catch this in every mutation method. Do not add storage try/catch above the store layer. When adding a new write path in a store, wrap with try/catch, call the local `onWriteError(e)` helper, then call `refresh()`.
 - **HMR and Pinia**: during HMR, stale Pinia instances can produce momentary errors — these clear on full reload and are not real bugs
+- **Timer lifecycle**: `useTimers.js` owns the singleton interval, page-visibility catch-up, and HMR/test cleanup. Preserve that explicit cleanup model when changing timers.
 - **Website import failures**: some sites block fetch or have variable page structure; check `src/lib/import/web.ts` and the relevant file in `src/lib/import/adapters/` before adding site-specific hacks
 - **i18n curly quotes**: the Edit tool can silently convert straight JS quote delimiters to curly typographic quotes when replacing French/Italian text. Always verify `i18nData.js` builds cleanly after editing that file
 
