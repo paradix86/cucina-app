@@ -74,6 +74,7 @@ Extended reference for AI agents working in this repository. Start with `CLAUDE.
 - **Stale service worker**: the cache-first SW can serve old JS/CSS in a deployed environment; always bump `CACHE_NAME` after changing cached assets in production
 - **Pinia ref unwrapping**: accessing `store.someRef` in script returns the unwrapped value; use `storeToRefs()` when you need the actual `Ref<T>` object
 - **localStorage schema**: saved recipes may be in legacy Italian shape (`nome`, `cat`, `fonte`) or v3 English shape; `normalizeStoredRecipe()` in `storage.ts` handles this — do not bypass it
+- **Storage write errors**: `saveRecipeBook` and `saveShoppingList` throw `StorageWriteError` (exported from `storage.ts`) on quota-exceeded or any write failure. Both Pinia stores catch this in every mutation method. Do not add storage try/catch above the store layer. When adding a new write path in a store, wrap with try/catch, call the local `onWriteError(e)` helper, then call `refresh()`.
 - **HMR and Pinia**: during HMR, stale Pinia instances can produce momentary errors — these clear on full reload and are not real bugs
 - **Website import failures**: some sites block fetch or have variable page structure; check `src/lib/import/web.ts` and `adapters.ts` before adding site-specific hacks
 - **i18n curly quotes**: the Edit tool can silently convert straight JS quote delimiters to curly typographic quotes when replacing French/Italian text. Always verify `i18nData.js` builds cleanly after editing that file

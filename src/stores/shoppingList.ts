@@ -1,5 +1,6 @@
 import { computed, ref } from 'vue';
 import { defineStore } from 'pinia';
+import { t } from '../lib/i18n.js';
 import {
   addShoppingListItemsWithScale,
   clearShoppingList,
@@ -7,8 +8,10 @@ import {
   removeShoppingListItemsByRecipe,
   removeShoppingListItem,
   saveShoppingList,
+  StorageWriteError,
   toggleShoppingListItem,
 } from '../lib/storage';
+import { useToasts } from '../composables/useToasts.js';
 import {
   assignSection,
   getSectionI18nKey,
@@ -25,21 +28,40 @@ type SectionBucket = {
 
 export const useShoppingListStore = defineStore('shoppingList', () => {
   const items = ref<ShoppingItem[]>(loadShoppingList());
+  const { showToast } = useToasts();
 
   function refresh(): void {
     items.value = loadShoppingList();
   }
 
+  function onWriteError(e: unknown): void {
+    if (e instanceof StorageWriteError) {
+      showToast(t('toast_storage_write_error'), 'error');
+    }
+  }
+
   function addRecipeIngredients(recipe: Pick<Recipe, 'id' | 'name' | 'ingredients'>, options: { scaleFactor?: number } = {}): number {
-    const added = addShoppingListItemsWithScale(recipe.ingredients || [], { id: recipe.id, name: recipe.name }, options);
-    refresh();
-    return added;
+    try {
+      const added = addShoppingListItemsWithScale(recipe.ingredients || [], { id: recipe.id, name: recipe.name }, options);
+      refresh();
+      return added;
+    } catch (e) {
+      onWriteError(e);
+      refresh();
+      return 0;
+    }
   }
 
   function removeRecipeIngredients(recipeId: string): number {
-    const removed = removeShoppingListItemsByRecipe(recipeId);
-    refresh();
-    return removed;
+    try {
+      const removed = removeShoppingListItemsByRecipe(recipeId);
+      refresh();
+      return removed;
+    } catch (e) {
+      onWriteError(e);
+      refresh();
+      return 0;
+    }
   }
 
   function hasRecipeItems(recipeId: string): boolean {
@@ -48,15 +70,27 @@ export const useShoppingListStore = defineStore('shoppingList', () => {
   }
 
   function toggleItem(id: string): boolean {
-    const ok = toggleShoppingListItem(id);
-    refresh();
-    return ok;
+    try {
+      const ok = toggleShoppingListItem(id);
+      refresh();
+      return ok;
+    } catch (e) {
+      onWriteError(e);
+      refresh();
+      return false;
+    }
   }
 
   function removeItem(id: string): boolean {
-    const ok = removeShoppingListItem(id);
-    refresh();
-    return ok;
+    try {
+      const ok = removeShoppingListItem(id);
+      refresh();
+      return ok;
+    } catch (e) {
+      onWriteError(e);
+      refresh();
+      return false;
+    }
   }
 
   function toggleGroup(ids: string[], checked: boolean): boolean {
@@ -69,9 +103,15 @@ export const useShoppingListStore = defineStore('shoppingList', () => {
       changed = true;
     });
     if (!changed) return false;
-    saveShoppingList(current);
-    refresh();
-    return true;
+    try {
+      saveShoppingList(current);
+      refresh();
+      return true;
+    } catch (e) {
+      onWriteError(e);
+      refresh();
+      return false;
+    }
   }
 
   function removeMany(ids: string[]): boolean {
@@ -79,14 +119,25 @@ export const useShoppingListStore = defineStore('shoppingList', () => {
     const current = loadShoppingList();
     const filtered = current.filter(item => !idSet.has(item.id));
     if (filtered.length === current.length) return false;
-    saveShoppingList(filtered);
-    refresh();
-    return true;
+    try {
+      saveShoppingList(filtered);
+      refresh();
+      return true;
+    } catch (e) {
+      onWriteError(e);
+      refresh();
+      return false;
+    }
   }
 
   function clearAll(): void {
-    clearShoppingList();
-    refresh();
+    try {
+      clearShoppingList();
+      refresh();
+    } catch (e) {
+      onWriteError(e);
+      refresh();
+    }
   }
 
   const groupedSections = computed<ShoppingSection[]>(() => {

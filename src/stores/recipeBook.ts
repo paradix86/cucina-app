@@ -8,23 +8,38 @@ import {
   importRecipeBook,
   loadRecipeBook,
   markRecipeViewed,
+  StorageWriteError,
   toggleRecipeFavorite,
   updateRecipe,
   updateRecipeNotes,
 } from '../lib/storage';
+import { useToasts } from '../composables/useToasts.js';
 import type { Recipe } from '../types';
 
 export const useRecipeBookStore = defineStore('recipeBook', () => {
   const recipes = ref<Recipe[]>(loadRecipeBook());
+  const { showToast } = useToasts();
 
   function refresh(): void {
     recipes.value = loadRecipeBook();
   }
 
+  function onWriteError(e: unknown): void {
+    if (e instanceof StorageWriteError) {
+      showToast(t('toast_storage_write_error'), 'error');
+    }
+  }
+
   function add(recipe: Recipe): boolean {
-    const ok = addRecipe(recipe);
-    refresh();
-    return ok;
+    try {
+      const ok = addRecipe(recipe);
+      refresh();
+      return ok;
+    } catch (e) {
+      onWriteError(e);
+      refresh();
+      return false;
+    }
   }
 
   function duplicate(id: string): Recipe | null {
@@ -52,43 +67,83 @@ export const useRecipeBookStore = defineStore('recipeBook', () => {
       tags: [ ...(original.tags || []) ],
     };
 
-    const ok = addRecipe(duplicated);
-    refresh();
-    return ok ? duplicated : null;
+    try {
+      const ok = addRecipe(duplicated);
+      refresh();
+      return ok ? duplicated : null;
+    } catch (e) {
+      onWriteError(e);
+      refresh();
+      return null;
+    }
   }
 
   function remove(id: string): void {
-    deleteRecipe(id);
-    refresh();
+    try {
+      deleteRecipe(id);
+    } catch (e) {
+      onWriteError(e);
+    } finally {
+      refresh();
+    }
   }
 
   function toggleFavorite(id: string): boolean {
-    const ok = toggleRecipeFavorite(id);
-    refresh();
-    return ok;
+    try {
+      const ok = toggleRecipeFavorite(id);
+      refresh();
+      return ok;
+    } catch (e) {
+      onWriteError(e);
+      refresh();
+      return false;
+    }
   }
 
   function saveNotes(id: string, notes: string): boolean {
-    const ok = updateRecipeNotes(id, notes);
-    refresh();
-    return ok;
+    try {
+      const ok = updateRecipeNotes(id, notes);
+      refresh();
+      return ok;
+    } catch (e) {
+      onWriteError(e);
+      refresh();
+      return false;
+    }
   }
 
   function update(id: string, updates: Partial<Recipe>): boolean {
-    const ok = updateRecipe(id, updates);
-    refresh();
-    return ok;
+    try {
+      const ok = updateRecipe(id, updates);
+      refresh();
+      return ok;
+    } catch (e) {
+      onWriteError(e);
+      refresh();
+      return false;
+    }
   }
 
   function viewed(id: string): void {
-    markRecipeViewed(id);
-    refresh();
+    try {
+      markRecipeViewed(id);
+      refresh();
+    } catch {
+      // background housekeeping — swallow silently, no toast
+    }
   }
 
   async function importBackup(file: File): Promise<{ total: number; added: number }> {
-    const result = await importRecipeBook(file);
-    refresh();
-    return result;
+    try {
+      const result = await importRecipeBook(file);
+      refresh();
+      return result;
+    } catch (e) {
+      if (e instanceof StorageWriteError) {
+        showToast(t('toast_storage_write_error'), 'error');
+      }
+      throw e;
+    }
   }
 
   function exportBackup(): number {

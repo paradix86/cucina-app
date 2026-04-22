@@ -63,6 +63,16 @@ type RecipeBookStorageValue = RecipeInput[];
 type RecipeMeta = { id?: string; name?: string };
 type AddShoppingOptions = { scaleFactor?: number };
 
+export class StorageWriteError extends Error {
+  readonly storageKey: string;
+  constructor(storageKey: string, cause?: unknown) {
+    super(`localStorage write failed for key "${storageKey}"`);
+    this.name = 'StorageWriteError';
+    this.storageKey = storageKey;
+    if (cause != null) this.cause = cause;
+  }
+}
+
 function parseJson<T>(value: string, fallback: T): T {
   try {
     return JSON.parse(value) as T;
@@ -195,7 +205,8 @@ export function saveRecipeBook(arr: Recipe[]): void {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify((arr || []).map(normalizeStoredRecipe)));
   } catch (e) {
-    console.warn('localStorage not available:', e);
+    console.warn('localStorage write failed:', e);
+    throw new StorageWriteError(STORAGE_KEY, e);
   }
 }
 
@@ -305,7 +316,8 @@ export function saveShoppingList(items: ShoppingItem[]): void {
   try {
     localStorage.setItem(SHOPPING_LIST_KEY, JSON.stringify(items || []));
   } catch (e) {
-    console.warn('localStorage not available:', e);
+    console.warn('localStorage write failed:', e);
+    throw new StorageWriteError(SHOPPING_LIST_KEY, e);
   }
 }
 

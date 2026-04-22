@@ -69,16 +69,33 @@ The app has gone through a full architectural migration:
 - [x] Internationalisation (IT, EN, DE, FR, ES)
 - [x] PWA / service worker (`public/sw.js`, `public/manifest.json`)
 
+## Technical debt backlog (do before next feature wave)
+
+### Wave 0 — Quick wins (≤1 day each, no risk)
+- [ ] Surface `saveRecipeBook` errors to callers — currently swallowed silently; return a result so the UI can warn on localStorage full
+- [ ] Fix `useTimers.js` interval lifecycle — module-level singleton interval is never cleared on page hide or HMR; add `visibilitychange` cleanup and export `teardownTimers()`
+- [ ] Normalize `timerMinutes` → seconds in `normalizeStoredRecipe()` — cooking mode recomputes it, but the right place is normalization
+
+### Wave 1 — Code quality (2–4 days, feature-neutral)
+- [ ] Split `src/lib/import/adapters.ts` (1171 lines) into `adapters/index.ts` + one file per adapter + `jsonld.ts` + `generic.ts`
+- [ ] Lazy-load the Ninja built-in pack (7558-line JSON currently bundled at build time) — dynamic `import()` on first access
+- [ ] Extend TypeScript to `useTimers.js` and remaining JS composables (opportunistically, when touching files)
+
+### Wave 3 — Architecture investments (after Wave 2 features)
+- [ ] IndexedDB migration via Dexie — `storage.ts` has the migration path comment; introduce a `StorageAdapter` interface first
+- [ ] Remove Pinia refresh-after-write round-trip — after IndexedDB lands only
+- [ ] Background SW update notification toast — `updatefound` event → "New version available, reload?" toast
+
 ## Active backlog
 
 ### P0
 1. Weekly planner
 
 ### P1
-1. Meal prep / batch cooking view
-2. Pantry ingredient tracking
-3. Recipe sharing via JSON link/QR
-4. Ingredient checklist in cooking mode
+1. Ingredient checklist in cooking mode
+2. Recipe sharing via JSON link/QR
+3. Meal prep / batch cooking view
+4. Pantry ingredient tracking
 
 ### P2
 1. Recipe duplication

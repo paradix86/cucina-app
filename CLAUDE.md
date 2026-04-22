@@ -34,6 +34,8 @@ URL import flow: `useImportFlow.ts` → `src/lib/import/core.ts` (URL detection,
 
 `src/lib/storage.ts` handles all localStorage CRUD. Saved recipes may be in legacy Italian shape (`nome`, `cat`, `fonte`) or v3 English shape — `normalizeStoredRecipe()` bridges both. **Never bypass this normalization.**
 
+Write failures throw `StorageWriteError` (exported from `storage.ts`). Both Pinia stores catch this in every mutation method and show a `toast_storage_write_error` toast. Callers above the store layer do not need to handle storage errors — the store is the catch boundary.
+
 ### Routing
 
 Hash history (`/#/route`) for static hosting compatibility. Add new routes in `src/router/index.js` and a tab in `App.vue`.
@@ -69,6 +71,7 @@ Approved Bimby action keys are intentionally frozen: `reverse`, `knead`, `scisso
 
 - **Stale service worker**: cache-first SW can serve old JS/CSS; always bump `CACHE_NAME` after production asset changes.
 - **Pinia ref unwrapping**: `store.someRef` returns unwrapped value; `storeToRefs()` gives you the actual `Ref<T>`.
+- **Storage write errors**: `saveRecipeBook` and `saveShoppingList` throw `StorageWriteError` on failure. Pinia stores catch this — do not add try/catch in views or composables above the store layer. If adding a new write path in a store, always wrap the save call with try/catch and call `onWriteError(e)` + `refresh()`.
 - **HMR + Pinia**: momentary errors during hot reload are not real bugs — full reload clears them.
 - **Website import failures**: some sites block fetch or vary structure; check `web.ts` and `adapters.ts` before adding hacks.
 - **i18n curly quotes**: `i18nData.js` string values must use straight JS quotes (`'...'`) as delimiters. Curly typographic apostrophes (`'`) inside string values are fine; as delimiters they cause a parse error.
