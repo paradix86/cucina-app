@@ -112,11 +112,21 @@ const GROUPING_SINGULAR_MAP: Record<string, string> = {
 function normalizeGroupingKeyName(name: string): string {
   let normalized = normalizeName(name)
     .replace(/[()]/g, ' ')
+    .replace(/\b(?:q\.b\.?|q\.b|quanto basta|to taste|a piacere|as needed)\b/gi, ' ')
+    .replace(/\b\d+\s+pizzic\w*\b/gi, ' ')
+    .replace(/\bpizzic\w*\b/gi, ' ')
+    .replace(/\s+per\s+(?:il|lo|la|l['’]|i|gli|le)\s+[a-zà-ù'’ -]+$/i, ' ')
+    .replace(/\s+per\s+la\s+cottura$/i, ' ')
+    .replace(/\s+per\s+cottura$/i, ' ')
     .replace(/\s+/g, ' ')
     .trim();
 
   normalized = normalized.replace(GROUPING_LEADING_DESCRIPTOR_RE, '').trim();
   if (!normalized) return '';
+
+  if (/\bsalsa di soia\b/i.test(normalized)) return 'salsa di soia';
+  if (/\bsale\b/i.test(normalized)) return 'sale';
+  if (/^pepe(?:\s+nero)?\b/i.test(normalized)) return 'pepe';
 
   const parts = normalized.split(' ');
   if (parts.length) parts[ 0 ] = GROUPING_SINGULAR_MAP[parts[ 0 ]] || parts[ 0 ];
@@ -299,7 +309,7 @@ const SECTION_KEYWORDS: Record<ShoppingSectionId, string[]> = {
     'salt', 'sale', 'pepper', 'pepe', 'paprika', 'peperoncino', 'cumin', 'cumino',
     'turmeric', 'curcuma', 'cinnamon', 'cannella', 'oregano', 'origano', 'basil',
     'basilico', 'thyme', 'timo', 'rosemary', 'rosmarino', 'parsley', 'prezzemolo',
-    'oil', 'olio', 'vinegar', 'aceto', 'sugar', 'zucchero', 'honey', 'miele',
+    'oil', 'olio', 'vinegar', 'aceto', 'soy sauce', 'salsa di soia', 'sugar', 'zucchero', 'honey', 'miele',
     'baking powder', 'lievito', 'baking soda', 'bicarbonato', 'vanilla', 'vaniglia',
     'flour', 'farina', 'lard', 'strutto', 'margarine',
   ],
@@ -398,7 +408,7 @@ export function groupShoppingItems(items: ShoppingItem[]): GroupedShoppingItemsR
           groupType: 'exact',
           groupKey: `exact__${exactKey}`,
           baseName: exactKey,
-          displayName: String(item.text).trim(),
+          displayName: exactKey,
           items: [],
         };
       }

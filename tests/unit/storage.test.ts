@@ -208,6 +208,7 @@ describe('assignSection', () => {
     expect(assignSection('sale')).toBe('fats_oils_spices');
     expect(assignSection('oil')).toBe('fats_oils_spices');
     expect(assignSection('basil')).toBe('fats_oils_spices');
+    expect(assignSection('salsa di soia')).toBe('fats_oils_spices');
   });
 
   it('should handle case insensitivity', () => {
@@ -329,6 +330,21 @@ describe('groupShoppingItems', () => {
     expect(result.grouped).toHaveLength(1);
     expect(result.grouped[ 0 ].items).toHaveLength(2);
     expect(result.grouped[ 0 ].totalQty).toBe(5);
+  });
+
+  it('should collapse obvious salt variants into a single shopping group', () => {
+    const items: ShoppingItem[] = [
+      { id: '1', text: 'Sale fino 1 pizzico Per il ripieno', checked: false, createdAt: Date.now() },
+      { id: '2', text: 'Sale fino q.b.', checked: false, createdAt: Date.now() },
+      { id: '3', text: 'Sale per cottura', checked: false, createdAt: Date.now() },
+      { id: '4', text: 'sale e pepe nero', checked: false, createdAt: Date.now() },
+      { id: '5', text: 'Sale, pepe', checked: false, createdAt: Date.now() },
+    ];
+    const result = groupShoppingItems(items);
+    expect(result.grouped).toHaveLength(1);
+    expect(result.grouped[ 0 ].baseName).toBe('sale');
+    expect(result.grouped[ 0 ].displayName).toBe('sale');
+    expect(result.grouped[ 0 ].items).toHaveLength(5);
   });
 
   it('should handle empty list', () => {
