@@ -9,6 +9,7 @@ import { createEmptyWeeklyPlanner, normalizeWeeklyPlanner } from '../planner';
 import { CucinaDexieDb, DEXIE_MIGRATION_META_KEY, WEEKLY_PLANNER_ROW_ID, isIndexedDbSupported } from './dexieDb';
 import type {
   AddShoppingOptions,
+  AsyncStorageAdapter,
   ImportResult,
   RecipeInput,
   RecipeMeta,
@@ -32,6 +33,7 @@ type DexieStorageAdapterOptions = {
 
 export type DexieStorageAdapter = StorageAdapter & {
   ready: Promise<void>;
+  async: AsyncStorageAdapter;
 };
 
 function cloneRecipe(recipe: Recipe): Recipe {
@@ -96,6 +98,7 @@ class DexieBackedStorageAdapter implements DexieStorageAdapter {
   readonly shoppingList;
   readonly weeklyPlanner;
   readonly ready: Promise<void>;
+  readonly async: AsyncStorageAdapter;
 
   private readonly db: CucinaDexieDb;
   private readonly localFallback: StorageAdapter;
@@ -240,6 +243,154 @@ class DexieBackedStorageAdapter implements DexieStorageAdapter {
         this.queuePlannerSync();
       },
     };
+
+    this.async = {
+      recipeBook: {
+        migrateFromV2: async () => {
+          this.recipeBook.migrateFromV2();
+          await this.ready;
+        },
+        load: async () => {
+          await this.ready;
+          return this.didFallback
+            ? this.localFallback.recipeBook.load()
+            : this.cache.recipes.map(cloneRecipe);
+        },
+        save: async recipes => {
+          const next = recipes.map(cloneRecipe);
+          await this.writeRecipesPrimary(next);
+        },
+        add: async recipe => {
+          const next = this.didFallback
+            ? this.localFallback.recipeBook.load()
+            : this.cache.recipes.map(cloneRecipe);
+          if (next.find(item => item.id === recipe.id)) return false;
+          next.unshift(recipe as Recipe);
+          await this.writeRecipesPrimary(next);
+          return true;
+        },
+        remove: async id => {
+          const next = (this.didFallback ? this.localFallback.recipeBook.load() : this.cache.recipes)
+            .filter(recipe => recipe.id !== id)
+            .map(cloneRecipe);
+          await this.writeRecipesPrimary(next);
+        },
+        update: async (id, updates) => {
+          const source = this.didFallback ? this.localFallback.recipeBook.load() : this.cache.recipes;
+          const index = source.findIndex(recipe => recipe.id === id);
+          if (index === -1) return false;
+          const next = source.map(cloneRecipe);
+          next[ index ] = { ...next[ index ], ...updates, id: next[ index ].id };
+          await this.writeRecipesPrimary(next);
+          return true;
+        },
+        updateNotes: async (id, notes) => {
+          const source = this.didFallback ? this.localFallback.recipeBook.load() : this.cache.recipes;
+          const index = source.findIndex(recipe => recipe.id === id);
+          if (index === -1) return false;
+          const next = source.map(cloneRecipe);
+          next[ index ] = { ...next[ index ], notes: notes || '' };
+          await this.writeRecipesPrimary(next);
+          return true;
+        },
+        toggleFavorite: async id => {
+          const source = this.didFallback ? this.localFallback.recipeBook.load() : this.cache.recipes;
+          const index = source.findIndex(recipe => recipe.id === id);
+          if (index === -1) return false;
+          const next = source.map(cloneRecipe);
+          next[ index ] = { ...next[ index ], favorite: !next[ index ].favorite };
+          await this.writeRecipesPrimary(next);
+          return true;
+        },
+        markViewed: async id => {
+          const source = this.didFallback ? this.localFallback.recipeBook.load() : this.cache.recipes;
+          const index = source.findIndex(recipe => recipe.id === id);
+          if (index === -1) return false;
+          const next = source.map(cloneRecipe);
+          next[ index ] = { ...next[ index ], lastViewedAt: Date.now() };
+          await this.writeRecipesPrimary(next);
+          return true;
+        },
+        exportBackup: async () => this.localFallback.recipeBook.exportBackup(),
+        importBackup: async file => {
+          const result = await this.localFallback.recipeBook.importBackup(file);
+          this.refreshRecipeCache();
+          await this.writeRecipesPrimary(this.cache.recipes);
+          return result;
+        },
+      },
+      shoppingList: {
+        load: async () => {
+          await this.ready;
+          return this.didFallback
+            ? this.localFallback.shoppingList.load()
+            : this.cache.shoppingItems.map(cloneShoppingItem);
+        },
+        save: async items => {
+          await this.writeShoppingPrimary(items.map(cloneShoppingItem));
+        },
+        add: async (items, recipeMeta) => {
+          const added = this.localFallback.shoppingList.add(items, recipeMeta);
+          this.refreshShoppingCache();
+          await this.writeShoppingPrimary(this.cache.shoppingItems);
+          return added;
+        },
+        addWithScale: async (items, recipeMeta, options) => {
+          const added = this.localFallback.shoppingList.addWithScale(items, recipeMeta, options);
+          this.refreshShoppingCache();
+          await this.writeShoppingPrimary(this.cache.shoppingItems);
+          return added;
+        },
+        removeByRecipe: async recipeId => {
+          const removed = this.localFallback.shoppingList.removeByRecipe(recipeId);
+          this.refreshShoppingCache();
+          await this.writeShoppingPrimary(this.cache.shoppingItems);
+          return removed;
+        },
+        toggleItem: async id => {
+          const updated = this.localFallback.shoppingList.toggleItem(id);
+          this.refreshShoppingCache();
+          await this.writeShoppingPrimary(this.cache.shoppingItems);
+          return updated;
+        },
+        removeItem: async id => {
+          const removed = this.localFallback.shoppingList.removeItem(id);
+          this.refreshShoppingCache();
+          await this.writeShoppingPrimary(this.cache.shoppingItems);
+          return removed;
+        },
+        clear: async () => {
+          this.localFallback.shoppingList.clear();
+          this.refreshShoppingCache();
+          await this.writeShoppingPrimary(this.cache.shoppingItems);
+        },
+      },
+      weeklyPlanner: {
+        load: async () => {
+          await this.ready;
+          return this.didFallback
+            ? this.localFallback.weeklyPlanner.load()
+            : cloneWeeklyPlanner(this.cache.weeklyPlanner);
+        },
+        save: async plan => {
+          await this.writePlannerPrimary(plan);
+        },
+        updateSlot: async (day, slot, recipeId) => {
+          const next = this.didFallback
+            ? this.localFallback.weeklyPlanner.updateSlot(day, slot, recipeId)
+            : (() => {
+                const updated = cloneWeeklyPlanner(this.cache.weeklyPlanner);
+                updated[day][slot] = recipeId && recipeId.trim() ? recipeId.trim() : null;
+                return updated;
+              })();
+          await this.writePlannerPrimary(next);
+          return cloneWeeklyPlanner(next);
+        },
+        clear: async () => {
+          await this.writePlannerPrimary(createEmptyWeeklyPlanner());
+        },
+      },
+    };
   }
 
   private async bootstrap(): Promise<void> {
@@ -247,17 +398,19 @@ class DexieBackedStorageAdapter implements DexieStorageAdapter {
     const migrationFlag = await this.db.meta.get(DEXIE_MIGRATION_META_KEY);
 
     if (migrationFlag?.value === true) {
-      if (hasSnapshotData(localSnapshot)) {
-        this.cache = localSnapshot;
-        this.queueFullSync();
+      const dexieSnapshot = await this.readSnapshotFromDexie();
+      if (hasSnapshotData(dexieSnapshot)) {
+        this.cache = cloneSnapshot(dexieSnapshot);
+        this.localFallback.recipeBook.save(dexieSnapshot.recipes);
+        this.localFallback.shoppingList.save(dexieSnapshot.shoppingItems);
+        this.localFallback.weeklyPlanner.save(dexieSnapshot.weeklyPlanner);
         return;
       }
 
-      const dexieSnapshot = await this.readSnapshotFromDexie();
-      this.cache = cloneSnapshot(dexieSnapshot);
-      this.localFallback.recipeBook.save(dexieSnapshot.recipes);
-      this.localFallback.shoppingList.save(dexieSnapshot.shoppingItems);
-      this.localFallback.weeklyPlanner.save(dexieSnapshot.weeklyPlanner);
+      this.cache = localSnapshot;
+      if (hasSnapshotData(localSnapshot)) {
+        await this.writeSnapshotToDexie(localSnapshot);
+      }
       return;
     }
 
@@ -407,6 +560,84 @@ class DexieBackedStorageAdapter implements DexieStorageAdapter {
       });
     } catch (error) {
       throw this.createWriteError('dexie_planner', error);
+    }
+  }
+
+  private async writeRecipesPrimary(recipes: Recipe[]): Promise<void> {
+    const next = recipes.map(cloneRecipe);
+    await this.ready;
+    if (this.didFallback) {
+      this.localFallback.recipeBook.save(next);
+      this.cache = { ...this.cache, recipes: next };
+      return;
+    }
+
+    try {
+      await this.syncRecipesToDexie(next);
+      this.cache = { ...this.cache, recipes: next };
+    } catch (error) {
+      this.triggerFallback(error);
+      this.localFallback.recipeBook.save(next);
+      this.cache = { ...this.cache, recipes: next };
+      return;
+    }
+
+    try {
+      this.localFallback.recipeBook.save(next);
+    } catch (error) {
+      console.warn('[storage] localStorage recipe mirror failed after Dexie write', error);
+    }
+  }
+
+  private async writeShoppingPrimary(items: ShoppingItem[]): Promise<void> {
+    const next = items.map(cloneShoppingItem);
+    await this.ready;
+    if (this.didFallback) {
+      this.localFallback.shoppingList.save(next);
+      this.cache = { ...this.cache, shoppingItems: next };
+      return;
+    }
+
+    try {
+      await this.syncShoppingItemsToDexie(next);
+      this.cache = { ...this.cache, shoppingItems: next };
+    } catch (error) {
+      this.triggerFallback(error);
+      this.localFallback.shoppingList.save(next);
+      this.cache = { ...this.cache, shoppingItems: next };
+      return;
+    }
+
+    try {
+      this.localFallback.shoppingList.save(next);
+    } catch (error) {
+      console.warn('[storage] localStorage shopping mirror failed after Dexie write', error);
+    }
+  }
+
+  private async writePlannerPrimary(plan: WeeklyPlanner): Promise<void> {
+    const next = cloneWeeklyPlanner(plan);
+    await this.ready;
+    if (this.didFallback) {
+      this.localFallback.weeklyPlanner.save(next);
+      this.cache = { ...this.cache, weeklyPlanner: next };
+      return;
+    }
+
+    try {
+      await this.syncWeeklyPlannerToDexie(next);
+      this.cache = { ...this.cache, weeklyPlanner: next };
+    } catch (error) {
+      this.triggerFallback(error);
+      this.localFallback.weeklyPlanner.save(next);
+      this.cache = { ...this.cache, weeklyPlanner: next };
+      return;
+    }
+
+    try {
+      this.localFallback.weeklyPlanner.save(next);
+    } catch (error) {
+      console.warn('[storage] localStorage planner mirror failed after Dexie write', error);
     }
   }
 }

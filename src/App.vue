@@ -7,8 +7,7 @@ import ToastStack from './components/ToastStack.vue';
 import CookingModeView from './components/CookingModeView.vue';
 import ConfirmDialog from './components/ConfirmDialog.vue';
 import TimerAlertModal from './components/TimerAlertModal.vue';
-import { t, initLanguage } from './lib/i18n.js';
-import { migrateFromV2 } from './lib/storage';
+import { t } from './lib/i18n.js';
 import { useToasts } from './composables/useToasts.js';
 import { useTimers } from './composables/useTimers.js';
 import { useTimerAlerts } from './composables/useTimerAlerts.js';
@@ -113,8 +112,6 @@ function handleToast(message, type = 'info') {
 }
 
 onMounted(() => {
-  migrateFromV2();
-  initLanguage();
   initServiceWorkerUpdates();
 });
 </script>

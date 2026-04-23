@@ -102,3 +102,8 @@ export interface AsyncStorageAdapter {
     clear(): Promise<void>;
   };
 }
+
+export interface StorageAdapterWithAsync extends StorageAdapter {
+  ready?: Promise<void>;
+  async?: AsyncStorageAdapter;
+}

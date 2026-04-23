@@ -19,10 +19,12 @@ import type {
 } from '../types';
 import type {
   AddShoppingOptions,
+  AsyncStorageAdapter,
   ImportResult,
   RecipeInput,
   RecipeMeta,
   StorageAdapter,
+  StorageAdapterWithAsync,
 } from './persistence/storageAdapter';
 import { createDexieStorageAdapter } from './persistence/dexieAdapter';
 import {
@@ -455,6 +457,45 @@ let activeStorageAdapter: StorageAdapter = defaultLocalStorageAdapter;
 let storageAdapterResolved = false;
 let storageBootstrapPromise: Promise<void> = Promise.resolve();
 
+function createAsyncAdapterFromSync(adapter: StorageAdapter): AsyncStorageAdapter {
+  return {
+    recipeBook: {
+      migrateFromV2: async () => adapter.recipeBook.migrateFromV2(),
+      load: async () => adapter.recipeBook.load(),
+      save: async recipes => adapter.recipeBook.save(recipes),
+      add: async recipe => adapter.recipeBook.add(recipe),
+      remove: async id => adapter.recipeBook.remove(id),
+      update: async (id, updates) => adapter.recipeBook.update(id, updates),
+      updateNotes: async (id, notes) => adapter.recipeBook.updateNotes(id, notes),
+      toggleFavorite: async id => adapter.recipeBook.toggleFavorite(id),
+      markViewed: async id => adapter.recipeBook.markViewed(id),
+      exportBackup: async () => adapter.recipeBook.exportBackup(),
+      importBackup: async file => adapter.recipeBook.importBackup(file),
+    },
+    shoppingList: {
+      load: async () => adapter.shoppingList.load(),
+      save: async items => adapter.shoppingList.save(items),
+      add: async (items, recipeMeta) => adapter.shoppingList.add(items, recipeMeta),
+      addWithScale: async (items, recipeMeta, options) => adapter.shoppingList.addWithScale(items, recipeMeta, options),
+      removeByRecipe: async recipeId => adapter.shoppingList.removeByRecipe(recipeId),
+      toggleItem: async id => adapter.shoppingList.toggleItem(id),
+      removeItem: async id => adapter.shoppingList.removeItem(id),
+      clear: async () => adapter.shoppingList.clear(),
+    },
+    weeklyPlanner: {
+      load: async () => adapter.weeklyPlanner.load(),
+      save: async plan => adapter.weeklyPlanner.save(plan),
+      updateSlot: async (day, slot, recipeId) => adapter.weeklyPlanner.updateSlot(day, slot, recipeId),
+      clear: async () => adapter.weeklyPlanner.clear(),
+    },
+  };
+}
+
+function getAsyncStorageAdapter(): AsyncStorageAdapter {
+  const adapter = getStorageAdapter() as StorageAdapterWithAsync;
+  return adapter.async || createAsyncAdapterFromSync(adapter);
+}
+
 function ensureActiveStorageAdapter(): StorageAdapter {
   if (storageAdapterResolved) return activeStorageAdapter;
 
@@ -498,6 +539,36 @@ export function resetStorageAdapter(): void {
 export function waitForStorageBootstrap(): Promise<void> {
   ensureActiveStorageAdapter();
   return storageBootstrapPromise;
+}
+
+export async function loadRecipeBookAsync(): Promise<Recipe[]> {
+  await waitForStorageBootstrap();
+  return getAsyncStorageAdapter().recipeBook.load();
+}
+
+export async function saveRecipeBookAsync(arr: Recipe[]): Promise<void> {
+  await waitForStorageBootstrap();
+  return getAsyncStorageAdapter().recipeBook.save(arr);
+}
+
+export async function loadShoppingListAsync(): Promise<ShoppingItem[]> {
+  await waitForStorageBootstrap();
+  return getAsyncStorageAdapter().shoppingList.load();
+}
+
+export async function saveShoppingListAsync(items: ShoppingItem[]): Promise<void> {
+  await waitForStorageBootstrap();
+  return getAsyncStorageAdapter().shoppingList.save(items);
+}
+
+export async function loadWeeklyPlannerAsync(): Promise<WeeklyPlanner> {
+  await waitForStorageBootstrap();
+  return getAsyncStorageAdapter().weeklyPlanner.load();
+}
+
+export async function saveWeeklyPlannerAsync(plan: WeeklyPlanner): Promise<void> {
+  await waitForStorageBootstrap();
+  return getAsyncStorageAdapter().weeklyPlanner.save(plan);
 }
 
 export function migrateFromV2(): void {

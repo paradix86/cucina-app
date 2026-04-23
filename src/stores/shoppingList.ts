@@ -2,14 +2,9 @@ import { computed, ref } from 'vue';
 import { defineStore } from 'pinia';
 import { t } from '../lib/i18n.js';
 import {
-  addShoppingListItemsWithScale,
-  clearShoppingList,
-  loadShoppingList,
-  removeShoppingListItemsByRecipe,
-  removeShoppingListItem,
-  saveShoppingList,
+  loadShoppingListAsync,
+  saveShoppingListAsync,
   StorageWriteError,
-  toggleShoppingListItem,
 } from '../lib/storage';
 import { useToasts } from '../composables/useToasts.js';
 import {
@@ -18,6 +13,7 @@ import {
   groupShoppingItems,
   parseIngredient,
   SHOPPING_SECTIONS,
+  scaleShoppingIngredientText,
 } from '../lib/ingredientUtils';
 import type { Recipe, ShoppingGroup, ShoppingItem, ShoppingSection } from '../types';
 
@@ -27,11 +23,32 @@ type SectionBucket = {
 };
 
 export const useShoppingListStore = defineStore('shoppingList', () => {
-  const items = ref<ShoppingItem[]>(loadShoppingList());
+  const items = ref<ShoppingItem[]>([]);
+  const isHydrated = ref(false);
   const { showToast } = useToasts();
+  let hydratePromise: Promise<void> | null = null;
+  let persistQueue: Promise<void> = Promise.resolve();
 
-  function refresh(): void {
-    items.value = loadShoppingList();
+  function cloneItems(list: ShoppingItem[]): ShoppingItem[] {
+    return list.map(item => ({ ...item }));
+  }
+
+  async function hydrate(force = false): Promise<void> {
+    if (isHydrated.value && !force) return;
+    if (hydratePromise && !force) return hydratePromise;
+
+    hydratePromise = (async () => {
+      items.value = cloneItems(await loadShoppingListAsync());
+      isHydrated.value = true;
+    })().finally(() => {
+      hydratePromise = null;
+    });
+
+    return hydratePromise;
+  }
+
+  function refresh(): Promise<void> {
+    return hydrate(true);
   }
 
   function onWriteError(e: unknown): void {
@@ -40,28 +57,46 @@ export const useShoppingListStore = defineStore('shoppingList', () => {
     }
   }
 
+  function persist(nextItems: ShoppingItem[]): void {
+    const snapshot = cloneItems(nextItems);
+    persistQueue = persistQueue
+      .then(async () => {
+        await saveShoppingListAsync(snapshot);
+      })
+      .catch(async e => {
+        onWriteError(e);
+        await hydrate(true);
+      });
+  }
+
   function addRecipeIngredients(recipe: Pick<Recipe, 'id' | 'name' | 'ingredients'>, options: { scaleFactor?: number } = {}): number {
-    try {
-      const added = addShoppingListItemsWithScale(recipe.ingredients || [], { id: recipe.id, name: recipe.name }, options);
-      refresh();
-      return added;
-    } catch (e) {
-      onWriteError(e);
-      refresh();
-      return 0;
-    }
+    const timestamp = Date.now();
+    const factor = Number.isFinite(options.scaleFactor) && (options.scaleFactor || 0) > 0 ? Number(options.scaleFactor) : 1;
+    const additions = (recipe.ingredients || [])
+      .map((text, index) => ({
+        id: `shop-${timestamp}-${index}-${Math.random().toString(36).slice(2, 8)}`,
+        text: scaleShoppingIngredientText(String(text), factor),
+        checked: false,
+        sourceRecipeId: recipe.id || undefined,
+        sourceRecipeName: recipe.name || undefined,
+        createdAt: timestamp,
+      }))
+      .filter(item => item.text) as ShoppingItem[];
+
+    if (additions.length === 0) return 0;
+    items.value = [ ...items.value, ...additions ];
+    persist(items.value);
+    return additions.length;
   }
 
   function removeRecipeIngredients(recipeId: string): number {
-    try {
-      const removed = removeShoppingListItemsByRecipe(recipeId);
-      refresh();
-      return removed;
-    } catch (e) {
-      onWriteError(e);
-      refresh();
-      return 0;
-    }
+    if (!recipeId) return 0;
+    const next = items.value.filter(item => item.sourceRecipeId !== recipeId);
+    const removed = items.value.length - next.length;
+    if (removed === 0) return 0;
+    items.value = next;
+    persist(next);
+    return removed;
   }
 
   function hasRecipeItems(recipeId: string): boolean {
@@ -70,32 +105,26 @@ export const useShoppingListStore = defineStore('shoppingList', () => {
   }
 
   function toggleItem(id: string): boolean {
-    try {
-      const ok = toggleShoppingListItem(id);
-      refresh();
-      return ok;
-    } catch (e) {
-      onWriteError(e);
-      refresh();
-      return false;
-    }
+    const index = items.value.findIndex(item => item.id === id);
+    if (index === -1) return false;
+    const next = cloneItems(items.value);
+    next[index] = { ...next[index], checked: !next[index].checked };
+    items.value = next;
+    persist(next);
+    return true;
   }
 
   function removeItem(id: string): boolean {
-    try {
-      const ok = removeShoppingListItem(id);
-      refresh();
-      return ok;
-    } catch (e) {
-      onWriteError(e);
-      refresh();
-      return false;
-    }
+    const next = items.value.filter(item => item.id !== id);
+    if (next.length === items.value.length) return false;
+    items.value = next;
+    persist(next);
+    return true;
   }
 
   function toggleGroup(ids: string[], checked: boolean): boolean {
     const idSet = new Set(ids);
-    const current = loadShoppingList();
+    const current = cloneItems(items.value);
     let changed = false;
     current.forEach(item => {
       if (!idSet.has(item.id)) return;
@@ -103,41 +132,23 @@ export const useShoppingListStore = defineStore('shoppingList', () => {
       changed = true;
     });
     if (!changed) return false;
-    try {
-      saveShoppingList(current);
-      refresh();
-      return true;
-    } catch (e) {
-      onWriteError(e);
-      refresh();
-      return false;
-    }
+    items.value = current;
+    persist(current);
+    return true;
   }
 
   function removeMany(ids: string[]): boolean {
     const idSet = new Set(ids);
-    const current = loadShoppingList();
-    const filtered = current.filter(item => !idSet.has(item.id));
-    if (filtered.length === current.length) return false;
-    try {
-      saveShoppingList(filtered);
-      refresh();
-      return true;
-    } catch (e) {
-      onWriteError(e);
-      refresh();
-      return false;
-    }
+    const filtered = items.value.filter(item => !idSet.has(item.id));
+    if (filtered.length === items.value.length) return false;
+    items.value = filtered;
+    persist(filtered);
+    return true;
   }
 
   function clearAll(): void {
-    try {
-      clearShoppingList();
-      refresh();
-    } catch (e) {
-      onWriteError(e);
-      refresh();
-    }
+    items.value = [];
+    persist([]);
   }
 
   const groupedSections = computed<ShoppingSection[]>(() => {
@@ -166,6 +177,8 @@ export const useShoppingListStore = defineStore('shoppingList', () => {
 
   return {
     items,
+    isHydrated,
+    hydrate,
     refresh,
     addRecipeIngredients,
     removeRecipeIngredients,

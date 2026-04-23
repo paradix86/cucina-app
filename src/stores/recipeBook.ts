@@ -2,26 +2,52 @@ import { computed, ref } from 'vue';
 import { defineStore } from 'pinia';
 import { t } from '../lib/i18n.js';
 import {
-  addRecipe,
-  deleteRecipe,
   exportRecipeBook,
   importRecipeBook,
-  loadRecipeBook,
-  markRecipeViewed,
+  loadRecipeBookAsync,
+  saveRecipeBookAsync,
   StorageWriteError,
-  toggleRecipeFavorite,
-  updateRecipe,
-  updateRecipeNotes,
 } from '../lib/storage';
 import { useToasts } from '../composables/useToasts.js';
 import type { Recipe } from '../types';
 
 export const useRecipeBookStore = defineStore('recipeBook', () => {
-  const recipes = ref<Recipe[]>(loadRecipeBook());
+  const recipes = ref<Recipe[]>([]);
+  const isHydrated = ref(false);
   const { showToast } = useToasts();
+  let hydratePromise: Promise<void> | null = null;
+  let persistQueue: Promise<void> = Promise.resolve();
 
-  function refresh(): void {
-    recipes.value = loadRecipeBook();
+  function cloneRecipe(recipe: Recipe): Recipe {
+    return {
+      ...recipe,
+      ingredients: [ ...(recipe.ingredients || []) ],
+      steps: [ ...(recipe.steps || []) ],
+      tags: recipe.tags ? [ ...recipe.tags ] : undefined,
+      mealOccasion: recipe.mealOccasion ? [ ...recipe.mealOccasion ] : undefined,
+    };
+  }
+
+  function cloneRecipes(list: Recipe[]): Recipe[] {
+    return list.map(cloneRecipe);
+  }
+
+  async function hydrate(force = false): Promise<void> {
+    if (isHydrated.value && !force) return;
+    if (hydratePromise && !force) return hydratePromise;
+
+    hydratePromise = (async () => {
+      recipes.value = cloneRecipes(await loadRecipeBookAsync());
+      isHydrated.value = true;
+    })().finally(() => {
+      hydratePromise = null;
+    });
+
+    return hydratePromise;
+  }
+
+  function refresh(): Promise<void> {
+    return hydrate(true);
   }
 
   function onWriteError(e: unknown): void {
@@ -30,16 +56,23 @@ export const useRecipeBookStore = defineStore('recipeBook', () => {
     }
   }
 
+  function persist(nextRecipes: Recipe[]): void {
+    const snapshot = cloneRecipes(nextRecipes);
+    persistQueue = persistQueue
+      .then(async () => {
+        await saveRecipeBookAsync(snapshot);
+      })
+      .catch(async e => {
+        onWriteError(e);
+        await hydrate(true);
+      });
+  }
+
   function add(recipe: Recipe): boolean {
-    try {
-      const ok = addRecipe(recipe);
-      refresh();
-      return ok;
-    } catch (e) {
-      onWriteError(e);
-      refresh();
-      return false;
-    }
+    if (recipes.value.find(item => item.id === recipe.id)) return false;
+    recipes.value = [ cloneRecipe(recipe), ...recipes.value ];
+    persist(recipes.value);
+    return true;
   }
 
   function duplicate(id: string): Recipe | null {
@@ -67,76 +100,59 @@ export const useRecipeBookStore = defineStore('recipeBook', () => {
       tags: [ ...(original.tags || []) ],
     };
 
-    try {
-      const ok = addRecipe(duplicated);
-      refresh();
-      return ok ? duplicated : null;
-    } catch (e) {
-      onWriteError(e);
-      refresh();
-      return null;
-    }
+    recipes.value = [ duplicated, ...recipes.value ];
+    persist(recipes.value);
+    return duplicated;
   }
 
   function remove(id: string): void {
-    try {
-      deleteRecipe(id);
-    } catch (e) {
-      onWriteError(e);
-    } finally {
-      refresh();
-    }
+    recipes.value = recipes.value.filter(recipe => recipe.id !== id);
+    persist(recipes.value);
   }
 
   function toggleFavorite(id: string): boolean {
-    try {
-      const ok = toggleRecipeFavorite(id);
-      refresh();
-      return ok;
-    } catch (e) {
-      onWriteError(e);
-      refresh();
-      return false;
-    }
+    const index = recipes.value.findIndex(recipe => recipe.id === id);
+    if (index === -1) return false;
+    const next = cloneRecipes(recipes.value);
+    next[index] = { ...next[index], favorite: !next[index].favorite };
+    recipes.value = next;
+    persist(next);
+    return true;
   }
 
   function saveNotes(id: string, notes: string): boolean {
-    try {
-      const ok = updateRecipeNotes(id, notes);
-      refresh();
-      return ok;
-    } catch (e) {
-      onWriteError(e);
-      refresh();
-      return false;
-    }
+    const index = recipes.value.findIndex(recipe => recipe.id === id);
+    if (index === -1) return false;
+    const next = cloneRecipes(recipes.value);
+    next[index] = { ...next[index], notes: notes || '' };
+    recipes.value = next;
+    persist(next);
+    return true;
   }
 
   function update(id: string, updates: Partial<Recipe>): boolean {
-    try {
-      const ok = updateRecipe(id, updates);
-      refresh();
-      return ok;
-    } catch (e) {
-      onWriteError(e);
-      refresh();
-      return false;
-    }
+    const index = recipes.value.findIndex(recipe => recipe.id === id);
+    if (index === -1) return false;
+    const next = cloneRecipes(recipes.value);
+    next[index] = cloneRecipe({ ...next[index], ...updates, id: next[index].id });
+    recipes.value = next;
+    persist(next);
+    return true;
   }
 
   function viewed(id: string): void {
-    try {
-      markRecipeViewed(id);
-      refresh();
-    } catch {
-      // background housekeeping — swallow silently, no toast
-    }
+    const index = recipes.value.findIndex(recipe => recipe.id === id);
+    if (index === -1) return;
+    const next = cloneRecipes(recipes.value);
+    next[index] = { ...next[index], lastViewedAt: Date.now() };
+    recipes.value = next;
+    persistQueue = persistQueue.then(() => saveRecipeBookAsync(cloneRecipes(next))).catch(() => {});
   }
 
   async function importBackup(file: File): Promise<{ total: number; added: number }> {
     try {
       const result = await importRecipeBook(file);
-      refresh();
+      await hydrate(true);
       return result;
     } catch (e) {
       if (e instanceof StorageWriteError) {
@@ -156,6 +172,8 @@ export const useRecipeBookStore = defineStore('recipeBook', () => {
 
   return {
     recipes,
+    isHydrated,
+    hydrate,
     refresh,
     add,
     duplicate,
