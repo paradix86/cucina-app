@@ -98,11 +98,21 @@ export async function importWebsiteRecipeWithFallbacks(markdown: string, url: st
 
   // JSON-LD / Schema.org (OG title fills in when JSON-LD name is empty)
   const jsonLdRecipe = parseJsonLdRecipeFromHtml(html, url, ogTitle);
-  if (jsonLdRecipe) return jsonLdRecipe;
+  if (jsonLdRecipe) {
+    if (!jsonLdRecipe.coverImageUrl && meta.image) {
+      jsonLdRecipe.coverImageUrl = meta.image;
+    }
+    return jsonLdRecipe;
+  }
 
   // WPRM / embedded plugin JSON (OG title fills in when plugin name is absent)
   const wprmRecipe = parseWprmRecipeFromHtml(html, url, ogTitle);
-  if (wprmRecipe) return wprmRecipe;
+  if (wprmRecipe) {
+    if (!wprmRecipe.coverImageUrl && meta.image) {
+      wprmRecipe.coverImageUrl = meta.image;
+    }
+    return wprmRecipe;
+  }
 
   throw new Error('UNSUPPORTED_WEB_IMPORT');
 }

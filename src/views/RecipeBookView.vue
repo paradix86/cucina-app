@@ -322,6 +322,9 @@ defineExpose({
       </div>
       <div v-else class="ricette-grid" id="saved-grid">
         <div v-for="recipe in filteredRecipes" :key="recipe.id" class="ricetta-card" @click="openDetail(recipe)">
+          <div v-if="recipe.coverImageUrl" class="card-cover-wrap">
+            <img class="card-cover-img" :src="recipe.coverImageUrl" :alt="recipe.name" loading="lazy" decoding="async" />
+          </div>
           <span class="card-src" :class="getPreparationInfo(recipe).cls">{{ getPreparationInfo(recipe).txt }}</span>
           <div class="card-actions">
             <button class="card-fav card-action-btn" :class="{ 'is-fav': recipe.favorite }" @click.stop="toggleFavorite(recipe.id)" :title="recipe.favorite ? t('favorite_remove') : t('favorite_add')">

@@ -116,6 +116,26 @@ function normalizeJsonLdServings(raw: unknown): string {
     .trim();
 }
 
+function extractImageUrl(raw: unknown): string {
+  if (!raw) return '';
+  if (typeof raw === 'string') {
+    const value = normalizeImportText(raw).trim();
+    return /^https?:\/\//i.test(value) ? value : '';
+  }
+  if (Array.isArray(raw)) {
+    for (const entry of raw) {
+      const candidate = extractImageUrl(entry);
+      if (candidate) return candidate;
+    }
+    return '';
+  }
+  if (typeof raw === 'object') {
+    const obj = raw as Record<string, unknown>;
+    return extractImageUrl(obj.url || obj.contentUrl || obj['@id']);
+  }
+  return '';
+}
+
 /**
  * Extract plain-text instruction steps from the JSON-LD recipeInstructions value.
  * Handles: plain string, string[], HowToStep[], HowToSection[] (with nested itemListElement).
@@ -267,6 +287,7 @@ function parseJsonLdRecipeNode(node: Record<string, unknown>, url: string, fallb
   const domain = normalizeSourceDomain(url);
   const fullText = ingredients.join(' ') + ' ' + steps.join(' ');
   const preparationType = inferImportPreparationType(fullText, domain);
+  const coverImageUrl = extractImageUrl(node.image);
 
   // Fix 2: merge site-provided keywords with domain-inferred tags (deduplicated)
   const siteKeywords = extractJsonLdKeywords(node.keywords);
@@ -284,6 +305,7 @@ function parseJsonLdRecipeNode(node: Record<string, unknown>, url: string, fallb
     timerMinutes,
     preparationType,
     tags,
+    coverImageUrl: coverImageUrl || undefined,
   });
 }
 
@@ -379,6 +401,7 @@ function buildWprmRecipe(
   const domain = normalizeSourceDomain(url);
   const fullText = ingredients.join(' ') + ' ' + steps.join(' ');
   const preparationType = inferImportPreparationType(fullText, domain);
+  const coverImageUrl = extractImageUrl((recipe as Record<string, unknown>).image || (recipe as Record<string, unknown>).image_url);
 
   // Fix 2: extract WPRM tags (array of {name} objects or strings)
   const rawWprmTags = Array.isArray(recipe.tags) ? (recipe.tags as unknown[]) : [];
@@ -403,6 +426,7 @@ function buildWprmRecipe(
     timerMinutes: totalTime,
     preparationType,
     tags,
+    coverImageUrl: coverImageUrl || undefined,
   });
 }
 

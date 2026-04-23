@@ -197,6 +197,9 @@ function printRecipe() {
     <button class="detail-back" @click="emit('back')">{{ backLabel || t('detail_back') }}</button>
     <div v-if="!isEditing" class="detail-wrap">
       <div class="detail-head">
+        <div v-if="recipe.coverImageUrl" class="detail-cover-wrap">
+          <img class="detail-cover-img" :src="recipe.coverImageUrl" :alt="recipe.name" loading="lazy" decoding="async" />
+        </div>
         <h2 class="detail-title">{{ recipe.emoji || '🍴' }} {{ recipe.name }}</h2>
         <p class="detail-meta">{{ joinMetaParts([recipe.category, recipe.time, recipe.difficolta]) }}</p>
         <p class="detail-print-servings print-only">{{ t('detail_servings') }}: {{ servings }}</p>

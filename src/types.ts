@@ -14,6 +14,7 @@ export interface Recipe {
   source?: string;
   sourceDomain?: string;
   url?: string;
+  coverImageUrl?: string;
   preparationType?: PreparationType;
   bimby?: boolean;
   ingredients: string[];

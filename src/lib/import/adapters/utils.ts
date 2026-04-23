@@ -181,6 +181,7 @@ export function buildImportedRecipe(url: string, fields: Partial<ImportPreviewRe
     source: 'web',
     sourceDomain: normalizeSourceDomain(url),
     url,
+    coverImageUrl: '',
     tags: [],
     ...fields,
   };

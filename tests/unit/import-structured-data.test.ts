@@ -202,6 +202,21 @@ describe('parseJsonLdRecipeFromHtml — valid Recipe', () => {
     expect(bimbyCount).toBe(1);
     expect(result!.tags).toContain('primo piatto');
   });
+
+  it('extracts cover image URL from JSON-LD image field', () => {
+    const recipe = JSON.stringify({
+      '@type': 'Recipe',
+      name: 'Lasagne',
+      recipeIngredient: ['sfoglia', 'ragu'],
+      recipeInstructions: ['Assemblare e cuocere.'],
+      image: [
+        { '@type': 'ImageObject', url: 'https://example.com/images/lasagne.jpg' },
+      ],
+    });
+    const result = parseJsonLdRecipeFromHtml(wrapJsonLd(recipe), TEST_URL);
+    expect(result).not.toBeNull();
+    expect(result!.coverImageUrl).toBe('https://example.com/images/lasagne.jpg');
+  });
 });
 
 // ─── JSON-LD: @graph structure ─────────────────────────────────────────────────
@@ -578,6 +593,17 @@ describe('parseWprmRecipeFromHtml — valid WPRM data', () => {
     const result = parseWprmRecipeFromHtml(html, TEST_URL);
     expect(result!.source).toBe('web');
     expect(result!.sourceDomain).toBe('example.com');
+  });
+
+  it('extracts cover image URL from WPRM image fields', () => {
+    const recipe = {
+      ...VALID_WPRM_RECIPE,
+      image_url: 'https://example.com/images/torta.jpg',
+    };
+    const html = `<html><body>${WPRM_SCRIPT(recipe)}</body></html>`;
+    const result = parseWprmRecipeFromHtml(html, TEST_URL);
+    expect(result).not.toBeNull();
+    expect(result!.coverImageUrl).toBe('https://example.com/images/torta.jpg');
   });
 });
 

@@ -562,6 +562,28 @@ describe('meal occasion normalization', () => {
   });
 });
 
+describe('recipe cover image normalization', () => {
+  it('persists valid http(s) cover image URLs', () => {
+    addRecipe({
+      ...BASE_RECIPE,
+      id: 'img-1',
+      coverImageUrl: 'https://example.com/recipe-cover.jpg',
+    });
+    const saved = loadRecipeBook().find(r => r.id === 'img-1');
+    expect(saved?.coverImageUrl).toBe('https://example.com/recipe-cover.jpg');
+  });
+
+  it('drops unsafe or invalid cover image URLs', () => {
+    addRecipe({
+      ...BASE_RECIPE,
+      id: 'img-2',
+      coverImageUrl: 'javascript:alert(1)',
+    });
+    const saved = loadRecipeBook().find(r => r.id === 'img-2');
+    expect(saved?.coverImageUrl).toBeUndefined();
+  });
+});
+
 describe('weekly planner persistence', () => {
   it('loads an empty normalized planner by default', () => {
     const plan = loadWeeklyPlanner();

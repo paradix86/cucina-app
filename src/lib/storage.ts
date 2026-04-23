@@ -61,6 +61,10 @@ type LegacyV2Recipe = {
   timerMin?: number;
   timerMinutes?: number;
   url?: string;
+  coverImageUrl?: string;
+  image?: string;
+  imageUrl?: string;
+  thumbnailUrl?: string;
   difficolta?: string;
 };
 
@@ -110,6 +114,13 @@ function asString(value: unknown, fallback = ''): string {
   return typeof value === 'string' ? value : fallback;
 }
 
+function normalizeCoverImageUrl(value: unknown): string {
+  const url = asString(value).trim();
+  if (!url) return '';
+  if (/^https?:\/\//i.test(url)) return url;
+  return '';
+}
+
 function isShoppingItem(value: unknown): value is ShoppingItem {
   return Boolean(
     value
@@ -133,6 +144,12 @@ function normalizeStoredRecipe(recipe: RecipeInput): Recipe {
 
   const id = asString(recipe.id);
   const name = asString(recipe.name ?? recipe.nome);
+  const coverImageUrl = normalizeCoverImageUrl(
+    recipe.coverImageUrl
+      ?? (recipe as Record<string, unknown>).image
+      ?? (recipe as Record<string, unknown>).imageUrl
+      ?? (recipe as Record<string, unknown>).thumbnailUrl,
+  );
 
   const validMealOccasions = [ 'Colazione', 'Pranzo', 'Cena', 'Spuntino' ];
   const mealOccasion = asStringArray(recipe?.mealOccasion).filter(m => validMealOccasions.includes(m));
@@ -146,6 +163,7 @@ function normalizeStoredRecipe(recipe: RecipeInput): Recipe {
     servings: asString(recipe.servings ?? recipe.porzioni),
     source,
     sourceDomain: recipe.sourceDomain || undefined,
+    coverImageUrl: coverImageUrl || undefined,
     ingredients: asStringArray(recipe.ingredients ?? recipe.ingredienti),
     steps: asStringArray(recipe.steps),
     timerMinutes: asNumber(recipe.timerMinutes, 0),
@@ -181,6 +199,7 @@ function migrateFromV2WithLocalStorage(): void {
       time: r.tempo || r.time || '',
       servings: r.porzioni || r.servings || '',
       source: r.fonte || r.source || 'web',
+      coverImageUrl: normalizeCoverImageUrl(r.coverImageUrl || r.imageUrl || r.image || r.thumbnailUrl) || undefined,
       preparationType: normalizePreparationTypeValue(r.preparationType) || (r.bimby ? 'bimby' : 'classic') as PreparationType,
       sourceDomain: r.sourceDomain || undefined,
       ingredients: asStringArray(r.ingredienti || r.ingredients),

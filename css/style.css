@@ -1446,6 +1446,21 @@ input[type="number"] {
 .ricetta-card.is-bimby { border-left: 3px solid var(--orange); border-radius: 0 var(--radius-md) var(--radius-md) 0; }
 .ricetta-card.is-airfryer { border-left: 3px solid var(--yt-red); border-radius: 0 var(--radius-md) var(--radius-md) 0; }
 
+.card-cover-wrap {
+  margin: -4px -4px 10px;
+  border-radius: 14px;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--border) 65%, transparent);
+  background: color-mix(in srgb, var(--bg-secondary) 72%, var(--bg) 28%);
+  aspect-ratio: 16 / 9;
+}
+.card-cover-img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
 /* source badge on cards */
 .card-src {
   display: inline-block;
@@ -1742,6 +1757,20 @@ input[type="number"] {
 }
 .detail-head {
   margin-bottom: .9rem;
+}
+.detail-cover-wrap {
+  margin-bottom: .9rem;
+  border-radius: 14px;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--border) 75%, transparent);
+  background: color-mix(in srgb, var(--bg-secondary) 75%, var(--bg) 25%);
+  aspect-ratio: 16 / 9;
+}
+.detail-cover-img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 .detail-meta-panel {
   padding: 10px 12px;
@@ -4457,6 +4486,7 @@ mark {
   .detail-start-cta,
   .detail-actions-secondary,
   .detail-print-row,
+  .detail-cover-wrap,
   .notes-box,
   .servings-btn,
   .backup-actions,
