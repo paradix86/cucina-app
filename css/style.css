@@ -2104,6 +2104,35 @@ input[type="number"] {
   padding: 4px 10px;
   font-variant-numeric: tabular-nums;
 }
+.shopping-summary-chip.is-remaining {
+  color: var(--text);
+  font-weight: 660;
+  border-color: color-mix(in srgb, var(--border) 92%, var(--text) 8%);
+}
+.shopping-filter-toggle {
+  font-size: 11px;
+  color: var(--text-muted);
+  background: color-mix(in srgb, var(--bg-secondary) 72%, var(--bg) 28%);
+  border: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
+  border-radius: var(--radius-pill);
+  padding: 3px 10px;
+  min-height: 28px;
+  cursor: pointer;
+  font-family: var(--font);
+  display: inline-flex;
+  align-items: center;
+  transition: background .12s ease, color .12s ease, border-color .12s ease;
+}
+.shopping-filter-toggle:hover {
+  background: var(--bg-secondary);
+  color: var(--text);
+}
+.shopping-filter-toggle.is-active {
+  background: color-mix(in srgb, var(--green-light) 42%, var(--bg) 58%);
+  border-color: color-mix(in srgb, var(--green) 32%, var(--border) 68%);
+  color: var(--green-text);
+  font-weight: 640;
+}
 .shopping-toolbar {
   display: flex;
   justify-content: space-between;
@@ -2115,11 +2144,35 @@ input[type="number"] {
   border-radius: 14px;
   background: color-mix(in srgb, var(--bg-secondary) 70%, var(--bg) 30%);
 }
+.shopping-toolbar-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
 .shopping-toolbar-note {
   margin: 0;
   font-size: 12px;
   color: var(--text-muted);
   line-height: 1.45;
+}
+.shopping-export-mode-btn {
+  font-size: 11px;
+  color: var(--text-hint);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-family: var(--font);
+  padding: 0;
+  text-align: left;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-color: color-mix(in srgb, var(--text-hint) 50%, transparent);
+  line-height: 1.3;
+}
+.shopping-export-mode-btn:hover {
+  color: var(--text-muted);
+  text-decoration-color: var(--text-hint);
 }
 .shopping-toolbar-actions {
   display: flex;
@@ -2183,6 +2236,7 @@ input[type="number"] {
 .shopping-item.is-checked {
   background: color-mix(in srgb, var(--green-light) 18%, var(--bg) 82%);
   border-color: color-mix(in srgb, var(--green) 28%, var(--border) 72%);
+  opacity: 0.62;
 }
 .shopping-remove {
   min-width: 42px;
@@ -2281,6 +2335,7 @@ input[type="number"] {
 .shopping-grouped-item.is-checked {
   border-color: color-mix(in srgb, var(--green) 44%, var(--border) 56%);
   background: color-mix(in srgb, var(--green-light) 20%, var(--bg) 80%);
+  opacity: 0.62;
 }
 .shopping-grouped-item.is-checked .shopping-item-total-name,
 .shopping-grouped-item.is-checked .shopping-item-total-qty {

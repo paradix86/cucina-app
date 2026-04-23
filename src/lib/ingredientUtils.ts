@@ -71,11 +71,21 @@ function normalizeUnit(unit: string): ParsedIngredientUnit | null {
 function normalizeName(name: string): string {
   if (!name) return '';
   let n = String(name).toLowerCase().trim();
-  n = n.replace(/\s+(fresco|congelato|secco|in\s+polvere|macinato)$/i, '');
+  n = n.replace(/\s+(fresco|congelato|secco|in\s+polvere|macinato|grattugiato)$/i, '');
   return n;
 }
 
-const GROUPING_LEADING_DESCRIPTOR_RE = /^(?:spicch(?:io|i)|cloves?|ramett(?:o|i)|fett(?:a|e)|fogli(?:a|e)|cucchiai(?:ni)?|cucchiain(?:o|i)|pezz(?:o|i|etto|etti)|filett(?:o|i)|ciuff(?:o|i)|mazzett(?:o|i))\s+(?:di\s+|d['’])?/i;
+const GROUPING_LEADING_DESCRIPTOR_RE = /^(?:spicch(?:io|i)|cloves?|ramett(?:o|i)|fett(?:a|e)|fogli(?:a|e)|cucchiai(?:ni)?|cucchiain(?:o|i)|pezz(?:o|i|etto|etti)|filett(?:o|i)|ciuff(?:o|i)|mazzett(?:o|i)|pett(?:o|i)|cos(?:cia|ce)|fes(?:a|e))\s+(?:di\s+|d[‘’])?/i;
+
+// Safe ingredient aliases: maps a specific variant name to its canonical shopping name.
+// Only add pairs that are always interchangeable at the point of purchase.
+const INGREDIENT_ALIASES: Record<string, string> = {
+  'parmigiano reggiano': 'parmigiano',
+  'chicken breast': 'chicken',
+  'chicken thighs': 'chicken',
+  'chicken legs': 'chicken',
+  'turkey breast': 'turkey',
+};
 const GROUPING_SINGULAR_MAP: Record<string, string> = {
   uova: 'uovo',
   patate: 'patata',
@@ -131,7 +141,8 @@ function normalizeGroupingKeyName(name: string): string {
 
   const parts = normalized.split(' ');
   if (parts.length) parts[ 0 ] = GROUPING_SINGULAR_MAP[parts[ 0 ]] || parts[ 0 ];
-  return parts.join(' ').trim();
+  const joined = parts.join(' ').trim();
+  return INGREDIENT_ALIASES[joined] ?? joined;
 }
 
 // ── Quantity unit conversion ──────────────────────────────────────────────

@@ -401,6 +401,65 @@ describe('groupShoppingItems', () => {
     expect(result.ungrouped).toHaveLength(0);
   });
 
+  it('should merge petto di pollo with plain pollo (Italian meat-cut descriptor)', () => {
+    const items: ShoppingItem[] = [
+      { id: '1', text: '300 g petto di pollo', checked: false, createdAt: Date.now() },
+      { id: '2', text: '200 g pollo', checked: false, createdAt: Date.now() },
+    ];
+    const result = groupShoppingItems(items);
+    expect(result.grouped).toHaveLength(1);
+    expect(result.grouped[ 0 ].baseName).toBe('pollo');
+    expect(result.grouped[ 0 ].totalQty).toBe(500);
+    expect(result.grouped[ 0 ].items).toHaveLength(2);
+  });
+
+  it('should merge cosce di pollo and coscia di pollo with plain pollo', () => {
+    const items: ShoppingItem[] = [
+      { id: '1', text: '400 g cosce di pollo', checked: false, createdAt: Date.now() },
+      { id: '2', text: '150 g coscia di pollo', checked: false, createdAt: Date.now() },
+      { id: '3', text: '250 g pollo', checked: false, createdAt: Date.now() },
+    ];
+    const result = groupShoppingItems(items);
+    expect(result.grouped).toHaveLength(1);
+    expect(result.grouped[ 0 ].baseName).toBe('pollo');
+    expect(result.grouped[ 0 ].totalQty).toBe(800);
+    expect(result.grouped[ 0 ].items).toHaveLength(3);
+  });
+
+  it('should merge parmigiano reggiano and parmigiano grattugiato with parmigiano (alias + suffix)', () => {
+    const items: ShoppingItem[] = [
+      { id: '1', text: 'parmigiano reggiano', checked: false, createdAt: Date.now() },
+      { id: '2', text: 'parmigiano', checked: false, createdAt: Date.now() },
+      { id: '3', text: 'parmigiano grattugiato', checked: false, createdAt: Date.now() },
+    ];
+    const result = groupShoppingItems(items);
+    expect(result.grouped).toHaveLength(1);
+    expect(result.grouped[ 0 ].baseName).toBe('parmigiano');
+    expect(result.grouped[ 0 ].items).toHaveLength(3);
+  });
+
+  it('should merge chicken breast with plain chicken (English alias)', () => {
+    const items: ShoppingItem[] = [
+      { id: '1', text: '300 g chicken breast', checked: false, createdAt: Date.now() },
+      { id: '2', text: '200 g chicken', checked: false, createdAt: Date.now() },
+    ];
+    const result = groupShoppingItems(items);
+    expect(result.grouped).toHaveLength(1);
+    expect(result.grouped[ 0 ].baseName).toBe('chicken');
+    expect(result.grouped[ 0 ].totalQty).toBe(500);
+    expect(result.grouped[ 0 ].items).toHaveLength(2);
+  });
+
+  it('should not merge chicken with chicken stock (alias does not over-reach)', () => {
+    const items: ShoppingItem[] = [
+      { id: '1', text: '500 ml chicken stock', checked: false, createdAt: Date.now() },
+      { id: '2', text: '300 g chicken', checked: false, createdAt: Date.now() },
+    ];
+    const result = groupShoppingItems(items);
+    // chicken stock is ml, chicken is g — different units → two separate groups
+    expect(result.grouped).toHaveLength(2);
+  });
+
   it('should sort grouped items alphabetically', () => {
     const items: ShoppingItem[] = [
       { id: '1', text: '200 g zucchini', checked: false, createdAt: Date.now() },

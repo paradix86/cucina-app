@@ -164,10 +164,13 @@ function clearWeek() {
 function addRecipesToShoppingList(recipesToAdd: Recipe[]) {
   let totalIngredients = 0;
   recipesToAdd.forEach(recipe => {
+    if (recipe.id && shoppingList.hasRecipeItems(recipe.id)) return;
     totalIngredients += shoppingList.addRecipeIngredients(recipe);
   });
   if (totalIngredients > 0) {
     showToast(t('planner_added_to_shopping_toast', { n: totalIngredients }), 'success');
+  } else {
+    showToast(t('planner_already_in_shopping_toast'), 'info');
   }
 }
 

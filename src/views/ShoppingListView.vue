@@ -1,5 +1,5 @@
 <script setup>
-import { computed, inject, ref } from 'vue';
+import { computed, inject, ref, watch } from 'vue';
 import { storeToRefs } from 'pinia';
 import { useRouter } from 'vue-router';
 import { parseIngredient, formatQuantity } from '../lib/ingredientUtils';
@@ -13,7 +13,12 @@ const store = useShoppingListStore();
 const { items, groupedSections } = storeToRefs(store);
 const { toggleItem, removeItem, toggleGroup, removeMany, clearAll } = store;
 const expandedGroups = ref({});
+const hideCompleted = ref(false);
+const compactExport = ref(false);
 const requestConfirm = inject('requestConfirm', null);
+
+// Auto-reset filter when nothing is left to show
+watch(remainingCount, count => { if (count === 0) hideCompleted.value = false; });
 const shareSupported = typeof navigator !== 'undefined' && typeof navigator.share === 'function';
 
 const countLabel = computed(() => items.value.length === 1 ? t('shopping_count', { n: items.value.length }) : t('shopping_count_plural', { n: items.value.length }));
@@ -122,6 +127,11 @@ function groupStateLabel(group) {
   return t('shopping_state_open');
 }
 
+function sectionHasVisibleItems(section) {
+  if (!hideCompleted.value) return true;
+  return section.grouped.some(g => !isGroupChecked(g)) || section.ungrouped.some(i => !i.checked);
+}
+
 function groupBreakdownMeta(group) {
   return t('shopping_group_meta', {
     checked: checkedCount(group),
@@ -165,18 +175,21 @@ function filteredGroupQuantityLabel(group) {
   return `${formatQuantity(total)} ${localizedShoppingUnit(group.unit, total)}`.trim();
 }
 
-function linesForExportGroup(group) {
+function linesForExportGroup(group, compact = false) {
   const quantityLabel = filteredGroupQuantityLabel(group);
   const mainLine = group.groupType === 'numeric' && quantityLabel
     ? `- ${groupPrimaryLabel(group)} — ${quantityLabel}`
     : `- ${groupPrimaryLabel(group)}`;
-  const sourceText = summarizeSources(group.items);
   const lines = [mainLine];
-  if (sourceText) lines.push(`  ${sourceText}`);
+  if (!compact) {
+    const sourceText = summarizeSources(group.items);
+    if (sourceText) lines.push(`  ${sourceText}`);
+  }
   return lines;
 }
 
 function buildExportText() {
+  const compact = compactExport.value;
   const selectedIds = new Set(exportableItems.value.map(item => item.id));
   const lines = [ t('shopping_export_title') ];
   if (!selectedIds.size) return lines.join('\n');
@@ -189,14 +202,16 @@ function buildExportText() {
         sectionLines.push(...linesForExportGroup({
           ...group,
           items: group.items.filter(item => selectedIds.has(item.id)),
-        }));
+        }, compact));
       });
     section.ungrouped
       .filter(item => selectedIds.has(item.id))
       .forEach(item => {
         sectionLines.push(`- ${item.text}`);
-        const sourceText = sourceSummaryForItem(item);
-        if (sourceText) sectionLines.push(`  ${sourceText}`);
+        if (!compact) {
+          const sourceText = sourceSummaryForItem(item);
+          if (sourceText) sectionLines.push(`  ${sourceText}`);
+        }
       });
     if (sectionLines.length > 1) lines.push('', ...sectionLines);
   });
@@ -253,7 +268,14 @@ async function shareExportText() {
           <p id="shopping-count" class="muted-label">{{ countLabel }}</p>
           <div v-if="items.length" class="shopping-summary">
             <span class="shopping-summary-chip">{{ t('shopping_done') }} {{ completedCount }}</span>
-            <span class="shopping-summary-chip">{{ t('shopping_left') }} {{ remainingCount }}</span>
+            <span class="shopping-summary-chip" :class="{ 'is-remaining': remainingCount > 0 }">{{ t('shopping_left') }} {{ remainingCount }}</span>
+            <button
+              v-if="completedCount > 0"
+              class="shopping-filter-toggle"
+              :class="{ 'is-active': hideCompleted }"
+              :aria-pressed="hideCompleted"
+              @click="hideCompleted = !hideCompleted"
+            >{{ hideCompleted ? t('shopping_show_all') : t('shopping_filter_remaining') }}</button>
           </div>
         </div>
         <button v-if="items.length" class="btn-ghost" id="shopping-clear-btn" @click="clearList">{{ t('shopping_clear') }}</button>
@@ -276,16 +298,21 @@ async function shareExportText() {
       </div>
       <div v-else id="shopping-list">
         <div class="shopping-toolbar">
-          <p class="shopping-toolbar-note">
-            {{ exportableItems.length === items.length ? t('shopping_export_all_hint') : t('shopping_export_remaining_hint') }}
-          </p>
+          <div class="shopping-toolbar-meta">
+            <p class="shopping-toolbar-note">
+              {{ exportableItems.length === items.length ? t('shopping_export_all_hint') : t('shopping_export_remaining_hint') }}
+            </p>
+            <button class="shopping-export-mode-btn" @click="compactExport = !compactExport">
+              {{ compactExport ? t('shopping_export_mode_full') : t('shopping_export_mode_compact') }}
+            </button>
+          </div>
           <div class="shopping-toolbar-actions">
             <button class="btn-ghost shopping-toolbar-btn" @click="copyExportText">{{ t('shopping_copy') }}</button>
             <button v-if="shareSupported" class="btn-ghost shopping-toolbar-btn" @click="shareExportText">{{ t('shopping_share') }}</button>
           </div>
         </div>
         <div class="shopping-list-rows">
-          <div v-for="section in groupedSections" :key="section.id" class="shopping-section">
+          <div v-for="section in groupedSections" :key="section.id" class="shopping-section" v-show="sectionHasVisibleItems(section)">
             <div class="shopping-section-heading">
               <div class="shopping-section-title-wrap">
                 <span class="shopping-section-name">{{ t(section.labelKey) }}</span>
@@ -299,6 +326,7 @@ async function shareExportText() {
               :key="group.groupKey"
               class="shopping-grouped-item"
               :class="{ 'is-checked': isGroupChecked(group), 'is-partial': isGroupPartial(group), 'is-expanded': isGroupExpanded(group) }"
+              v-show="!hideCompleted || !isGroupChecked(group)"
             >
               <div class="shopping-group-header">
                 <label class="shopping-item-main">
@@ -353,7 +381,7 @@ async function shareExportText() {
               </div>
             </div>
 
-            <div v-for="item in section.ungrouped" :key="item.id" class="shopping-item" :class="{ 'is-checked': item.checked }">
+            <div v-for="item in section.ungrouped" :key="item.id" class="shopping-item" :class="{ 'is-checked': item.checked }" v-show="!hideCompleted || !item.checked">
               <label class="shopping-item-main">
                 <input type="checkbox" class="shopping-item-checkbox" :checked="item.checked" @change="toggleItem(item.id)" />
                 <span class="shopping-item-copy">
