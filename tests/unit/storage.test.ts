@@ -192,6 +192,7 @@ describe('assignSection', () => {
     expect(assignSection('rice')).toBe('carbs');
     expect(assignSection('riso')).toBe('carbs');
     expect(assignSection('bread')).toBe('carbs');
+    expect(assignSection('farina')).toBe('carbs');
   });
 
   it('should assign vegetables_fruit', () => {
@@ -199,6 +200,7 @@ describe('assignSection', () => {
     expect(assignSection('carota')).toBe('vegetables_fruit');
     expect(assignSection('tomato')).toBe('vegetables_fruit');
     expect(assignSection('onion')).toBe('vegetables_fruit');
+    expect(assignSection('patate')).toBe('vegetables_fruit');
   });
 
   it('should assign dairy_eggs', () => {
@@ -214,6 +216,12 @@ describe('assignSection', () => {
     expect(assignSection('oil')).toBe('fats_oils_spices');
     expect(assignSection('basil')).toBe('fats_oils_spices');
     expect(assignSection('salsa di soia')).toBe('fats_oils_spices');
+  });
+
+  it('should assign common legumes to proteins', () => {
+    expect(assignSection('ceci')).toBe('proteins');
+    expect(assignSection('fagioli')).toBe('proteins');
+    expect(assignSection('piselli')).toBe('proteins');
   });
 
   it('should assign obvious produce variants to vegetables_fruit', () => {
@@ -268,16 +276,16 @@ describe('groupShoppingItems', () => {
     expect(result.grouped[ 0 ].items).toHaveLength(2);
   });
 
-  it('should keep kg and g items separate (different units)', () => {
-    // Items with different units are grouped separately
+  it('should merge kg and g items into one numeric group', () => {
     const items: ShoppingItem[] = [
       { id: '1', text: '1 kg chicken', checked: false, createdAt: Date.now() },
       { id: '2', text: '500 g chicken', checked: false, createdAt: Date.now() },
     ];
     const result = groupShoppingItems(items);
-    expect(result.grouped).toHaveLength(2);
-    expect(result.grouped.some(g => g.unit === 'kg')).toBe(true);
-    expect(result.grouped.some(g => g.unit === 'g')).toBe(true);
+    expect(result.grouped).toHaveLength(1);
+    expect(result.grouped[ 0 ].baseName).toBe('chicken');
+    expect(result.grouped[ 0 ].unit).toBe('kg');
+    expect(result.grouped[ 0 ].displayQty).toBe('1.5');
   });
 
   it('should convert ml to l when total >= 1000', () => {
@@ -402,6 +410,18 @@ describe('groupShoppingItems', () => {
     const result = groupShoppingItems(items);
     const names = result.grouped.map(g => g.baseName);
     expect(names).toEqual([ 'apple', 'butter', 'zucchini' ]);
+  });
+
+  it('should merge l and ml items into one numeric group', () => {
+    const items: ShoppingItem[] = [
+      { id: '1', text: '1 l latte', checked: false, createdAt: Date.now() },
+      { id: '2', text: '250 ml latte', checked: false, createdAt: Date.now() },
+    ];
+    const result = groupShoppingItems(items);
+    expect(result.grouped).toHaveLength(1);
+    expect(result.grouped[ 0 ].baseName).toBe('latte');
+    expect(result.grouped[ 0 ].unit).toBe('l');
+    expect(result.grouped[ 0 ].displayQty).toBe('1.3');
   });
 });
 

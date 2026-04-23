@@ -282,13 +282,14 @@ const SECTION_KEYWORDS: Record<ShoppingSectionId, string[]> = {
     'sausage', 'salsiccia', 'fish', 'pesce', 'salmon', 'salmone', 'tuna', 'tonno',
     'cod', 'merluzzo', 'shrimp', 'gamberetto', 'prawn', 'squid', 'calamaro',
     'mussels', 'cozze', 'clams', 'vongole', 'scallop', 'capasanta',
-    'tofu', 'lentil', 'lenticchia', 'chickpea', 'cece',
+    'tofu', 'lentil', 'lenticchia', 'lenticchie', 'chickpea', 'cece', 'ceci',
+    'bean', 'beans', 'fagiolo', 'fagioli', 'pea', 'peas', 'pisello', 'piselli',
   ],
   'carbs': [
     'pasta', 'rice', 'riso', 'couscous', 'barley', 'orzo', 'quinoa', 'polenta',
     'bread', 'pane', 'oat', 'avena', 'bulgur', 'noodle', 'spaghetti', 'penne',
     'fusilli', 'rigatoni', 'lasagna', 'ravioli', 'gnocchi',
-    'potato', 'patata', 'cracker',
+    'cracker', 'flour', 'farina',
   ],
   'vegetables_fruit': [
     'carrot', 'carota', 'onion', 'cipolla', 'cipollotto', 'garlic', 'aglio',
@@ -296,7 +297,7 @@ const SECTION_KEYWORDS: Record<ShoppingSectionId, string[]> = {
     'cabbage', 'cavolo', 'zucchini', 'zucchina', 'zucca', 'peperone', 'eggplant', 'melanzana',
     'banana', 'apple', 'mela', 'orange', 'arancia', 'lemon', 'limone', 'limoni',
     'strawberry', 'fragola', 'blueberry', 'mirtillo', 'grape', 'uva', 'pear', 'pera',
-    'cucumber', 'cetriolo', 'pumpkin', 'bean', 'fagiolo', 'pea', 'pisello',
+    'cucumber', 'cetriolo', 'pumpkin', 'potato', 'patata', 'patate',
     'artichoke', 'carciofo', 'asparagus', 'asparago', 'radish', 'ravanello',
     'leek', 'porro', 'celery', 'sedano', 'fennel', 'finocchio', 'mushroom', 'fungo',
   ],
@@ -312,7 +313,7 @@ const SECTION_KEYWORDS: Record<ShoppingSectionId, string[]> = {
     'basilico', 'thyme', 'timo', 'rosemary', 'rosmarino', 'parsley', 'prezzemolo',
     'oil', 'olio', 'vinegar', 'aceto', 'soy sauce', 'salsa di soia', 'sugar', 'zucchero', 'honey', 'miele',
     'baking powder', 'lievito', 'baking soda', 'bicarbonato', 'vanilla', 'vaniglia',
-    'flour', 'farina', 'lard', 'strutto', 'margarine',
+    'lard', 'strutto', 'margarine',
   ],
   'other': [],
 };
@@ -326,6 +327,12 @@ function _keywordMatches(normalized: string, keyword: string): boolean {
     if (/^(s|es|i|e|\s|$)/.test(rest)) return true;
   }
   return false;
+}
+
+function normalizeGroupingUnit(unit: ParsedIngredientUnit): ParsedIngredientUnit {
+  if (unit === 'kg') return 'g';
+  if (unit === 'l') return 'ml';
+  return unit;
 }
 
 export function assignSection(ingredientName: string): ShoppingSectionId {
@@ -385,13 +392,14 @@ export function groupShoppingItems(items: ShoppingItem[]): GroupedShoppingItemsR
     const parsed = item.parsed;
     if (parsed.confidence === 'high' && parsed.parsedName && parsed.parsedUnit) {
       const normalizedGroupName = normalizeGroupingKeyName(parsed.parsedName) || parsed.parsedName;
-      const key = `${normalizedGroupName}__${parsed.parsedUnit}`;
+      const groupingUnit = normalizeGroupingUnit(parsed.parsedUnit);
+      const key = `${normalizedGroupName}__${groupingUnit}`;
       if (!numericGroups[ key ]) {
         numericGroups[ key ] = {
           groupType: 'numeric',
           groupKey: key,
           name: normalizedGroupName,
-          unit: parsed.parsedUnit,
+          unit: groupingUnit,
           items: [],
           baseTotal: 0,
         };

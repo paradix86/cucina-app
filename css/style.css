@@ -2282,7 +2282,8 @@ input[type="number"] {
   border-color: color-mix(in srgb, var(--green) 44%, var(--border) 56%);
   background: color-mix(in srgb, var(--green-light) 20%, var(--bg) 80%);
 }
-.shopping-grouped-item.is-checked .shopping-item-total-name {
+.shopping-grouped-item.is-checked .shopping-item-total-name,
+.shopping-grouped-item.is-checked .shopping-item-total-qty {
   text-decoration: line-through;
   text-decoration-thickness: 2px;
   text-decoration-color: color-mix(in srgb, var(--green) 36%, var(--text-hint) 64%);

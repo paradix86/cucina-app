@@ -162,17 +162,12 @@ function clearWeek() {
 }
 
 function addRecipesToShoppingList(recipesToAdd: Recipe[]) {
-  let addedRecipes = 0;
-
+  let totalIngredients = 0;
   recipesToAdd.forEach(recipe => {
-    const addedIngredients = shoppingList.addRecipeIngredients(recipe);
-    if (addedIngredients > 0) {
-      addedRecipes += 1;
-    }
+    totalIngredients += shoppingList.addRecipeIngredients(recipe);
   });
-
-  if (addedRecipes > 0) {
-    showToast(t('planner_added_to_shopping_toast', { n: addedRecipes }), 'success');
+  if (totalIngredients > 0) {
+    showToast(t('planner_added_to_shopping_toast', { n: totalIngredients }), 'success');
   }
 }
 

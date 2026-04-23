@@ -100,7 +100,7 @@ function uniqueSourceNames(list) {
 
 function summarizeSources(list) {
   const names = uniqueSourceNames(list);
-  if (!names.length) return t('shopping_recipe_unknown');
+  if (!names.length) return '';
   if (names.length === 1) return t('shopping_from_recipe', { recipe: names[ 0 ] });
   if (names.length === 2) return t('shopping_from_two_recipes', { first: names[ 0 ], second: names[ 1 ] });
   return t('shopping_from_many_recipes', { first: names[ 0 ], n: names.length - 1 });
@@ -113,7 +113,7 @@ function sourceSummaryForGroup(group) {
 function sourceSummaryForItem(item) {
   return item.sourceRecipeName
     ? t('shopping_from_recipe', { recipe: item.sourceRecipeName })
-    : t('shopping_recipe_unknown');
+    : '';
 }
 
 function groupStateLabel(group) {
@@ -170,10 +170,10 @@ function linesForExportGroup(group) {
   const mainLine = group.groupType === 'numeric' && quantityLabel
     ? `- ${groupPrimaryLabel(group)} — ${quantityLabel}`
     : `- ${groupPrimaryLabel(group)}`;
-  return [
-    mainLine,
-    `  ${summarizeSources(group.items)}`,
-  ];
+  const sourceText = summarizeSources(group.items);
+  const lines = [mainLine];
+  if (sourceText) lines.push(`  ${sourceText}`);
+  return lines;
 }
 
 function buildExportText() {
@@ -195,7 +195,8 @@ function buildExportText() {
       .filter(item => selectedIds.has(item.id))
       .forEach(item => {
         sectionLines.push(`- ${item.text}`);
-        sectionLines.push(`  ${sourceSummaryForItem(item)}`);
+        const sourceText = sourceSummaryForItem(item);
+        if (sourceText) sectionLines.push(`  ${sourceText}`);
       });
     if (sectionLines.length > 1) lines.push('', ...sectionLines);
   });
@@ -311,7 +312,7 @@ async function shareExportText() {
                     <span class="shopping-item-total-name">{{ groupPrimaryLabel(group) }}</span>
                     <span v-if="groupQuantityLabel(group)" class="shopping-item-total-qty">{{ groupQuantityLabel(group) }}</span>
                   </span>
-                  <span class="shopping-item-sub">
+                  <span v-if="sourceSummaryForGroup(group)" class="shopping-item-sub">
                     {{ sourceSummaryForGroup(group) }}
                   </span>
                 </label>
@@ -345,7 +346,7 @@ async function shareExportText() {
                     <span class="contrib-qty">
                       {{ contributionLabel(group, item) }}
                     </span>
-                    <span class="contrib-recipe">{{ sourceSummaryForItem(item) }}</span>
+                    <span v-if="sourceSummaryForItem(item)" class="contrib-recipe">{{ sourceSummaryForItem(item) }}</span>
                   </div>
                   <button class="shopping-contrib-remove" :aria-label="t('shopping_remove')" @click="removeItem(item.id)">✕</button>
                 </div>
@@ -357,7 +358,7 @@ async function shareExportText() {
                 <input type="checkbox" class="shopping-item-checkbox" :checked="item.checked" @change="toggleItem(item.id)" />
                 <span class="shopping-item-copy">
                   <span class="shopping-item-text">{{ item.text }}</span>
-                  <span class="shopping-item-sub">{{ sourceSummaryForItem(item) }}</span>
+                  <span v-if="sourceSummaryForItem(item)" class="shopping-item-sub">{{ sourceSummaryForItem(item) }}</span>
                 </span>
               </label>
               <button class="shopping-remove" :aria-label="t('shopping_remove')" @click="removeItem(item.id)">✕</button>
