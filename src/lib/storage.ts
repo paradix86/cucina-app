@@ -24,6 +24,7 @@ import type {
   RecipeMeta,
   StorageAdapter,
 } from './persistence/storageAdapter';
+import { createDexieStorageAdapter } from './persistence/dexieAdapter';
 import {
   getPreparationType,
   normalizePreparationTypeValue,
@@ -448,18 +449,55 @@ function createLocalStorageAdapter(): StorageAdapter {
   };
 }
 
-let activeStorageAdapter: StorageAdapter = createLocalStorageAdapter();
+const defaultLocalStorageAdapter = createLocalStorageAdapter();
 
-export function getStorageAdapter(): StorageAdapter {
+let activeStorageAdapter: StorageAdapter = defaultLocalStorageAdapter;
+let storageAdapterResolved = false;
+let storageBootstrapPromise: Promise<void> = Promise.resolve();
+
+function ensureActiveStorageAdapter(): StorageAdapter {
+  if (storageAdapterResolved) return activeStorageAdapter;
+
+  storageAdapterResolved = true;
+  activeStorageAdapter = defaultLocalStorageAdapter;
+
+  const dexieAdapter = createDexieStorageAdapter({
+    localFallback: defaultLocalStorageAdapter,
+    createWriteError: (storageKey, cause) => new StorageWriteError(storageKey, cause),
+    onFallback: () => {
+      activeStorageAdapter = defaultLocalStorageAdapter;
+    },
+  });
+
+  if (!dexieAdapter) {
+    console.info('Dexie fallback to localStorage');
+    return activeStorageAdapter;
+  }
+
+  activeStorageAdapter = dexieAdapter;
+  storageBootstrapPromise = dexieAdapter.ready.catch(() => undefined);
   return activeStorageAdapter;
 }
 
+export function getStorageAdapter(): StorageAdapter {
+  return ensureActiveStorageAdapter();
+}
+
 export function setStorageAdapter(adapter: StorageAdapter): void {
+  storageAdapterResolved = true;
   activeStorageAdapter = adapter;
+  storageBootstrapPromise = Promise.resolve();
 }
 
 export function resetStorageAdapter(): void {
-  activeStorageAdapter = createLocalStorageAdapter();
+  storageAdapterResolved = false;
+  activeStorageAdapter = defaultLocalStorageAdapter;
+  storageBootstrapPromise = Promise.resolve();
+}
+
+export function waitForStorageBootstrap(): Promise<void> {
+  ensureActiveStorageAdapter();
+  return storageBootstrapPromise;
 }
 
 export function migrateFromV2(): void {

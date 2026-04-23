@@ -33,6 +33,10 @@ pnpm-debug.log*
 node_modules/
 .npm/
 
+# temp / local
+.tmp/
+vendor/
+
 # Vite build output and internal cache
 dist/
 .vite/

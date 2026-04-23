@@ -1,3 +1,4 @@
+import 'fake-indexeddb/auto';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import {
   normalizePreparationTypeValue,
@@ -17,8 +18,13 @@ import {
   resetStorageAdapter,
   saveWeeklyPlanner,
   setStorageAdapter,
+  STORAGE_KEY,
+  SHOPPING_LIST_KEY,
   updateWeeklyPlannerSlot,
+  waitForStorageBootstrap,
+  WEEKLY_PLANNER_KEY,
 } from '../../src/lib/storage';
+import { CucinaDexieDb, DEXIE_MIGRATION_META_KEY, WEEKLY_PLANNER_ROW_ID } from '../../src/lib/persistence/dexieDb';
 import type { StorageAdapter } from '../../src/lib/persistence/storageAdapter';
 import { createEmptyWeeklyPlanner } from '../../src/lib/planner';
 import type { PlannerDayId, PlannerMealSlot, Recipe, ShoppingItem, ParsedIngredient } from '../../src/types';
@@ -34,14 +40,24 @@ const localStorageMock = (() => {
   };
 })();
 
-beforeEach(() => {
+async function clearDexieDb(): Promise<void> {
+  const db = new CucinaDexieDb();
+  await db.delete();
+  db.close();
+}
+
+beforeEach(async () => {
   globalThis.localStorage = localStorageMock as any;
   localStorageMock.clear();
+  resetStorageAdapter();
+  await clearDexieDb();
 });
 
-afterEach(() => {
+afterEach(async () => {
   vi.clearAllMocks();
+  await waitForStorageBootstrap().catch(() => undefined);
   resetStorageAdapter();
+  await clearDexieDb();
 });
 
 describe('normalizePreparationTypeValue', () => {
@@ -648,5 +664,101 @@ describe('storage adapter boundary', () => {
 
     expect(getStorageAdapter()).not.toBe(replacement);
     expect(loadWeeklyPlanner().monday.breakfast).toBeNull();
+  });
+});
+
+describe('dexie bootstrap migration', () => {
+  it('migrates localStorage data into Dexie only once and keeps localStorage intact', async () => {
+    const infoSpy = vi.spyOn(console, 'info').mockImplementation(() => {});
+
+    localStorage.setItem(STORAGE_KEY, JSON.stringify([
+      {
+        id: 'recipe-1',
+        name: 'Pasta al pomodoro',
+        ingredients: [ '200 g pasta' ],
+        steps: [ 'Cuoci' ],
+      },
+    ]));
+    localStorage.setItem(SHOPPING_LIST_KEY, JSON.stringify([
+      {
+        id: 'shop-1',
+        text: '200 g pasta',
+        checked: false,
+        createdAt: 1,
+      },
+    ]));
+    localStorage.setItem(WEEKLY_PLANNER_KEY, JSON.stringify({
+      ...createEmptyWeeklyPlanner(),
+      monday: { breakfast: null, lunch: 'recipe-1', dinner: null },
+    }));
+
+    expect(loadRecipeBook()).toHaveLength(1);
+    await waitForStorageBootstrap();
+
+    const db = new CucinaDexieDb();
+    const [ recipes, shoppingItems, plannerRow, migrationMeta ] = await Promise.all([
+      db.recipes.toArray(),
+      db.shoppingItems.toArray(),
+      db.weeklyPlanner.get(WEEKLY_PLANNER_ROW_ID),
+      db.meta.get(DEXIE_MIGRATION_META_KEY),
+    ]);
+
+    expect(recipes).toHaveLength(1);
+    expect(shoppingItems).toHaveLength(1);
+    expect(plannerRow?.plan.monday.lunch).toBe('recipe-1');
+    expect(migrationMeta?.value).toBe(true);
+    expect(JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]')).toHaveLength(1);
+    expect(infoSpy).toHaveBeenCalledWith('Dexie migration started');
+    expect(infoSpy).toHaveBeenCalledWith('Dexie migration completed');
+
+    resetStorageAdapter();
+    expect(loadRecipeBook()).toHaveLength(1);
+    await waitForStorageBootstrap();
+
+    expect(infoSpy.mock.calls.filter(call => call[ 0 ] === 'Dexie migration started')).toHaveLength(1);
+    expect(infoSpy.mock.calls.filter(call => call[ 0 ] === 'Dexie migration completed')).toHaveLength(1);
+
+    db.close();
+    infoSpy.mockRestore();
+  });
+
+  it('hydrates localStorage from Dexie when migration already happened and localStorage is empty', async () => {
+    const db = new CucinaDexieDb();
+    await db.recipes.put({
+      id: 'recipe-2',
+      name: 'Riso',
+      ingredients: [ '100 g riso' ],
+      steps: [ 'Cuoci' ],
+    } as Recipe);
+    await db.meta.put({ key: DEXIE_MIGRATION_META_KEY, value: true });
+    db.close();
+
+    expect(loadRecipeBook()).toHaveLength(0);
+    await waitForStorageBootstrap();
+
+    expect(loadRecipeBook()).toHaveLength(1);
+    expect(JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]')).toHaveLength(1);
+  });
+
+  it('falls back to localStorage when indexedDB is unavailable', async () => {
+    const originalIndexedDb = globalThis.indexedDB;
+    const infoSpy = vi.spyOn(console, 'info').mockImplementation(() => {});
+
+    globalThis.indexedDB = undefined as any;
+    resetStorageAdapter();
+
+    expect(addRecipe({
+      id: 'fallback-1',
+      name: 'Fallback recipe',
+      ingredients: [ '1 uovo' ],
+      steps: [ 'Mescola' ],
+    })).toBe(true);
+    expect(loadRecipeBook()).toHaveLength(1);
+    await waitForStorageBootstrap();
+
+    expect(infoSpy).toHaveBeenCalledWith('Dexie fallback to localStorage');
+
+    globalThis.indexedDB = originalIndexedDb;
+    infoSpy.mockRestore();
   });
 });
