@@ -50,17 +50,21 @@ export function useImportFlow() {
   }
 
   function normalizePreviewRecipe(recipe: ImportPreviewRecipe): ImportPreviewRecipe {
-    const normalizeArray = (value: unknown) => Array.isArray(value)
-      ? value.map(item => {
-        if (typeof item === 'string') return item;
-        if (item && typeof item === 'object') {
-          if (typeof (item as Record<string, unknown>).text === 'string') {
-            return (item as Record<string, unknown>).text;
+    const normalizeArray = (value: unknown): string[] => Array.isArray(value)
+      ? value
+        .map((item): string => {
+          if (typeof item === 'string') return item;
+          if (item && typeof item === 'object') {
+            const record = item as Record<string, unknown>;
+            if (typeof record.text === 'string') {
+              return record.text;
+            }
+            return Object.values(record).filter((v): v is string => typeof v === 'string').join(' ');
           }
-          return Object.values(item).filter(v => typeof v === 'string').join(' ');
-        }
-        return '';
-      }).map(item => item.trim()).filter(Boolean)
+          return '';
+        })
+        .map(item => item.trim())
+        .filter(Boolean)
       : [];
 
     return {

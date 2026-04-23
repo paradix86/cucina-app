@@ -21,7 +21,7 @@ import {
 } from '../../src/lib/storage';
 import type { StorageAdapter } from '../../src/lib/persistence/storageAdapter';
 import { createEmptyWeeklyPlanner } from '../../src/lib/planner';
-import type { Recipe, ShoppingItem, ParsedIngredient } from '../../src/types';
+import type { PlannerDayId, PlannerMealSlot, Recipe, ShoppingItem, ParsedIngredient } from '../../src/types';
 
 // Mock localStorage for testing
 const localStorageMock = (() => {
@@ -35,7 +35,7 @@ const localStorageMock = (() => {
 })();
 
 beforeEach(() => {
-  global.localStorage = localStorageMock as any;
+  globalThis.localStorage = localStorageMock as any;
   localStorageMock.clear();
 });
 
@@ -583,6 +583,12 @@ describe('weekly planner persistence', () => {
 
 describe('storage adapter boundary', () => {
   it('delegates public storage calls to the active adapter', () => {
+    const updateSlotMock = vi.fn((day: PlannerDayId, slot: PlannerMealSlot, recipeId: string | null) => {
+      const plan = createEmptyWeeklyPlanner();
+      plan[ day ][ slot ] = recipeId;
+      return plan;
+    });
+
     const adapter: StorageAdapter = {
       recipeBook: {
         migrateFromV2: vi.fn(),
@@ -610,13 +616,7 @@ describe('storage adapter boundary', () => {
       weeklyPlanner: {
         load: vi.fn(createEmptyWeeklyPlanner),
         save: vi.fn(),
-        updateSlot: vi.fn((day, slot, recipeId) => ({
-          ...createEmptyWeeklyPlanner(),
-          [day]: {
-            ...createEmptyWeeklyPlanner()[ day ],
-            [slot]: recipeId,
-          },
-        })),
+        updateSlot: updateSlotMock,
         clear: vi.fn(),
       },
     };
@@ -625,18 +625,19 @@ describe('storage adapter boundary', () => {
 
     const result = updateWeeklyPlannerSlot('wednesday', 'dinner', 'recipe-999');
 
-    expect(adapter.weeklyPlanner.updateSlot).toHaveBeenCalledWith('wednesday', 'dinner', 'recipe-999');
+    expect(updateSlotMock).toHaveBeenCalledWith('wednesday', 'dinner', 'recipe-999');
     expect(result.wednesday.dinner).toBe('recipe-999');
   });
 
   it('resets back to the built-in localStorage adapter', () => {
     const original = getStorageAdapter();
+    const loadMock = vi.fn(createEmptyWeeklyPlanner);
     const replacement: StorageAdapter = {
       recipeBook: original.recipeBook,
       shoppingList: original.shoppingList,
       weeklyPlanner: {
         ...original.weeklyPlanner,
-        load: vi.fn(createEmptyWeeklyPlanner),
+        load: loadMock,
       },
     };
 
