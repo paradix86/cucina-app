@@ -34,10 +34,12 @@ const editError = ref('');
 const prepOptions = ['classic', 'bimby', 'airfryer'];
 const mealOccasionOptions = ['Colazione', 'Pranzo', 'Cena', 'Spuntino'];
 const editDraft = ref(buildEditDraft(props.recipe));
+const coverImageFailed = ref(false);
 
 watch(() => props.recipe, recipe => {
   servings.value = parseInt(recipe.servings, 10) || 4;
   noteDraft.value = recipe.notes || '';
+  coverImageFailed.value = false;
   if (!isEditing.value) {
     editDraft.value = buildEditDraft(recipe);
   }
@@ -46,6 +48,8 @@ watch(() => props.recipe, recipe => {
 const prepInfo = computed(() => getPreparationInfo(props.recipe));
 const scaledIngredients = computed(() => scaleIngredients(props.recipe.ingredients || [], parseInt(props.recipe.servings, 10) || 4, servings.value));
 const steps = computed(() => buildStepsHtml(props.recipe.steps || [], prepInfo.value.type));
+const resolvedCoverImageUrl = computed(() => normalizeCoverImageUrl(props.recipe.coverImageUrl));
+const showCoverImage = computed(() => Boolean(resolvedCoverImageUrl.value) && !coverImageFailed.value);
 const hasShoppingContributions = computed(() => {
   if (!props.recipe?.id) return false;
   return shoppingItems.value.some(item => item.sourceRecipeId === props.recipe.id);
@@ -54,6 +58,22 @@ const shoppingActionLabel = computed(() => (hasShoppingContributions.value ? t('
 
 function changeServings(delta) {
   servings.value = Math.max(1, Math.min(20, servings.value + delta));
+}
+
+function normalizeCoverImageUrl(value) {
+  const raw = String(value || '').trim();
+  if (!raw) return '';
+  try {
+    const parsed = new URL(raw);
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return '';
+    return parsed.href;
+  } catch {
+    return '';
+  }
+}
+
+function onCoverImageError() {
+  coverImageFailed.value = true;
 }
 
 function buildEditDraft(recipe) {
@@ -66,6 +86,7 @@ function buildEditDraft(recipe) {
     emoji: recipe.emoji || '',
     preparationType: prepOptions.includes(recipe.preparationType) ? recipe.preparationType : 'classic',
     timerMinutes: recipe.timerMinutes > 0 ? String(recipe.timerMinutes) : '',
+    coverImageUrl: recipe.coverImageUrl || '',
     ingredients: Array.isArray(recipe.ingredients) && recipe.ingredients.length ? [...recipe.ingredients] : [''],
     steps: Array.isArray(recipe.steps) && recipe.steps.length ? [...recipe.steps] : [''],
     mealOccasion: Array.isArray(recipe.mealOccasion) ? [...recipe.mealOccasion] : [],
@@ -150,6 +171,7 @@ function submitEdit() {
   }
 
   const timerMinutes = parseInt(editDraft.value.timerMinutes, 10);
+  const normalizedCoverImageUrl = normalizeCoverImageUrl(editDraft.value.coverImageUrl);
   const updates = {
     name,
     category: editDraft.value.category.trim(),
@@ -158,6 +180,7 @@ function submitEdit() {
     emoji: editDraft.value.emoji.trim() || '🍴',
     preparationType: prepOptions.includes(editDraft.value.preparationType) ? editDraft.value.preparationType : 'classic',
     timerMinutes: Number.isFinite(timerMinutes) && timerMinutes > 0 ? timerMinutes : 0,
+    coverImageUrl: normalizedCoverImageUrl || undefined,
     ingredients,
     steps,
     mealOccasion: editDraft.value.mealOccasion && editDraft.value.mealOccasion.length > 0 ? editDraft.value.mealOccasion : undefined,
@@ -197,8 +220,19 @@ function printRecipe() {
     <button class="detail-back" @click="emit('back')">{{ backLabel || t('detail_back') }}</button>
     <div v-if="!isEditing" class="detail-wrap">
       <div class="detail-head">
-        <div v-if="recipe.coverImageUrl" class="detail-cover-wrap">
-          <img class="detail-cover-img" :src="recipe.coverImageUrl" :alt="recipe.name" loading="lazy" decoding="async" />
+        <div class="detail-cover-wrap">
+          <img
+            v-if="showCoverImage"
+            class="detail-cover-img"
+            :src="resolvedCoverImageUrl"
+            :alt="recipe.name"
+            loading="lazy"
+            decoding="async"
+            @error="onCoverImageError"
+          />
+          <div v-else class="detail-cover-placeholder" aria-hidden="true">
+            <span class="detail-cover-placeholder-icon">{{ recipe.emoji || '🍽️' }}</span>
+          </div>
         </div>
         <h2 class="detail-title">{{ recipe.emoji || '🍴' }} {{ recipe.name }}</h2>
         <p class="detail-meta">{{ joinMetaParts([recipe.category, recipe.time, recipe.difficolta]) }}</p>
@@ -323,6 +357,17 @@ function printRecipe() {
           <div class="manual-field">
             <label for="edit-timer">{{ t('manual_timer_label') }}</label>
             <input id="edit-timer" v-model="editDraft.timerMinutes" type="number" min="0" step="1" :placeholder="t('manual_timer_placeholder')" />
+          </div>
+          <div class="manual-field manual-field--full">
+            <label for="edit-cover-image-url">{{ t('manual_cover_image_label') }}</label>
+            <input
+              id="edit-cover-image-url"
+              v-model="editDraft.coverImageUrl"
+              type="url"
+              inputmode="url"
+              autocomplete="url"
+              :placeholder="t('manual_cover_image_placeholder')"
+            />
           </div>
         </div>
       </div>

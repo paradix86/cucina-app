@@ -150,6 +150,18 @@ const showTopSuccessBanner = computed(() => Boolean(successNotice.value) && !pre
 
 const manualForm = ref(buildManualForm());
 
+function normalizeCoverImageUrl(value) {
+  const raw = String(value || '').trim();
+  if (!raw) return '';
+  try {
+    const parsed = new URL(raw);
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return '';
+    return parsed.href;
+  } catch {
+    return '';
+  }
+}
+
 function buildManualForm() {
   return {
     name: '',
@@ -157,6 +169,7 @@ function buildManualForm() {
     servings: '',
     time: '',
     emoji: '',
+    coverImageUrl: '',
     preparationType: 'classic',
     timerMinutes: '',
     ingredients: [''],
@@ -375,6 +388,7 @@ function saveManualRecipe() {
     return;
   }
   const timerMinutes = parseInt(manualForm.value.timerMinutes, 10);
+  const normalizedCoverImageUrl = normalizeCoverImageUrl(manualForm.value.coverImageUrl);
   const recipe = {
     id: `manual-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
     name,
@@ -382,6 +396,7 @@ function saveManualRecipe() {
     servings: String(manualForm.value.servings || '').trim(),
     time: manualForm.value.time.trim(),
     emoji: manualForm.value.emoji.trim() || '🍴',
+    coverImageUrl: normalizedCoverImageUrl || undefined,
     preparationType: prepOptions.includes(manualForm.value.preparationType) ? manualForm.value.preparationType : 'classic',
     source: 'manual',
     ingredients,
@@ -526,6 +541,17 @@ function savePreview() {
               <div class="manual-field">
                 <label for="manual-timer">{{ t('manual_timer_label') }}</label>
                 <input id="manual-timer" v-model="manualForm.timerMinutes" type="number" min="0" step="1" :placeholder="t('manual_timer_placeholder')" />
+              </div>
+              <div class="manual-field manual-field--full">
+                <label for="manual-cover-image-url">{{ t('manual_cover_image_label') }}</label>
+                <input
+                  id="manual-cover-image-url"
+                  v-model="manualForm.coverImageUrl"
+                  type="url"
+                  inputmode="url"
+                  autocomplete="url"
+                  :placeholder="t('manual_cover_image_placeholder')"
+                />
               </div>
             </div>
           </div>

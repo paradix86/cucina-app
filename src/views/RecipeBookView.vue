@@ -25,6 +25,7 @@ const filterType = ref('all');
 const siteFilter = ref('all');
 const mealFilter = ref('all');
 const mobileFiltersOpen = ref(false);
+const brokenCoverImageIds = ref(new Set());
 
 // Source = where the recipe came from (YouTube / TikTok / Instagram / Web / Manual)
 const sourceOptions = [
@@ -136,6 +137,26 @@ watch(visiblePrepOptions, (options) => {
     preparationFilter.value = 'all';
   }
 });
+
+watch(recipes, (list) => {
+  if (!brokenCoverImageIds.value.size) return;
+  const currentIds = new Set(list.map(recipe => recipe.id));
+  const next = new Set([...brokenCoverImageIds.value].filter(id => currentIds.has(id)));
+  if (next.size !== brokenCoverImageIds.value.size) {
+    brokenCoverImageIds.value = next;
+  }
+});
+
+function hasCardCoverImage(recipe) {
+  return Boolean(recipe.coverImageUrl) && !brokenCoverImageIds.value.has(recipe.id);
+}
+
+function onCardCoverError(recipeId) {
+  if (brokenCoverImageIds.value.has(recipeId)) return;
+  const next = new Set(brokenCoverImageIds.value);
+  next.add(recipeId);
+  brokenCoverImageIds.value = next;
+}
 
 function openDetail(recipe) {
   router.push({ name: 'recipe-book-detail', params: { id: recipe.id } }).catch(() => {});
@@ -322,8 +343,19 @@ defineExpose({
       </div>
       <div v-else class="ricette-grid" id="saved-grid">
         <div v-for="recipe in filteredRecipes" :key="recipe.id" class="ricetta-card" @click="openDetail(recipe)">
-          <div v-if="recipe.coverImageUrl" class="card-cover-wrap">
-            <img class="card-cover-img" :src="recipe.coverImageUrl" :alt="recipe.name" loading="lazy" decoding="async" />
+          <div class="card-cover-wrap">
+            <img
+              v-if="hasCardCoverImage(recipe)"
+              class="card-cover-img"
+              :src="recipe.coverImageUrl"
+              :alt="recipe.name"
+              loading="lazy"
+              decoding="async"
+              @error="onCardCoverError(recipe.id)"
+            />
+            <div v-else class="card-cover-placeholder" aria-hidden="true">
+              <span class="card-cover-placeholder-icon">{{ recipe.emoji || '🍽️' }}</span>
+            </div>
           </div>
           <span class="card-src" :class="getPreparationInfo(recipe).cls">{{ getPreparationInfo(recipe).txt }}</span>
           <div class="card-actions">
