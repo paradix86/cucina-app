@@ -29,14 +29,6 @@ const creditsOpen = ref(false);
           <a href="https://github.com/duemme/piano_alimentare" target="_blank" rel="noopener">duemme/piano_alimentare</a>
           <span class="credits-note">{{ t('credits_used_pack') }}</span>
         </li>
-        <li>
-          <a href="https://github.com/Biolazard/GialloZafferano" target="_blank" rel="noopener">Biolazard/GialloZafferano</a>
-          <span class="credits-note">{{ t('credits_inspiration_only') }}</span>
-        </li>
-        <li>
-          <a href="https://github.com/PiervitoCreanza/GialloZafferano_Scraper" target="_blank" rel="noopener">PiervitoCreanza/GialloZafferano_Scraper</a>
-          <span class="credits-note">{{ t('credits_inspiration_only') }}</span>
-        </li>
       </ul>
       <p class="muted-label">{{ t('credits_license_note') }}</p>
     </div>

@@ -13,9 +13,11 @@ import {
   addRecipe,
   clearWeeklyPlanner,
   getStorageAdapter,
+  importRecipeBook,
   loadRecipeBook,
   loadWeeklyPlanner,
   resetStorageAdapter,
+  saveRecipeBook,
   saveWeeklyPlanner,
   setStorageAdapter,
   STORAGE_KEY,
@@ -594,6 +596,59 @@ describe('weekly planner persistence', () => {
     expect(plan.friday.breakfast).toBeNull();
     expect(plan.friday.lunch).toBeNull();
     expect(plan.friday.dinner).toBeNull();
+  });
+});
+
+describe('backup import semantics', () => {
+  it('replaces current recipe book with backup snapshot (full restore)', async () => {
+    saveRecipeBook([
+      {
+        id: 'live-1',
+        name: 'Live Recipe',
+        ingredients: [ '1 egg' ],
+        steps: [ 'Cook' ],
+      } as Recipe,
+      {
+        id: 'marker-1',
+        name: 'Backup Marker Recipe',
+        ingredients: [ '1 marker' ],
+        steps: [ 'Keep' ],
+      } as Recipe,
+    ]);
+
+    const backupSnapshot = [
+      {
+        id: 'backup-1',
+        name: 'Backup Recipe',
+        ingredients: [ '200 g pasta' ],
+        steps: [ 'Boil' ],
+      },
+    ];
+
+    class MockFileReader {
+      onload: ((event: { target?: { result?: string } }) => void) | null = null;
+      readAsText(file: Blob): void {
+        void file.text().then(text => {
+          this.onload?.({ target: { result: text } });
+        });
+      }
+    }
+
+    const originalFileReader = globalThis.FileReader;
+    globalThis.FileReader = MockFileReader as unknown as typeof FileReader;
+
+    try {
+      const file = new File([ JSON.stringify(backupSnapshot) ], 'backup.json', { type: 'application/json' });
+      const result = await importRecipeBook(file);
+      const restored = loadRecipeBook();
+
+      expect(result.total).toBe(1);
+      expect(restored).toHaveLength(1);
+      expect(restored[ 0 ]?.id).toBe('backup-1');
+      expect(restored.find(recipe => recipe.id === 'marker-1')).toBeUndefined();
+    } finally {
+      globalThis.FileReader = originalFileReader;
+    }
   });
 });
 

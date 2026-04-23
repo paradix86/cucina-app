@@ -3,7 +3,7 @@
 Tablet-friendly cooking app built with Vue 3 + Vite.
 
 - No backend
-- `localStorage` persistence only
+- Dexie-backed persistence with automatic `localStorage` fallback
 - Static deploy friendly
 - PWA (cache-first service worker)
 
@@ -126,6 +126,8 @@ URL import pipeline:
 Supported website adapters:
 - `giallozafferano.it`
 - `ricetteperbimby.it`
+- `ricette-bimby.net`
+- `vegolosi.it`
 
 Unsupported websites fail with explicit diagnostics in the import UI.
 
@@ -142,6 +144,7 @@ This produces a draft pack, a vetted-subset candidate file, and a compact review
 
 ## Persistence and Compatibility
 
+- Runtime storage uses a Dexie adapter when IndexedDB is available, with transparent fallback to the localStorage adapter.
 - Recipe model is normalized before persistence.
 - Legacy data compatibility is preserved in `src/lib/storage.ts` (`migrateFromV2`, `normalizeStoredRecipe` path).
 - Legacy `bimby: boolean` remains supported, while `preparationType` is first-class.

@@ -16,7 +16,7 @@ npx vue-tsc --noEmit  # TypeScript check (run when touching .ts files)
 
 ## Architecture
 
-**Cucina App** is an offline-first PWA cooking app — no backend, localStorage only, deployable to static hosting.
+**Cucina App** is an offline-first PWA cooking app — no backend, Dexie-first persistence with localStorage fallback, deployable to static hosting.
 
 ### Layer separation (critical)
 

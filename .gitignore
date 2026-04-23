@@ -9,6 +9,7 @@ playwright-report/
 test-results/
 .playwright/
 .playwright-mcp/
+.playwright-cli/
 
 # OS noise
 .DS_Store

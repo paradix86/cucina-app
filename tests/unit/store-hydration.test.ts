@@ -136,4 +136,49 @@ describe('store hydration', () => {
       globalThis.indexedDB = originalIndexedDb;
     }
   });
+
+  it('remains stable through repeated hydration and refresh cycles', async () => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify([
+      {
+        id: 'cycle-1',
+        name: 'Cycle Recipe',
+        ingredients: [ '1 tomato' ],
+        steps: [ 'Slice' ],
+      },
+    ]));
+    localStorage.setItem(SHOPPING_LIST_KEY, JSON.stringify([
+      {
+        id: 'cycle-shop-1',
+        text: '1 tomato',
+        checked: false,
+        createdAt: 1,
+      },
+    ]));
+    localStorage.setItem(WEEKLY_PLANNER_KEY, JSON.stringify({
+      ...createEmptyWeeklyPlanner(),
+      monday: { breakfast: null, lunch: 'cycle-1', dinner: null },
+    }));
+
+    const recipeBook = useRecipeBookStore();
+    const shoppingList = useShoppingListStore();
+    const weeklyPlanner = useWeeklyPlannerStore();
+
+    for (let i = 0; i < 4; i += 1) {
+      await Promise.all([
+        recipeBook.hydrate(i > 0),
+        shoppingList.hydrate(i > 0),
+        weeklyPlanner.hydrate(i > 0),
+      ]);
+
+      expect(recipeBook.recipes).toHaveLength(1);
+      expect(shoppingList.items).toHaveLength(1);
+      expect(weeklyPlanner.plan.monday.lunch).toBe('cycle-1');
+
+      await Promise.all([
+        recipeBook.refresh(),
+        shoppingList.refresh(),
+        weeklyPlanner.refresh(),
+      ]);
+    }
+  });
 });
