@@ -419,6 +419,7 @@ h3 { font-size: 15px; font-weight: 600; margin-bottom: 4px; }
   padding: 2.5rem 1rem;
   font-size: 14px;
   line-height: 1.8;
+  margin: 0;
 }
 .empty-state-shell {
   grid-column: 1 / -1;
@@ -457,6 +458,7 @@ h3 { font-size: 15px; font-weight: 600; margin-bottom: 4px; }
   max-width: 520px;
   text-align: center;
   line-height: 1.5;
+  margin: 0;
 }
 .empty-steps {
   width: min(520px, 100%);
@@ -497,10 +499,11 @@ h3 { font-size: 15px; font-weight: 600; margin-bottom: 4px; }
   border-radius: var(--radius-sm);
   cursor: pointer;
   font-family: var(--font);
-  transition: background .15s;
+  transition: background .15s, transform .15s, box-shadow .15s, opacity .15s;
 }
 .btn-primary:hover   { background: var(--green-dark); }
 .btn-primary:disabled { background: #9FE1CB; cursor: not-allowed; }
+.btn-primary:active { transform: translateY(1px); }
 .btn-ghost {
   min-height: 44px;
   padding: 9px 18px;
@@ -511,6 +514,7 @@ h3 { font-size: 15px; font-weight: 600; margin-bottom: 4px; }
   cursor: pointer;
   color: var(--text-muted);
   font-family: var(--font);
+  transition: background .15s, border-color .15s, color .15s, opacity .15s;
 }
 .btn-ghost:hover { background: var(--bg-secondary); }
 .btn-shopping {
@@ -558,6 +562,20 @@ h3 { font-size: 15px; font-weight: 600; margin-bottom: 4px; }
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
 }
 .btn-secondary:active { background: var(--bg-tertiary); }
+.btn-secondary:disabled,
+.btn-ghost:disabled {
+  opacity: .55;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+.btn-primary:focus-visible,
+.btn-secondary:focus-visible,
+.btn-ghost:focus-visible,
+.tab:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(29,158,117,.18);
+}
 .btn-secondary.btn-favorite {
   display: inline-flex;
   align-items: center;
@@ -739,7 +757,7 @@ input[type="number"] {
   border-radius: var(--radius-sm);
   display: none;
 }
-.status-msg.loading { display:block; background: rgba(29,158,117,.1);  color: var(--green-dark); }
+.status-msg.loading { display:block; background: color-mix(in srgb, var(--bg-secondary) 86%, transparent); color: var(--text-muted); }
 .status-msg.ok      { display:block; background: rgba(29,158,117,.12); color: var(--green-dark); }
 .status-msg.err     { display:block; background: var(--red-light);     color: var(--red); }
 

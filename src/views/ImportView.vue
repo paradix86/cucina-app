@@ -456,7 +456,9 @@ function savePreview() {
           <p v-if="!socialImportAvailable" class="muted-label import-help-line">{{ t('import_social_unavailable_hint') }}</p>
           <div class="url-row">
             <input ref="urlInputRef" v-model="url" type="url" :placeholder="t('import_placeholder')" :disabled="loading" />
-            <button class="btn-primary" id="btn-import-go" :disabled="loading" @click="submit">{{ t('import_btn') }}</button>
+            <button class="btn-primary" id="btn-import-go" :disabled="loading" :aria-busy="loading ? 'true' : 'false'" @click="submit">
+              {{ loading ? t('import_btn_loading') : t('import_btn') }}
+            </button>
           </div>
           <div v-if="showImportStatus" class="status-msg" :class="status.type">{{ status.message }}</div>
           <div v-if="diagnostic && status.type === 'err'" class="import-diagnostics" style="display:block" aria-live="polite">
