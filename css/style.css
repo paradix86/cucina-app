@@ -1878,29 +1878,63 @@ input[type="number"] {
 }
 .detail-origin a:hover { text-decoration: underline; }
 
-.detail-primary-action {
-  margin-top: 1rem;
-  margin-bottom: .75rem;
-}
 .detail-actions {
   display: flex;
   gap: 8px;
   margin-top: .25rem;
   flex-wrap: wrap;
 }
-.detail-actions-primary {
+.detail-actions-shell {
   margin-top: 1.05rem;
-}
-.detail-actions-prep {
-  margin-top: 1.05rem;
-}
-.detail-start-cta {
-  margin-top: .85rem;
-  padding-top: .85rem;
-  border-top: 1px solid var(--border);
   display: flex;
   flex-direction: column;
+  gap: 10px;
+}
+.detail-action-primary {
+  display: block;
+}
+.detail-actions-secondary-tier {
+  margin-top: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 8px;
+}
+.detail-actions-secondary-tier .btn-secondary {
+  width: 100%;
+}
+.detail-action-shopping {
+  font-weight: 600;
+}
+.detail-actions-utility {
+  margin-top: 0;
+  padding-top: 8px;
+  border-top: 1px solid color-mix(in srgb, var(--border) 85%, transparent);
+  gap: 6px;
+}
+.detail-actions-utility .btn-utility {
+  min-height: 40px;
+  padding: 7px 12px;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+.btn-utility-icon {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.btn-utility-icon .button-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 6px;
+  background: rgba(0,0,0,0.04);
+  color: var(--text-muted);
+  font-size: 12px;
+}
+.btn-utility-icon:hover .button-icon {
+  background: rgba(0,0,0,0.08);
 }
 .btn-start-cooking {
   width: 100%;
@@ -1918,14 +1952,6 @@ input[type="number"] {
   letter-spacing: .01em;
 }
 .btn-start-cooking:hover { background: var(--green-dark); }
-.detail-actions-secondary {
-  margin-top: .15rem;
-}
-.detail-actions-secondary .btn-primary,
-.detail-actions-secondary .btn-secondary,
-.detail-actions-secondary .btn-ghost {
-  min-height: 44px;
-}
 
 .notes-box {
   margin-top: 1rem;
@@ -4300,22 +4326,18 @@ mark {
     height: 44px;
     min-width: 44px;
   }
-  .detail-primary-action {
-    margin-top: 1.1rem;
-    margin-bottom: .85rem;
-  }
-  .detail-actions-secondary {
+  .detail-actions-shell {
     gap: 10px;
   }
-  .detail-actions-prep .btn-shopping,
-  .detail-actions-prep .btn-primary,
-  .detail-actions-prep .btn-secondary {
+  .detail-actions-secondary-tier {
+    grid-template-columns: 1fr;
+  }
+  .detail-actions-secondary-tier .btn-secondary,
+  .detail-actions-utility .btn-utility {
     width: 100%;
   }
-  .detail-actions-secondary .btn-primary,
-  .detail-actions-secondary .btn-secondary,
-  .detail-actions-secondary .btn-ghost {
-    width: 100%;
+  .detail-actions-utility {
+    gap: 8px;
   }
   .notes-actions .btn-primary {
     width: 100%;
@@ -4438,13 +4460,6 @@ mark {
    ====================================================================== */
 
 .print-only { display: none; }
-.detail-print-row {
-  margin-top: 1rem;
-  padding-top: .75rem;
-  border-top: 1px solid var(--border);
-  display: flex;
-  justify-content: flex-end;
-}
 .btn-print {
   font-size: 13px;
   color: var(--text-muted);
@@ -4482,10 +4497,7 @@ mark {
   .app-footer,
   .toast-stack,
   .detail-back,
-  .detail-actions-prep,
-  .detail-start-cta,
-  .detail-actions-secondary,
-  .detail-print-row,
+  .detail-actions-shell,
   .detail-cover-wrap,
   .notes-box,
   .servings-btn,
