@@ -63,7 +63,7 @@ export function extractHtmlMetaFields(html: string): HtmlMetaFields {
   };
 }
 
-function resolveImportImageUrl(value: unknown, pageUrl: string): string {
+export function resolveImportImageUrl(value: unknown, pageUrl: string): string {
   const raw = normalizeImportText(decodeImportEntities(String(value || ''))).trim();
   if (!raw || /^data:/i.test(raw)) return '';
   const normalized = raw.startsWith('//') ? `https:${raw}` : raw;

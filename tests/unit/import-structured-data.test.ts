@@ -5,6 +5,7 @@ import {
   parseWprmRecipeFromHtml,
   extractHtmlMetaFields,
   extractMainContentImageUrl,
+  resolveImportImageUrl,
 } from '../../src/lib/import/adapters';
 
 // ─── Fixtures ─────────────────────────────────────────────────────────────────
@@ -793,6 +794,19 @@ describe('extractMainContentImageUrl', () => {
       </main>
     </body></html>`;
     expect(extractMainContentImageUrl(html, 'https://example.com/recipes/pasta')).toBe('https://example.com/assets/pasta-cover.jpg');
+  });
+});
+
+describe('resolveImportImageUrl', () => {
+  it('resolves relative and protocol-relative URLs to absolute http(s)', () => {
+    expect(resolveImportImageUrl('/img/cover.jpg', 'https://example.com/recipes/1')).toBe('https://example.com/img/cover.jpg');
+    expect(resolveImportImageUrl('//cdn.example.com/cover.jpg', 'https://example.com/recipes/1')).toBe('https://cdn.example.com/cover.jpg');
+  });
+
+  it('drops invalid and non-http(s) values', () => {
+    expect(resolveImportImageUrl('javascript:alert(1)', 'https://example.com/recipes/1')).toBe('');
+    expect(resolveImportImageUrl('data:image/png;base64,abcd', 'https://example.com/recipes/1')).toBe('');
+    expect(resolveImportImageUrl('', 'https://example.com/recipes/1')).toBe('');
   });
 });
 

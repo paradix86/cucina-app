@@ -26,6 +26,7 @@ import {
   parseWprmRecipeFromHtml,
   extractHtmlMetaFields,
   extractMainContentImageUrl,
+  resolveImportImageUrl,
 } from './jsonld';
 
 // Re-export shared utilities that tests and composables consume directly.
@@ -41,6 +42,7 @@ export {
   parseWprmRecipeFromHtml,
   extractHtmlMetaFields,
   extractMainContentImageUrl,
+  resolveImportImageUrl,
 };
 
 // ─── Adapter registry ─────────────────────────────────────────────────────────
@@ -81,6 +83,29 @@ export function importWebsiteRecipeWithAdapters(markdown: string, url: string): 
   throw new Error('UNSUPPORTED_WEB_IMPORT');
 }
 
+function extractFallbackImageFromHtml(html: string, pageUrl: string): string {
+  const meta = extractHtmlMetaFields(html);
+  return (
+    resolveImportImageUrl(meta.image || '', pageUrl)
+    || extractMainContentImageUrl(html, pageUrl)
+    || ''
+  );
+}
+
+async function enrichCoverImageIfMissing(recipe: ImportPreviewRecipe, pageUrl: string): Promise<ImportPreviewRecipe> {
+  if (recipe.coverImageUrl) return recipe;
+  try {
+    const html = await fetchHtmlForJsonLd(pageUrl);
+    const fallbackImage = extractFallbackImageFromHtml(html, pageUrl);
+    if (fallbackImage) {
+      recipe.coverImageUrl = fallbackImage;
+    }
+  } catch {
+    // Do not fail a successful adapter parse because image enrichment failed.
+  }
+  return recipe;
+}
+
 /**
  * Full async import with structured-data fallbacks.
  * Steps 4 and 5 share the same HTML fetch (no extra round-trip).
@@ -88,15 +113,20 @@ export function importWebsiteRecipeWithAdapters(markdown: string, url: string): 
  */
 export async function importWebsiteRecipeWithFallbacks(markdown: string, url: string): Promise<ImportPreviewRecipe> {
   const adapter = getImportAdapterForUrl(url);
-  if (adapter) return adapter.parse(markdown, url);
+  if (adapter) {
+    const parsed = adapter.parse(markdown, url);
+    return enrichCoverImageIfMissing(parsed, url);
+  }
 
   const genericRecipe = parseGenericReadableRecipe(markdown, url);
-  if (genericRecipe) return genericRecipe;
+  if (genericRecipe) {
+    return enrichCoverImageIfMissing(genericRecipe, url);
+  }
 
   // Fetch HTML once — shared by all remaining fallbacks
   const html = await fetchHtmlForJsonLd(url);
   const meta = extractHtmlMetaFields(html);
-  const fallbackImage = meta.image || extractMainContentImageUrl(html, url) || '';
+  const fallbackImage = extractFallbackImageFromHtml(html, url);
   const ogTitle = meta.title ?? undefined;
 
   // JSON-LD / Schema.org (OG title fills in when JSON-LD name is empty)
