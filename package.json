@@ -11,7 +11,8 @@
     "test": "vitest",
     "test:unit": "vitest run",
     "test:watch": "vitest --watch",
-    "test:smoke": "vitest run --config vitest.smoke.config.ts"
+    "test:smoke": "vitest run --config vitest.smoke.config.ts",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "@playwright/test": "^1.59.1",
