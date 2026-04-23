@@ -25,6 +25,7 @@ import {
   parseJsonLdRecipeFromHtml,
   parseWprmRecipeFromHtml,
   extractHtmlMetaFields,
+  extractMainContentImageUrl,
 } from './jsonld';
 
 // Re-export shared utilities that tests and composables consume directly.
@@ -39,6 +40,7 @@ export {
   parseJsonLdRecipeFromHtml,
   parseWprmRecipeFromHtml,
   extractHtmlMetaFields,
+  extractMainContentImageUrl,
 };
 
 // ─── Adapter registry ─────────────────────────────────────────────────────────
@@ -94,13 +96,14 @@ export async function importWebsiteRecipeWithFallbacks(markdown: string, url: st
   // Fetch HTML once — shared by all remaining fallbacks
   const html = await fetchHtmlForJsonLd(url);
   const meta = extractHtmlMetaFields(html);
+  const fallbackImage = meta.image || extractMainContentImageUrl(html, url) || '';
   const ogTitle = meta.title ?? undefined;
 
   // JSON-LD / Schema.org (OG title fills in when JSON-LD name is empty)
   const jsonLdRecipe = parseJsonLdRecipeFromHtml(html, url, ogTitle);
   if (jsonLdRecipe) {
-    if (!jsonLdRecipe.coverImageUrl && meta.image) {
-      jsonLdRecipe.coverImageUrl = meta.image;
+    if (!jsonLdRecipe.coverImageUrl && fallbackImage) {
+      jsonLdRecipe.coverImageUrl = fallbackImage;
     }
     return jsonLdRecipe;
   }
@@ -108,8 +111,8 @@ export async function importWebsiteRecipeWithFallbacks(markdown: string, url: st
   // WPRM / embedded plugin JSON (OG title fills in when plugin name is absent)
   const wprmRecipe = parseWprmRecipeFromHtml(html, url, ogTitle);
   if (wprmRecipe) {
-    if (!wprmRecipe.coverImageUrl && meta.image) {
-      wprmRecipe.coverImageUrl = meta.image;
+    if (!wprmRecipe.coverImageUrl && fallbackImage) {
+      wprmRecipe.coverImageUrl = fallbackImage;
     }
     return wprmRecipe;
   }

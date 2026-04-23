@@ -4,6 +4,7 @@ import {
   parseJsonLdRecipeFromHtml,
   parseWprmRecipeFromHtml,
   extractHtmlMetaFields,
+  extractMainContentImageUrl,
 } from '../../src/lib/import/adapters';
 
 // ─── Fixtures ─────────────────────────────────────────────────────────────────
@@ -216,6 +217,19 @@ describe('parseJsonLdRecipeFromHtml — valid Recipe', () => {
     const result = parseJsonLdRecipeFromHtml(wrapJsonLd(recipe), TEST_URL);
     expect(result).not.toBeNull();
     expect(result!.coverImageUrl).toBe('https://example.com/images/lasagne.jpg');
+  });
+
+  it('resolves relative JSON-LD image URLs against page URL', () => {
+    const recipe = JSON.stringify({
+      '@type': 'Recipe',
+      name: 'Piadina',
+      recipeIngredient: ['farina', 'acqua'],
+      recipeInstructions: ['Impastare e cuocere.'],
+      image: '/media/piadina-cover.jpg',
+    });
+    const result = parseJsonLdRecipeFromHtml(wrapJsonLd(recipe), 'https://example.com/recipes/piadina');
+    expect(result).not.toBeNull();
+    expect(result!.coverImageUrl).toBe('https://example.com/media/piadina-cover.jpg');
   });
 });
 
@@ -605,6 +619,17 @@ describe('parseWprmRecipeFromHtml — valid WPRM data', () => {
     expect(result).not.toBeNull();
     expect(result!.coverImageUrl).toBe('https://example.com/images/torta.jpg');
   });
+
+  it('resolves relative WPRM image URLs against page URL', () => {
+    const recipe = {
+      ...VALID_WPRM_RECIPE,
+      image_url: '/images/torta-rel.jpg',
+    };
+    const html = `<html><body>${WPRM_SCRIPT(recipe)}</body></html>`;
+    const result = parseWprmRecipeFromHtml(html, 'https://example.com/dolci/torta');
+    expect(result).not.toBeNull();
+    expect(result!.coverImageUrl).toBe('https://example.com/images/torta-rel.jpg');
+  });
 });
 
 // ─── WPRM: incomplete / missing data ──────────────────────────────────────────
@@ -727,6 +752,13 @@ describe('extractHtmlMetaFields', () => {
     expect(extractHtmlMetaFields(html).image).toBe('https://example.com/img.jpg');
   });
 
+  it('extracts og:image from name attribute variant', () => {
+    const html = `<html><head>
+      <meta name="og:image" content="/images/cover.jpg" />
+    </head></html>`;
+    expect(extractHtmlMetaFields(html).image).toBe('/images/cover.jpg');
+  });
+
   it('returns nulls when no meta fields are present', () => {
     const html = `<html><head></head></html>`;
     const result = extractHtmlMetaFields(html);
@@ -740,6 +772,27 @@ describe('extractHtmlMetaFields', () => {
       <meta property="og:title" content="Pasta &amp; Fagioli" />
     </head></html>`;
     expect(extractHtmlMetaFields(html).title).toBe('Pasta & Fagioli');
+  });
+});
+
+describe('extractMainContentImageUrl', () => {
+  it('extracts the first safe image inside main/article and resolves relative URLs', () => {
+    const html = `<html><body>
+      <article>
+        <img src="/assets/recipe-cover.jpg" alt="cover" />
+      </article>
+    </body></html>`;
+    expect(extractMainContentImageUrl(html, 'https://example.com/recipes/pasta')).toBe('https://example.com/assets/recipe-cover.jpg');
+  });
+
+  it('skips obvious non-content images like logos', () => {
+    const html = `<html><body>
+      <main>
+        <img src="/assets/logo.png" alt="logo" />
+        <img src="/assets/pasta-cover.jpg" alt="recipe" />
+      </main>
+    </body></html>`;
+    expect(extractMainContentImageUrl(html, 'https://example.com/recipes/pasta')).toBe('https://example.com/assets/pasta-cover.jpg');
   });
 });
 

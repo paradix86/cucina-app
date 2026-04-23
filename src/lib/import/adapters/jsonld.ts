@@ -57,8 +57,22 @@ export function extractHtmlMetaFields(html: string): HtmlMetaFields {
     image: firstMatch([
       /<meta\b[^>]*\bproperty=["']og:image["'][^>]*\bcontent=["']([^"'<>]+)["']/i,
       /<meta\b[^>]*\bcontent=["']([^"'<>]+)["'][^>]*\bproperty=["']og:image["']/i,
+      /<meta\b[^>]*\bname=["']og:image["'][^>]*\bcontent=["']([^"'<>]+)["']/i,
+      /<meta\b[^>]*\bcontent=["']([^"'<>]+)["'][^>]*\bname=["']og:image["']/i,
     ]),
   };
+}
+
+function resolveImportImageUrl(value: unknown, pageUrl: string): string {
+  const raw = normalizeImportText(decodeImportEntities(String(value || ''))).trim();
+  if (!raw || /^data:/i.test(raw)) return '';
+  const normalized = raw.startsWith('//') ? `https:${raw}` : raw;
+  try {
+    const absolute = new URL(normalized, pageUrl);
+    return /^https?:$/i.test(absolute.protocol) ? absolute.href : '';
+  } catch {
+    return '';
+  }
 }
 
 // ─── JSON-LD / Schema.org structured data ────────────────────────────────────
@@ -116,24 +130,47 @@ function normalizeJsonLdServings(raw: unknown): string {
     .trim();
 }
 
-function extractImageUrl(raw: unknown): string {
+function extractImageUrl(raw: unknown, pageUrl: string): string {
   if (!raw) return '';
   if (typeof raw === 'string') {
-    const value = normalizeImportText(raw).trim();
-    return /^https?:\/\//i.test(value) ? value : '';
+    return resolveImportImageUrl(raw, pageUrl);
   }
   if (Array.isArray(raw)) {
     for (const entry of raw) {
-      const candidate = extractImageUrl(entry);
+      const candidate = extractImageUrl(entry, pageUrl);
       if (candidate) return candidate;
     }
     return '';
   }
   if (typeof raw === 'object') {
     const obj = raw as Record<string, unknown>;
-    return extractImageUrl(obj.url || obj.contentUrl || obj['@id']);
+    return extractImageUrl(
+      obj.url
+      || obj.contentUrl
+      || obj['@id']
+      || obj.image
+      || obj.imageUrl,
+      pageUrl,
+    );
   }
   return '';
+}
+
+function isLikelyContentImage(src: string): boolean {
+  return !/(?:logo|icon|sprite|avatar|placeholder|blank|pixel)/i.test(src);
+}
+
+export function extractMainContentImageUrl(html: string, pageUrl: string): string | null {
+  const mainOrArticle = html.match(/<(?:main|article)\b[\s\S]*?<\/(?:main|article)>/i)?.[ 0 ] || html;
+  const imgRe = /<img\b[^>]*\bsrc=["']([^"'<>]+)["'][^>]*>/gi;
+  let match: RegExpExecArray | null;
+  while ((match = imgRe.exec(mainOrArticle)) !== null) {
+    const resolved = resolveImportImageUrl(match[ 1 ], pageUrl);
+    if (!resolved) continue;
+    if (!isLikelyContentImage(resolved)) continue;
+    return resolved;
+  }
+  return null;
 }
 
 /**
@@ -287,7 +324,7 @@ function parseJsonLdRecipeNode(node: Record<string, unknown>, url: string, fallb
   const domain = normalizeSourceDomain(url);
   const fullText = ingredients.join(' ') + ' ' + steps.join(' ');
   const preparationType = inferImportPreparationType(fullText, domain);
-  const coverImageUrl = extractImageUrl(node.image);
+  const coverImageUrl = extractImageUrl(node.image, url);
 
   // Fix 2: merge site-provided keywords with domain-inferred tags (deduplicated)
   const siteKeywords = extractJsonLdKeywords(node.keywords);
@@ -401,7 +438,11 @@ function buildWprmRecipe(
   const domain = normalizeSourceDomain(url);
   const fullText = ingredients.join(' ') + ' ' + steps.join(' ');
   const preparationType = inferImportPreparationType(fullText, domain);
-  const coverImageUrl = extractImageUrl((recipe as Record<string, unknown>).image || (recipe as Record<string, unknown>).image_url);
+  const coverImageUrl = extractImageUrl(
+    (recipe as Record<string, unknown>).image
+    || (recipe as Record<string, unknown>).image_url,
+    url,
+  );
 
   // Fix 2: extract WPRM tags (array of {name} objects or strings)
   const rawWprmTags = Array.isArray(recipe.tags) ? (recipe.tags as unknown[]) : [];
