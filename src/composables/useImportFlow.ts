@@ -202,6 +202,7 @@ Rispondi SOLO con un oggetto JSON valido, senza backtick, senza testo aggiuntivo
         && (rawError.includes('GZ_PAGE_NOT_FOUND') || rawError.includes('WEB_FETCH_404'));
       const isWebImportLimit = source === 'web'
         && (rawError.includes('UNSUPPORTED_WEB_IMPORT') || rawError.includes('WEB_FETCH'));
+      const isWebTimeout = source === 'web' && rawError.includes('WEB_TIMEOUT');
       if (source === 'web') {
         const stage = inferImportFailureStage(rawError);
         diagnostic.value = {
@@ -219,6 +220,8 @@ Rispondi SOLO con un oggetto JSON valido, senza backtick, senza testo aggiuntivo
       setStatus(
         isDeadPage
           ? t('import_error_page_not_found')
+          : isWebTimeout
+            ? t('import_error_timeout')
           : isWebImportLimit
             ? t('import_error_web_blocked')
             : t('import_error'),
