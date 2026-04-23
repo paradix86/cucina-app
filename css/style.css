@@ -3401,12 +3401,86 @@ mark {
 .planner-day-card {
   display: grid;
   gap: 12px;
+  transition: border-color 0.16s ease, background 0.16s ease, box-shadow 0.16s ease, transform 0.16s ease;
+}
+.planner-day-card--planned {
+  border-color: color-mix(in srgb, var(--green) 18%, var(--border-md));
+  background: linear-gradient(180deg, color-mix(in srgb, var(--green) 3%, var(--bg)) 0%, var(--bg) 100%);
+}
+.planner-day-card--complete {
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--green) 20%, transparent);
+}
+.planner-day-card.is-today {
+  border-color: color-mix(in srgb, var(--green) 32%, var(--border-md));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--green) 14%, transparent);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--green) 6%, var(--bg)) 0%, var(--bg) 100%);
 }
 .planner-day-head {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
   gap: 10px;
+}
+.planner-day-heading {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  flex: 1;
+}
+.planner-day-title-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+.planner-day-title-copy {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.planner-today-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 22px;
+  padding: 0 8px;
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--green) 10%, var(--bg));
+  border: 1px solid color-mix(in srgb, var(--green) 18%, transparent);
+  color: var(--green-dark);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.planner-day-count {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 0 8px;
+  border-radius: var(--radius-pill);
+  background: var(--bg-secondary);
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+.planner-day-progress {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+.planner-day-progress-segment {
+  height: 5px;
+  border-radius: 999px;
+  background: var(--border-md);
+}
+.planner-day-progress-segment.is-filled {
+  background: color-mix(in srgb, var(--green) 75%, white);
+}
+.planner-day-progress-segment.is-missing {
+  background: color-mix(in srgb, var(--red) 50%, white);
 }
 .planner-summary-actions,
 .planner-day-actions {
@@ -3419,11 +3493,29 @@ mark {
 .planner-clear-week,
 .planner-day-shopping,
 .planner-week-shopping {
-  min-height: 40px;
+  min-height: 38px;
+  padding: 8px 12px;
+  border-color: color-mix(in srgb, var(--border-md) 92%, transparent);
+  background: color-mix(in srgb, var(--bg-secondary) 76%, transparent);
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+.planner-day-shopping,
+.planner-week-shopping {
+  background: color-mix(in srgb, var(--bg-secondary) 88%, transparent);
+}
+.planner-day-clear:hover,
+.planner-clear-week:hover,
+.planner-day-shopping:hover,
+.planner-week-shopping:hover {
+  background: color-mix(in srgb, var(--bg-secondary) 98%, transparent);
+  border-color: color-mix(in srgb, var(--green-soft) 40%, var(--border-md));
+  color: var(--text);
 }
 .planner-slot-list {
   display: grid;
-  gap: 10px;
+  gap: 12px;
 }
 .planner-slot-card {
   border: 0.5px solid var(--border-md);
@@ -3432,6 +3524,7 @@ mark {
   overflow: hidden;
   /* slot-type left border: set by data-slot attribute */
   border-left-width: 3px;
+  transition: border-color 0.14s ease, background 0.14s ease, box-shadow 0.14s ease, transform 0.14s ease;
 }
 .planner-slot-card[data-slot="breakfast"] { border-left-color: #d97706; }
 .planner-slot-card[data-slot="lunch"]     { border-left-color: #0d9488; }
@@ -3451,6 +3544,10 @@ mark {
 .planner-slot-card.is-active {
   box-shadow: 0 0 0 1px color-mix(in srgb, var(--green) 35%, transparent);
 }
+.planner-slot-card:hover {
+  border-color: color-mix(in srgb, var(--green) 28%, var(--border-md));
+  box-shadow: 0 10px 22px -18px color-mix(in srgb, var(--green) 28%, transparent);
+}
 .planner-slot-main {
   width: 100%;
   border: 0;
@@ -3462,14 +3559,16 @@ mark {
   text-align: left;
   cursor: pointer;
   font-family: var(--font);
+  position: relative;
+  transition: background 0.14s ease, transform 0.14s ease;
 }
 /* Empty slot CTA: dashed border, centered, clearly interactive */
 .planner-slot-card:not(.is-filled):not(.is-missing) .planner-slot-main {
-  display: flex;
-  align-items: center;
-  gap: 10px;
+  display: grid;
+  justify-items: center;
+  gap: 8px;
   padding: 12px 14px;
-  min-height: 56px;
+  min-height: 74px;
   border: 1.5px dashed var(--border-md);
   border-radius: var(--radius-sm);
   margin: 8px;
@@ -3481,6 +3580,7 @@ mark {
 .planner-slot-card:not(.is-filled):not(.is-missing) .planner-slot-main:hover {
   border-color: var(--green-soft);
   color: var(--green);
+  background: color-mix(in srgb, var(--green) 3%, var(--bg));
 }
 .planner-slot-label {
   font-size: 12px;
@@ -3489,20 +3589,58 @@ mark {
   text-transform: uppercase;
   color: var(--text-muted);
 }
-/* In empty CTA mode, the label sits inline with the + icon */
-.planner-slot-card:not(.is-filled):not(.is-missing) .planner-slot-label {
+.planner-slot-topline,
+.planner-slot-empty-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.planner-slot-topline {
+  width: 100%;
+}
+.planner-slot-empty-copy {
+  width: 100%;
+  display: grid;
+  gap: 7px;
+}
+.planner-slot-card:not(.is-filled):not(.is-missing) .planner-slot-empty-copy {
+  justify-items: center;
+  text-align: center;
+}
+.planner-slot-card:not(.is-filled):not(.is-missing) .planner-slot-empty-head {
+  justify-content: center;
+}
+.planner-slot-card:not(.is-filled):not(.is-missing) .planner-slot-label,
+.planner-slot-card.is-missing .planner-slot-label {
   color: inherit;
 }
 .planner-slot-name {
   font-size: 17px;
   font-weight: 600;
   line-height: 1.3;
+  overflow-wrap: anywhere;
 }
 .planner-slot-empty,
 .planner-slot-meta {
   font-size: 13px;
   color: var(--text-muted);
   line-height: 1.4;
+}
+.planner-slot-empty {
+  max-width: 20ch;
+}
+.planner-slot-hint {
+  display: inline-flex;
+  align-items: center;
+  min-height: 20px;
+  padding: 0 6px;
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--bg-secondary) 92%, transparent);
+  color: var(--text-muted);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
 }
 .planner-slot-add-icon {
   flex-shrink: 0;
@@ -3536,16 +3674,39 @@ mark {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  padding: 0 14px 14px;
+  padding: 10px 14px 12px;
+  border-top: 1px solid color-mix(in srgb, var(--border-md) 75%, transparent);
+  background: color-mix(in srgb, var(--bg-secondary) 42%, transparent);
 }
 .planner-slot-action {
-  min-height: 36px;
+  min-height: 34px;
+  padding: 7px 11px;
+  border-color: color-mix(in srgb, var(--border-md) 90%, transparent);
+  background: color-mix(in srgb, var(--bg) 96%, transparent);
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 600;
+  transition: background 0.14s ease, border-color 0.14s ease, color 0.14s ease, transform 0.14s ease;
+}
+.planner-slot-action:hover {
+  border-color: color-mix(in srgb, var(--green-soft) 38%, var(--border-md));
+  background: color-mix(in srgb, var(--bg-secondary) 88%, transparent);
+  color: var(--text);
+}
+.planner-slot-action:active,
+.planner-day-clear:active,
+.planner-clear-week:active,
+.planner-day-shopping:active,
+.planner-week-shopping:active,
+.planner-slot-main:active {
+  transform: translateY(1px);
 }
 .planner-slot-action--danger {
   color: var(--red);
 }
 .planner-slot-action--danger:hover {
-  background: var(--red-light);
+  border-color: color-mix(in srgb, var(--red) 22%, var(--border-md));
+  background: color-mix(in srgb, var(--red-light) 72%, var(--bg));
 }
 
 /* ---- RESPONSIVE ---- */
@@ -3576,6 +3737,10 @@ mark {
   .planner-day-actions {
     width: 100%;
   }
+  .planner-day-actions {
+    justify-content: stretch;
+    gap: 6px;
+  }
   .planner-summary-stat {
     text-align: left;
   }
@@ -3588,6 +3753,25 @@ mark {
   }
   .planner-slot-actions {
     flex-direction: column;
+    gap: 6px;
+  }
+  .planner-slot-main {
+    padding: 14px 13px;
+  }
+  .planner-slot-topline {
+    align-items: flex-start;
+  }
+  .planner-slot-hint {
+    white-space: nowrap;
+  }
+  .planner-slot-action {
+    min-height: 40px;
+  }
+  .planner-day-shopping,
+  .planner-week-shopping,
+  .planner-day-clear,
+  .planner-clear-week {
+    min-height: 42px;
   }
   .planner-slot-action,
   .planner-day-shopping,

@@ -28,6 +28,8 @@ const searchQuery = ref('');
 const activeSelection = ref<PlannerSelection | null>(null);
 
 const totalSlots = PLANNER_DAYS.length * PLANNER_MEAL_SLOTS.length;
+const today = new Date();
+const todayPlannerDay = PLANNER_DAYS[(today.getDay() + 6) % 7];
 
 const slotOccasionMap: Record<PlannerMealSlot, string> = {
   breakfast: 'Colazione',
@@ -102,6 +104,7 @@ const weekDays = computed(() => {
       id: day,
       label: t(`planner_day_${day}`),
       filledCount: slots.filter(slot => slot.recipeId).length,
+      isToday: day === todayPlannerDay,
       plannedRecipes,
       slots,
     };
@@ -308,11 +311,34 @@ function isSuggested(recipe: Recipe) {
       </div>
 
       <div class="planner-week-grid">
-        <article v-for="day in weekDays" :key="day.id" class="card planner-day-card">
+        <article
+          v-for="day in weekDays"
+          :key="day.id"
+          class="card planner-day-card"
+          :class="{
+            'planner-day-card--planned': day.filledCount > 0,
+            'planner-day-card--complete': day.filledCount === day.slots.length,
+            'is-today': day.isToday,
+          }"
+        >
           <div class="planner-day-head">
-            <div>
-              <h2>{{ day.label }}</h2>
+            <div class="planner-day-heading">
+              <div class="planner-day-title-row">
+                <div class="planner-day-title-copy">
+                  <h2>{{ day.label }}</h2>
+                  <span v-if="day.isToday" class="planner-today-badge">{{ t('planner_today') }}</span>
+                </div>
+                <span class="planner-day-count">{{ day.filledCount }}/{{ day.slots.length }}</span>
+              </div>
               <p class="muted-label">{{ t('planner_day_progress', { filled: day.filledCount, total: 3 }) }}</p>
+              <div class="planner-day-progress" aria-hidden="true">
+                <span
+                  v-for="slot in day.slots"
+                  :key="`${day.id}-${slot.id}-progress`"
+                  class="planner-day-progress-segment"
+                  :class="{ 'is-filled': Boolean(slot.recipe), 'is-missing': slot.missing }"
+                />
+              </div>
             </div>
             <div v-if="day.filledCount > 0" class="planner-day-actions">
               <button
@@ -345,16 +371,29 @@ function isSuggested(recipe: Recipe) {
             >
               <button class="planner-slot-main" @click="openPicker(day.id, slot.id)">
                 <template v-if="slot.recipe">
-                  <span class="planner-slot-label">{{ slot.label }}</span>
+                  <span class="planner-slot-topline">
+                    <span class="planner-slot-label">{{ slot.label }}</span>
+                    <span class="planner-slot-hint">{{ t('planner_open_recipe') }}</span>
+                  </span>
                   <span class="planner-slot-name">{{ slot.recipe.name }}</span>
                 </template>
                 <template v-else-if="slot.missing">
-                  <span class="planner-slot-label">{{ slot.label }}</span>
-                  <span class="planner-slot-name">{{ t('planner_missing_recipe') }}</span>
+                  <span class="planner-slot-empty-copy">
+                    <span class="planner-slot-empty-head">
+                      <span class="planner-slot-add-icon" aria-hidden="true">!</span>
+                      <span class="planner-slot-label">{{ slot.label }}</span>
+                    </span>
+                    <span class="planner-slot-name">{{ t('planner_missing_recipe') }}</span>
+                  </span>
                 </template>
                 <template v-else>
-                  <span class="planner-slot-add-icon" aria-hidden="true">+</span>
-                  <span class="planner-slot-label">{{ slot.label }}</span>
+                  <span class="planner-slot-empty-copy">
+                    <span class="planner-slot-empty-head">
+                      <span class="planner-slot-add-icon" aria-hidden="true">+</span>
+                      <span class="planner-slot-label">{{ slot.label }}</span>
+                    </span>
+                    <span class="planner-slot-empty">{{ t('planner_empty_slot') }}</span>
+                  </span>
                 </template>
                 <span v-if="slot.recipe?.time" class="planner-slot-meta">{{ slot.recipe.time }}</span>
                 <span
