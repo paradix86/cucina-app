@@ -2887,7 +2887,7 @@ input[type="number"] {
   justify-content: space-between;
   gap: 8px;
   flex-wrap: wrap;
-  padding-bottom: .75rem;
+  padding-bottom: .9rem;
   border-bottom: 0.5px solid var(--border);
 }
 .cooking-exit {
@@ -2918,47 +2918,88 @@ input[type="number"] {
   border-radius: var(--radius-sm);
   padding: 10px 14px;
   font-size: 14px;
+  border: 0.5px solid color-mix(in srgb, var(--border) 88%, var(--bg));
 }
 .cooking-ingredients summary {
   cursor: pointer;
-  font-weight: 500;
+  font-weight: 600;
   font-size: 13px;
   color: var(--text-muted);
   list-style: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
 }
 .cooking-ingredients summary::before { content: '▸ '; }
 .cooking-ingredients[open] summary::before { content: '▾ '; }
+.cooking-ingredients-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  min-height: 24px;
+  padding: 0 8px;
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--green-light) 68%, var(--bg));
+  color: var(--green-text);
+  font-size: 12px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
 .cooking-step-wrap {
   display: flex;
   gap: 1.25rem;
   align-items: flex-start;
   flex: 1;
-  background: var(--bg);
-  border: 0.5px solid var(--border);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--green-light) 26%, var(--bg)) 0%, var(--bg) 68%);
+  border: 1px solid color-mix(in srgb, var(--green) 16%, var(--border));
   border-radius: var(--radius-md);
-  padding: 1.5rem;
+  padding: 1.55rem;
+  box-shadow: 0 14px 34px color-mix(in srgb, var(--green) 8%, transparent);
 }
 .cooking-step-number {
-  width: 44px;
-  height: 44px;
-  min-width: 44px;
-  background: var(--green-light);
+  width: 52px;
+  height: 52px;
+  min-width: 52px;
+  background: color-mix(in srgb, var(--green-light) 82%, var(--bg));
+  border: 1px solid color-mix(in srgb, var(--green) 18%, transparent);
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 18px;
-  font-weight: 600;
+  font-size: 20px;
+  font-weight: 700;
   color: var(--green-text);
 }
 .cooking-step-content {
   flex: 1;
   min-width: 0;
-  padding-top: 6px;
+  padding-top: 2px;
+}
+.cooking-step-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.cooking-step-label {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 10px;
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--bg-secondary) 82%, var(--bg));
+  border: 0.5px solid color-mix(in srgb, var(--border) 90%, var(--bg));
+  font-size: 12px;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  font-weight: 700;
 }
 .cooking-step-text {
-  font-size: 20px;
-  line-height: 1.7;
+  font-size: 22px;
+  line-height: 1.75;
   color: var(--text);
 }
 .cooking-bimby-tags {
@@ -2976,15 +3017,17 @@ input[type="number"] {
 .cooking-step-timer {
   text-align: center;
   background: var(--bg-secondary);
+  border: 1px solid color-mix(in srgb, var(--border) 88%, var(--bg));
   border-radius: var(--radius-md);
-  padding: 1rem;
+  padding: 1rem 1rem 1.05rem;
 }
 .cooking-timer-header {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
-  margin-bottom: .5rem;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: .45rem;
 }
 .cooking-timer-label {
   font-size: 13px;
@@ -2993,12 +3036,34 @@ input[type="number"] {
   text-transform: uppercase;
   letter-spacing: .04em;
 }
+.cooking-timer-status {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 0 9px;
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--bg-tertiary) 74%, var(--bg));
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .03em;
+  text-transform: uppercase;
+}
+.cooking-timer-status.is-running,
+.cooking-timer-status.is-ready {
+  background: color-mix(in srgb, var(--green-light) 70%, var(--bg));
+  color: var(--green-text);
+}
+.cooking-timer-status.is-finished {
+  background: color-mix(in srgb, var(--yellow-light) 72%, var(--bg));
+  color: color-mix(in srgb, var(--yellow-dark) 70%, var(--text));
+}
 .cooking-timer-edit-btn {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 3px 10px;
-  min-height: 28px;
+  padding: 3px 9px;
+  min-height: 30px;
   font-size: 12px;
   border: 0.5px solid var(--border-md);
   border-radius: var(--radius-pill);
@@ -3010,16 +3075,21 @@ input[type="number"] {
 .cooking-timer-edit-btn:hover { background: var(--bg-tertiary); }
 .cooking-timer-display {
   font-size: 52px;
-  font-weight: 600;
+  font-weight: 700;
   letter-spacing: 3px;
   font-variant-numeric: tabular-nums;
   color: var(--green);
-  margin-bottom: .5rem;
+  margin-bottom: .2rem;
 }
 .cooking-timer-display.timer-inactive {
   color: var(--text-hint);
   font-size: 40px;
   letter-spacing: 1px;
+}
+.cooking-timer-help {
+  margin-bottom: .75rem;
+  font-size: 13px;
+  color: var(--text-muted);
 }
 .cooking-timer-edit {
   display: flex;
@@ -3086,16 +3156,33 @@ input[type="number"] {
   cursor: pointer;
   color: var(--text);
   font-family: var(--font);
+  transition: background .15s ease, border-color .15s ease, transform .08s ease;
 }
 .cooking-timer-confirm-btn {
   background: var(--green) !important;
   color: white !important;
   border-color: var(--green) !important;
 }
+.cooking-timer-toggle-btn {
+  background: var(--green) !important;
+  color: white !important;
+  border-color: var(--green) !important;
+}
+.cooking-timer-toggle-btn:hover,
+.cooking-complete-action:hover {
+  background: var(--green-dark) !important;
+}
+.cooking-timer-reset-btn {
+  color: var(--text-muted) !important;
+}
+.cooking-timer-reset-btn:hover {
+  background: var(--bg) !important;
+  border-color: color-mix(in srgb, var(--border-md) 72%, var(--text-muted));
+}
 .cooking-nav {
   display: flex;
   gap: 12px;
-  padding-top: .5rem;
+  padding-top: .25rem;
 }
 .cooking-btn-prev,
 .cooking-btn-next {
@@ -3119,6 +3206,13 @@ input[type="number"] {
   color: white;
 }
 .cooking-btn-next:hover  { background: var(--green-dark); }
+.cooking-timer-btns button:active,
+.cooking-exit:active,
+.cooking-btn-prev:active,
+.cooking-btn-next:active,
+.cooking-complete-action:active {
+  transform: translateY(1px);
+}
 .cooking-btn-prev:disabled,
 .cooking-btn-next:disabled {
   opacity: .35;
@@ -3157,6 +3251,19 @@ input[type="number"] {
 .cooking-complete-sub {
   font-size: 18px;
   color: var(--text-muted);
+  margin-bottom: 1rem;
+}
+.cooking-complete-action {
+  min-height: 46px;
+  padding: 10px 18px;
+  border: none;
+  border-radius: var(--radius-md);
+  background: var(--green);
+  color: white;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: var(--font);
 }
 
 /* ---- HIGHLIGHT (Point 3) ---- */
@@ -3855,6 +3962,64 @@ mark {
     min-height: 40px;
     font-size: 14px;
     padding: 6px 10px;
+  }
+  .cooking-mode {
+    gap: .85rem;
+  }
+  .cooking-header {
+    align-items: flex-start;
+    gap: 10px;
+  }
+  .cooking-recipe-name {
+    order: 3;
+    width: 100%;
+    text-align: left;
+    font-size: 16px;
+  }
+  .cooking-progress {
+    order: 2;
+  }
+  .cooking-step-wrap {
+    gap: .95rem;
+    padding: 1.1rem 1rem;
+  }
+  .cooking-step-number {
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    font-size: 18px;
+  }
+  .cooking-step-text {
+    font-size: 19px;
+    line-height: 1.65;
+  }
+  .cooking-step-meta {
+    margin-bottom: 8px;
+  }
+  .cooking-step-timer {
+    padding: .95rem .9rem 1rem;
+  }
+  .cooking-timer-display {
+    font-size: 42px;
+    letter-spacing: 2px;
+  }
+  .cooking-timer-display.timer-inactive {
+    font-size: 32px;
+  }
+  .cooking-timer-btns {
+    flex-direction: column;
+  }
+  .cooking-timer-btns button {
+    width: 100%;
+  }
+  .cooking-nav {
+    gap: 10px;
+  }
+  .cooking-btn-prev,
+  .cooking-btn-next {
+    padding: 14px 12px;
+    font-size: 15px;
+    min-height: 52px;
   }
   .lbl-row {
     display: none;

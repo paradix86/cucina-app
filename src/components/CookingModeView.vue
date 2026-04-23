@@ -31,10 +31,26 @@ const { request: requestWakeLock, release: releaseWakeLock, isSupported: wakeLoc
 const prepInfo = computed(() => getPreparationInfo(props.recipe));
 const currentStep = computed(() => props.recipe.steps?.[stepIndex.value] || '');
 const isComplete = ref(false);
+const ingredientCount = computed(() => props.recipe.ingredients?.length || 0);
 
 const progressPct = computed(() => {
   const total = props.recipe.steps?.length || 1;
   return Math.round(((stepIndex.value + 1) / total) * 100);
+});
+
+const timerStateKey = computed(() => {
+  if (timerTotal.value <= 0) return 'cooking_timer_none';
+  if (timerRunning.value) return 'cooking_timer_running';
+  if (timerRemaining.value <= 0) return 'cooking_timer_finished';
+  if (timerRemaining.value < timerTotal.value) return 'cooking_timer_paused';
+  return 'cooking_timer_ready';
+});
+
+const timerHelpKey = computed(() => {
+  if (isEditingTimer.value) return '';
+  if (timerTotal.value <= 0) return 'cooking_timer_add_hint';
+  if (timerRunning.value) return '';
+  return 'cooking_timer_edit_hint';
 });
 
 const currentStepStructured = computed(() => {
@@ -203,7 +219,10 @@ onBeforeUnmount(() => {
     </div>
 
     <details class="cooking-ingredients">
-      <summary>{{ t('detail_ingredients') }}</summary>
+      <summary>
+        <span>{{ t('detail_ingredients') }}</span>
+        <span class="cooking-ingredients-count">{{ ingredientCount }}</span>
+      </summary>
       <ul class="ing-list">
         <li v-for="ingredient in recipe.ingredients" :key="ingredient">{{ ingredient }}</li>
       </ul>
@@ -213,6 +232,9 @@ onBeforeUnmount(() => {
       <template v-if="!isComplete">
         <div class="cooking-step-number">{{ stepIndex + 1 }}</div>
         <div class="cooking-step-content">
+          <div class="cooking-step-meta">
+            <span class="cooking-step-label">{{ t('cooking_current_step') }}</span>
+          </div>
           <template v-if="currentStepStructured.type === 'bimby'">
             <div class="cooking-bimby-tags">
               <BimbyActionIcon :action="currentStepAction" />
@@ -227,12 +249,14 @@ onBeforeUnmount(() => {
         <div class="cooking-complete-icon">✓</div>
         <div class="cooking-complete-title">{{ t('cooking_done') }}</div>
         <div class="cooking-complete-sub">{{ t('cooking_done_sub') }}</div>
+        <button class="cooking-complete-action" @click="exitMode">{{ t('cooking_exit') }}</button>
       </div>
     </div>
 
     <div v-if="!isComplete" class="cooking-step-timer">
       <div class="cooking-timer-header">
         <span class="cooking-timer-label">{{ t('cooking_step_timer') }}</span>
+        <span class="cooking-timer-status" :class="`is-${timerStateKey.replace('cooking_timer_', '')}`">{{ t(timerStateKey) }}</span>
         <button v-if="!timerRunning && !isEditingTimer" class="cooking-timer-edit-btn" @click="startEditTimer">
           <svg aria-hidden="true" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
             <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
@@ -262,9 +286,10 @@ onBeforeUnmount(() => {
       </template>
       <template v-else>
         <div class="cooking-timer-display" :class="{ 'timer-inactive': timerTotal === 0 }" id="cooking-timer-display">{{ timerTotal > 0 ? formatClock(timerRemaining) : '—' }}</div>
+        <div v-if="timerHelpKey" class="cooking-timer-help">{{ t(timerHelpKey) }}</div>
         <div v-if="timerTotal > 0" class="cooking-timer-btns">
-          <button id="cooking-timer-toggle" @click="toggleTimer">{{ timerRunning ? t('timer_pause') : t('timer_start') }}</button>
-          <button @click="resetTimer">{{ t('timer_reset') }}</button>
+          <button id="cooking-timer-toggle" class="cooking-timer-toggle-btn" @click="toggleTimer">{{ timerRunning ? t('timer_pause') : t('timer_start') }}</button>
+          <button class="cooking-timer-reset-btn" @click="resetTimer">{{ t('timer_reset') }}</button>
         </div>
       </template>
     </div>
