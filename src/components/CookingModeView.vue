@@ -232,9 +232,6 @@ onBeforeUnmount(() => {
       <template v-if="!isComplete">
         <div class="cooking-step-number">{{ stepIndex + 1 }}</div>
         <div class="cooking-step-content">
-          <div class="cooking-step-meta">
-            <span class="cooking-step-label">{{ t('cooking_current_step') }}</span>
-          </div>
           <template v-if="currentStepStructured.type === 'bimby'">
             <div class="cooking-bimby-tags">
               <BimbyActionIcon :action="currentStepAction" />
@@ -253,10 +250,15 @@ onBeforeUnmount(() => {
       </div>
     </div>
 
-    <div v-if="!isComplete" class="cooking-step-timer">
-      <div class="cooking-timer-header">
-        <span class="cooking-timer-label">{{ t('cooking_step_timer') }}</span>
-        <span class="cooking-timer-status" :class="`is-${timerStateKey.replace('cooking_timer_', '')}`">{{ t(timerStateKey) }}</span>
+    <div v-if="!isComplete" class="cooking-step-timer" :class="{ 'has-timer': timerTotal > 0 }">
+      <div class="cooking-timer-top">
+        <div class="cooking-timer-heading">
+          <div class="cooking-timer-header">
+            <span class="cooking-timer-label">{{ t('cooking_step_timer') }}</span>
+            <span class="cooking-timer-status" :class="`is-${timerStateKey.replace('cooking_timer_', '')}`">{{ t(timerStateKey) }}</span>
+          </div>
+          <div v-if="timerHelpKey" class="cooking-timer-help">{{ t(timerHelpKey) }}</div>
+        </div>
         <button v-if="!timerRunning && !isEditingTimer" class="cooking-timer-edit-btn" @click="startEditTimer">
           <svg aria-hidden="true" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
             <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
@@ -284,10 +286,11 @@ onBeforeUnmount(() => {
           </div>
         </div>
       </template>
-      <template v-else>
-        <div class="cooking-timer-display" :class="{ 'timer-inactive': timerTotal === 0 }" id="cooking-timer-display">{{ timerTotal > 0 ? formatClock(timerRemaining) : '—' }}</div>
-        <div v-if="timerHelpKey" class="cooking-timer-help">{{ t(timerHelpKey) }}</div>
-        <div v-if="timerTotal > 0" class="cooking-timer-btns">
+      <template v-else-if="timerTotal > 0">
+        <div class="cooking-timer-face">
+          <div class="cooking-timer-display" id="cooking-timer-display">{{ formatClock(timerRemaining) }}</div>
+        </div>
+        <div class="cooking-timer-btns">
           <button id="cooking-timer-toggle" class="cooking-timer-toggle-btn" @click="toggleTimer">{{ timerRunning ? t('timer_pause') : t('timer_start') }}</button>
           <button class="cooking-timer-reset-btn" @click="resetTimer">{{ t('timer_reset') }}</button>
         </div>

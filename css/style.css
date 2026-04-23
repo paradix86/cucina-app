@@ -2866,7 +2866,7 @@ input[type="number"] {
   display: flex;
   flex-direction: column;
   min-height: 80vh;
-  gap: 1rem;
+  gap: 1.1rem;
 }
 .cooking-progress-bar {
   height: 4px;
@@ -2882,11 +2882,10 @@ input[type="number"] {
   transition: width .3s ease;
 }
 .cooking-header {
-  display: flex;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  flex-wrap: wrap;
+  gap: 12px;
   padding-bottom: .9rem;
   border-bottom: 0.5px solid var(--border);
 }
@@ -2904,13 +2903,21 @@ input[type="number"] {
 .cooking-exit:hover { background: var(--bg-secondary); }
 .cooking-recipe-name {
   font-size: 15px;
-  font-weight: 600;
-  flex: 1;
+  font-weight: 700;
   text-align: center;
+  line-height: 1.35;
 }
 .cooking-progress {
-  font-size: 13px;
-  color: var(--text-muted);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 32px;
+  padding: 0 12px;
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--green-light) 55%, var(--bg));
+  color: var(--green-text);
+  font-size: 12px;
+  font-weight: 700;
   white-space: nowrap;
 }
 .cooking-ingredients {
@@ -2949,57 +2956,41 @@ input[type="number"] {
 }
 .cooking-step-wrap {
   display: flex;
-  gap: 1.25rem;
+  gap: 1rem;
   align-items: flex-start;
-  flex: 1;
+  flex: 0 0 auto;
   background: linear-gradient(180deg, color-mix(in srgb, var(--green-light) 26%, var(--bg)) 0%, var(--bg) 68%);
   border: 1px solid color-mix(in srgb, var(--green) 16%, var(--border));
   border-radius: var(--radius-md);
-  padding: 1.55rem;
+  padding: 1.45rem;
   box-shadow: 0 14px 34px color-mix(in srgb, var(--green) 8%, transparent);
 }
 .cooking-step-number {
-  width: 52px;
-  height: 52px;
-  min-width: 52px;
+  width: 58px;
+  height: 58px;
+  min-width: 58px;
   background: color-mix(in srgb, var(--green-light) 82%, var(--bg));
   border: 1px solid color-mix(in srgb, var(--green) 18%, transparent);
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 20px;
+  font-size: 22px;
   font-weight: 700;
   color: var(--green-text);
+  box-shadow: 0 10px 22px color-mix(in srgb, var(--green) 10%, transparent);
 }
 .cooking-step-content {
   flex: 1;
   min-width: 0;
+  display: flex;
+  flex-direction: column;
   padding-top: 2px;
 }
-.cooking-step-meta {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 10px;
-}
-.cooking-step-label {
-  display: inline-flex;
-  align-items: center;
-  min-height: 28px;
-  padding: 0 10px;
-  border-radius: var(--radius-pill);
-  background: color-mix(in srgb, var(--bg-secondary) 82%, var(--bg));
-  border: 0.5px solid color-mix(in srgb, var(--border) 90%, var(--bg));
-  font-size: 12px;
-  letter-spacing: .04em;
-  text-transform: uppercase;
-  color: var(--text-muted);
-  font-weight: 700;
-}
 .cooking-step-text {
-  font-size: 22px;
-  line-height: 1.75;
+  max-width: 28ch;
+  font-size: 28px;
+  line-height: 1.55;
   color: var(--text);
 }
 .cooking-bimby-tags {
@@ -3015,26 +3006,39 @@ input[type="number"] {
   font-weight: 700;
 }
 .cooking-step-timer {
-  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  text-align: left;
   background: var(--bg-secondary);
   border: 1px solid color-mix(in srgb, var(--border) 88%, var(--bg));
   border-radius: var(--radius-md);
-  padding: 1rem 1rem 1.05rem;
+  padding: 1.1rem 1.1rem 1.15rem;
+}
+.cooking-timer-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+.cooking-timer-heading {
+  display: flex;
+  flex-direction: column;
+  gap: .4rem;
+  min-width: 0;
 }
 .cooking-timer-header {
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   gap: 8px;
   flex-wrap: wrap;
-  margin-bottom: .45rem;
 }
 .cooking-timer-label {
   font-size: 13px;
   font-weight: 500;
   color: var(--text-muted);
-  text-transform: uppercase;
-  letter-spacing: .04em;
+  letter-spacing: .01em;
 }
 .cooking-timer-status {
   display: inline-flex;
@@ -3062,34 +3066,50 @@ input[type="number"] {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 3px 9px;
-  min-height: 30px;
+  padding: 7px 12px;
+  min-height: 38px;
   font-size: 12px;
   border: 0.5px solid var(--border-md);
   border-radius: var(--radius-pill);
-  background: transparent;
+  background: var(--bg);
   cursor: pointer;
   color: var(--text-muted);
   font-family: var(--font);
+  flex-shrink: 0;
 }
 .cooking-timer-edit-btn:hover { background: var(--bg-tertiary); }
+.cooking-timer-face {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 124px;
+  padding: 1rem;
+  border-radius: calc(var(--radius-md) - 4px);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--bg) 78%, var(--green-light)) 0%, var(--bg) 100%);
+  border: 1px solid color-mix(in srgb, var(--green) 14%, var(--border));
+}
+.cooking-step-timer.has-timer .cooking-timer-face {
+  background: linear-gradient(180deg, color-mix(in srgb, var(--green-light) 32%, var(--bg)) 0%, var(--bg) 100%);
+}
 .cooking-timer-display {
-  font-size: 52px;
+  font-size: 68px;
   font-weight: 700;
+  line-height: 1;
   letter-spacing: 3px;
   font-variant-numeric: tabular-nums;
   color: var(--green);
-  margin-bottom: .2rem;
+  margin: 0;
 }
 .cooking-timer-display.timer-inactive {
   color: var(--text-hint);
-  font-size: 40px;
+  font-size: 44px;
   letter-spacing: 1px;
 }
 .cooking-timer-help {
-  margin-bottom: .75rem;
   font-size: 13px;
   color: var(--text-muted);
+  line-height: 1.5;
+  max-width: 52ch;
 }
 .cooking-timer-edit {
   display: flex;
@@ -3144,7 +3164,7 @@ input[type="number"] {
 .cooking-timer-btns {
   display: flex;
   gap: 8px;
-  justify-content: center;
+  justify-content: flex-start;
 }
 .cooking-timer-btns button {
   padding: 8px 20px;
@@ -3967,21 +3987,23 @@ mark {
     gap: .85rem;
   }
   .cooking-header {
-    align-items: flex-start;
-    gap: 10px;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: start;
+    gap: 10px 12px;
   }
   .cooking-recipe-name {
-    order: 3;
-    width: 100%;
+    grid-column: 2;
+    grid-row: 1 / span 2;
     text-align: left;
-    font-size: 16px;
+    font-size: 15px;
   }
   .cooking-progress {
-    order: 2;
+    grid-column: 1 / -1;
+    justify-self: start;
   }
   .cooking-step-wrap {
     gap: .95rem;
-    padding: 1.1rem 1rem;
+    padding: 1rem;
   }
   .cooking-step-number {
     width: 44px;
@@ -3990,21 +4012,32 @@ mark {
     font-size: 18px;
   }
   .cooking-step-text {
-    font-size: 19px;
-    line-height: 1.65;
-  }
-  .cooking-step-meta {
-    margin-bottom: 8px;
+    max-width: none;
+    font-size: 18px;
+    line-height: 1.6;
   }
   .cooking-step-timer {
+    gap: .85rem;
     padding: .95rem .9rem 1rem;
   }
+  .cooking-timer-top {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+  .cooking-timer-edit-btn {
+    align-self: flex-start;
+  }
+  .cooking-timer-face {
+    min-height: 96px;
+    padding: .85rem;
+  }
   .cooking-timer-display {
-    font-size: 42px;
+    font-size: 52px;
     letter-spacing: 2px;
   }
   .cooking-timer-display.timer-inactive {
-    font-size: 32px;
+    font-size: 36px;
   }
   .cooking-timer-btns {
     flex-direction: column;
