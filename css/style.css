@@ -2963,6 +2963,7 @@ input[type="number"] {
   border: 1px solid color-mix(in srgb, var(--green) 16%, var(--border));
   border-radius: var(--radius-md);
   padding: 1.45rem;
+  min-height: auto;
   box-shadow: 0 14px 34px color-mix(in srgb, var(--green) 8%, transparent);
 }
 .cooking-step-number {
@@ -3039,6 +3040,7 @@ input[type="number"] {
   font-weight: 500;
   color: var(--text-muted);
   letter-spacing: .01em;
+  text-transform: none;
 }
 .cooking-timer-status {
   display: inline-flex;
