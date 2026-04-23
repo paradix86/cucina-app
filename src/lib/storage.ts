@@ -286,9 +286,9 @@ function importRecipeBookFromLocalStorage(file: File): Promise<ImportResult> {
         const existing = loadRecipeBookFromLocalStorage();
         const existingIds = new Set(existing.map(r => r.id));
         const added = incoming.filter(r => !existingIds.has(r.id)).length;
-        const merged = [ ...incoming, ...existing.filter(r => !incoming.find(a => a.id === r.id)) ];
-        saveRecipeBookToLocalStorage(merged);
-        resolve({ total: merged.length, added });
+        // Full restore: imported backup snapshot replaces current recipe book state.
+        saveRecipeBookToLocalStorage(incoming);
+        resolve({ total: incoming.length, added });
       } catch (err) {
         reject(err);
       }

@@ -17,13 +17,13 @@ const hideCompleted = ref(false);
 const compactExport = ref(false);
 const requestConfirm = inject('requestConfirm', null);
 
-// Auto-reset filter when nothing is left to show
-watch(remainingCount, count => { if (count === 0) hideCompleted.value = false; });
 const shareSupported = typeof navigator !== 'undefined' && typeof navigator.share === 'function';
 
 const countLabel = computed(() => items.value.length === 1 ? t('shopping_count', { n: items.value.length }) : t('shopping_count_plural', { n: items.value.length }));
 const completedCount = computed(() => items.value.filter(item => item.checked).length);
 const remainingCount = computed(() => Math.max(0, items.value.length - completedCount.value));
+// Auto-reset filter when nothing is left to show
+watch(remainingCount, count => { if (count === 0) hideCompleted.value = false; });
 const exportableItems = computed(() => {
   const remaining = items.value.filter(item => !item.checked);
   return remaining.length ? remaining : items.value;

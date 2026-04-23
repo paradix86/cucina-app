@@ -24,6 +24,20 @@ export async function refreshAppRuntime() {
 
 export function initServiceWorkerUpdates() {
   if (!('serviceWorker' in navigator)) return;
+
+  // In dev/HMR we must avoid cache-first SW interference serving stale modules.
+  if (!import.meta.env.PROD) {
+    navigator.serviceWorker.getRegistrations()
+      .then(regs => Promise.all(regs.map(reg => reg.unregister().catch(() => {}))))
+      .catch(() => {});
+    if ('caches' in window) {
+      caches.keys()
+        .then(keys => Promise.all(keys.map(key => caches.delete(key).catch(() => {}))))
+        .catch(() => {});
+    }
+    return;
+  }
+
   const swUrl = `${import.meta.env.BASE_URL}sw.js`;
 
   let hasReloadedForUpdate = sessionStorage.getItem(SW_RELOAD_FLAG) === '1';

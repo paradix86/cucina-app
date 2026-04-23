@@ -181,8 +181,7 @@ async function onImportBackup(event) {
   }
 
   store.importBackup(file).then(({ added, total }) => {
-    const key = added === 0 ? 'backup_import_none' : 'backup_import_ok';
-    emit('toast', t(key, { added, total }), 'success');
+    emit('toast', t('backup_import_ok', { added, total }), 'success');
   }).catch(() => {
     emit('toast', t('backup_import_err'), 'error');
   }).finally(() => {
