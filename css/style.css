@@ -814,6 +814,10 @@ input[type="number"] {
   border: 1px solid color-mix(in srgb, var(--green) 30%, var(--border) 70%);
   background: linear-gradient(180deg, color-mix(in srgb, var(--green-light) 55%, var(--bg) 45%) 0%, var(--bg) 100%);
 }
+.import-secondary-card {
+  border-color: color-mix(in srgb, var(--border) 74%, var(--green) 26%);
+  background: color-mix(in srgb, var(--bg-secondary) 70%, var(--bg) 30%);
+}
 .import-start-actions {
   margin-top: 10px;
   display: flex;
@@ -892,6 +896,20 @@ input[type="number"] {
 }
 .url-row { display: flex; gap: 8px; align-items: stretch; }
 .url-row input { flex: 1; }
+.import-supported-sites {
+  margin-top: 10px;
+  border-top: 1px dashed color-mix(in srgb, var(--border) 86%, transparent);
+  padding-top: 8px;
+}
+.import-supported-sites summary {
+  cursor: pointer;
+  color: var(--text-muted);
+  font-size: 12px;
+  user-select: none;
+}
+.import-supported-sites .source-pills {
+  margin-top: 8px;
+}
 .preview-box { margin-top: 1rem; }
 .preview-actions { display: flex; gap: 8px; margin-top: 1rem; flex-wrap: wrap; }
 .preview-actions .btn-primary,
@@ -1232,6 +1250,9 @@ input[type="number"] {
   padding: 1rem;
   border-color: color-mix(in srgb, var(--green) 24%, var(--border) 76%);
   background: color-mix(in srgb, var(--bg-secondary) 62%, var(--bg) 38%);
+}
+.collection-browser .import-featured-grid {
+  margin: 8px 0 12px;
 }
 .collection-browser-top {
   display: flex;
@@ -4132,6 +4153,10 @@ mark {
   }
   .url-row { flex-direction: column; }
   .url-row .btn-primary { width: 100%; }
+  .import-start-actions .btn-primary,
+  .import-start-actions .btn-secondary {
+    width: 100%;
+  }
 
   .tabs {
     gap: 8px;

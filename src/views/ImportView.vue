@@ -141,6 +141,12 @@ const previewMeta = computed(() => {
     previewRecipe.value.difficolta,
   ]);
 });
+const showImportStatus = computed(() =>
+  status.value.type === 'loading'
+  || status.value.type === 'err'
+  || (status.value.type === 'ok' && !previewRecipe.value),
+);
+const showTopSuccessBanner = computed(() => Boolean(successNotice.value) && !previewRecipe.value);
 
 const manualForm = ref(buildManualForm());
 
@@ -260,6 +266,10 @@ watch(featuredCollections, collections => {
 
 function closeCollectionBrowser() {
   showCollectionBrowser.value = false;
+}
+
+function openCollectionsPanel(collectionKey = activeCollectionKey.value) {
+  openCollectionBrowser(collectionKey, { scroll: true });
 }
 
 function setActiveCollection(collectionKey) {
@@ -411,17 +421,7 @@ function savePreview() {
 <template>
   <section class="panel active">
     <div class="import-shell">
-      <div class="card import-start-card">
-        <h2>{{ t('import_start_title') }}</h2>
-        <p class="muted-label import-section-subtitle">{{ t('import_start_desc') }}</p>
-        <div class="import-start-actions">
-          <button class="btn-primary" @click="startWithLink">{{ t('import_start_link') }}</button>
-          <button class="btn-secondary btn-secondary-strong" @click="openManualForm({ focus: true })">{{ t('import_start_manual') }}</button>
-          <button class="btn-secondary" @click="openCollectionBrowser(activeCollectionKey)">{{ t('import_start_collections') }}</button>
-        </div>
-      </div>
-
-      <div v-if="successNotice" class="card import-success-banner" :class="`is-${successNotice.tone}`" aria-live="polite">
+      <div v-if="showTopSuccessBanner" class="card import-success-banner" :class="`is-${successNotice.tone}`" aria-live="polite">
         <div>
           <span class="import-success-kicker">{{ successNotice.kicker }}</span>
           <h3>{{ successNotice.title }}</h3>
@@ -433,150 +433,66 @@ function savePreview() {
         </div>
       </div>
 
-      <div class="import-featured-grid">
-        <div
-          v-for="collection in featuredCollections"
-          :key="collection.key"
-          class="card import-duemme-featured"
-          :class="collection.accentClass"
-        >
-        <div class="import-duemme-featured-head">
-          <span class="import-duemme-featured-kicker">{{ collection.key === 'ninja' ? t('import_ninja_feature_kicker') : t('import_duemme_feature_kicker') }}</span>
-          <h2>{{ collection.title }}</h2>
-        </div>
-        <p class="muted-label import-section-subtitle">{{ collection.description }}</p>
-        <div class="import-duemme-featured-meta">
-          <span class="chip-featured">{{ collection.countLabel }}</span>
-          <span class="chip-featured">{{ collection.sourceLabel }}</span>
-        </div>
-        <div class="import-duemme-featured-actions">
-          <button class="btn-secondary btn-secondary-strong" :disabled="collection.loading" @click="openCollectionBrowser(collection.key)">{{ collection.browseLabel }}</button>
-          <button class="btn-primary" :disabled="collection.loading" @click="setActiveCollection(collection.key); quickImportFeaturedCollection()">{{ collection.importAllLabel }}</button>
-        </div>
-        </div>
-      </div>
-
-      <div v-if="showCollectionBrowser && activeCollection" id="import-collection-browser" class="card collection-browser">
-        <div class="collection-browser-top">
-          <div>
-            <h3>{{ activeCollectionTitle }}</h3>
-            <p class="muted-label">{{ activeCollectionDesc }}</p>
-            <p class="muted-label">{{ activeCollectionSource }}</p>
-          </div>
-          <button class="btn-ghost" @click="closeCollectionBrowser">{{ t('import_collection_close') }}</button>
-        </div>
-        <div class="collection-switcher" :aria-label="t('import_collection_switcher_label')">
-          <button
-            v-for="collection in featuredCollections"
-            :key="collection.key"
-            class="collection-switcher-btn"
-            :class="{ active: activeCollectionKey === collection.key }"
-            @click="setActiveCollection(collection.key)"
-          >
-            <span>{{ collection.key === 'ninja' ? t('import_collection_ninja_short') : t('import_collection_duemme_short') }}</span>
-            <small>{{ collection.loading ? '…' : collection.recipes.length }}</small>
-          </button>
-        </div>
-        <div class="collection-browser-grid">
-          <div class="collection-list">
-            <div class="collection-list-actions">
-              <button class="btn-ghost" @click="selectAllCollectionRecipes">{{ t('import_collection_select_all') }}</button>
-              <button class="btn-ghost" @click="clearCollectionSelection">{{ t('import_collection_clear') }}</button>
-            </div>
-            <div class="collection-list-items">
-              <label
-                v-for="recipe in collectionRecipes"
-                :key="recipe.id"
-                class="collection-item"
-                :class="{ active: selectedCollectionId === recipe.id }"
-              >
-                <input
-                  type="checkbox"
-                  :checked="selectedCollectionIds.includes(recipe.id)"
-                  @change="toggleCollectionSelection(recipe.id)"
-                />
-                <button class="collection-item-main" @click="selectedCollectionId = recipe.id">
-                  <span class="collection-item-name">{{ recipe.name }}</span>
-                  <span class="collection-item-meta">{{ joinMetaParts([recipe.category, recipe.time]) }}</span>
-                </button>
-              </label>
-            </div>
-          </div>
-          <div v-if="selectedCollectionRecipe" class="collection-preview">
-            <h4>{{ selectedCollectionRecipe.emoji || '🍴' }} {{ selectedCollectionRecipe.name }}</h4>
-            <p class="muted-label">{{ collectionPreviewMeta }}</p>
-            <div class="sec-label">{{ t('detail_ingredients') }}</div>
-            <ul class="ing-list collection-preview-list">
-              <li v-for="ingredient in selectedCollectionRecipe.ingredients" :key="ingredient">{{ ingredient }}</li>
-            </ul>
-            <div class="sec-label" style="margin-top:1rem">{{ t('detail_steps') }}</div>
-            <div class="collection-preview-steps">
-              <div v-for="(step, index) in selectedCollectionRecipe.steps" :key="`${selectedCollectionRecipe.id}-${index}`" class="step-row">
-                <span class="step-n">{{ index + 1 }}</span>
-                <p class="step-txt">{{ step }}</p>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="collection-browser-bottom">
-          <span class="muted-label">{{ t('import_collection_selected', { n: collectionSelectedCount }) }}</span>
-          <div class="collection-browser-actions">
-            <button class="btn-primary" :disabled="!collectionSelectedCount" @click="importSelectedCollectionRecipes">{{ t('import_collection_import') }}</button>
-          </div>
-        </div>
-      </div>
-
       <div class="import-work-sections">
         <div id="import-link-card" class="import-box card">
-        <h2>{{ t('import_section_link_title') }}</h2>
-        <p class="muted-label import-section-subtitle">{{ t('import_section_link_desc') }}</p>
-        <p class="muted-label import-help-line">{{ t('import_section_link_helper') }}</p>
-        <p v-if="!socialImportAvailable" class="muted-label import-help-line">{{ t('import_social_unavailable_hint') }}</p>
-        <p class="muted-label import-help-line">{{ t('import_supported_sites_label') }}</p>
-        <div class="source-pills source-pills-static">
-          <span class="src-pill web">cucchiaio.it</span>
-          <span class="src-pill web">misya.info</span>
-          <span class="src-pill web">fattoincasadabenedetta.it</span>
-          <span class="src-pill web">ricette-bimby.net</span>
-          <span class="src-pill web">ricetteperbimby.it</span>
-          <span class="src-pill web">giallozafferano.it</span>
-          <span class="src-pill web">{{ t('import_supported_sites_more') }}</span>
-        </div>
-        <div class="url-row">
-          <input ref="urlInputRef" v-model="url" type="url" :placeholder="t('import_placeholder')" />
-          <button class="btn-primary" id="btn-import-go" :disabled="loading" @click="submit">{{ t('import_btn') }}</button>
-        </div>
-        <div class="status-msg" :class="status.type">{{ status.message }}</div>
-        <div v-if="diagnostic" class="import-diagnostics" style="display:block" aria-live="polite">
-          <div class="import-diagnostics-title">{{ t('import_diag_user_title') }}</div>
-          <p class="import-diagnostics-summary">{{ t('import_diag_user_desc') }}</p>
-          <details class="import-diagnostics-hint">
-            <summary>{{ t('import_diag_details_toggle') }}</summary>
-            <div class="import-diagnostics-item"><span class="import-diagnostics-label">{{ t('import_diag_domain') }}:</span> <span class="import-diagnostics-value">{{ diagnostic.domain }}</span></div>
-            <div class="import-diagnostics-item"><span class="import-diagnostics-label">{{ t('import_diag_adapter') }}:</span> <span class="import-diagnostics-value">{{ diagnostic.adapter }}</span></div>
-            <div class="import-diagnostics-item"><span class="import-diagnostics-label">{{ t('import_diag_stage') }}:</span> <span class="import-diagnostics-value">{{ diagnostic.stage }}</span></div>
-            <div class="import-diagnostics-item"><span class="import-diagnostics-label">{{ t('import_diag_reason') }}:</span> <span class="import-diagnostics-value">{{ diagnostic.reason }}</span></div>
-            <div v-if="diagnostic.hint" class="import-diagnostics-hint-body">
-              <strong>{{ t('import_diag_hint') }}:</strong>
-              <div>{{ diagnostic.hint }}</div>
+          <h2>{{ t('import_section_link_title') }}</h2>
+          <p class="muted-label import-section-subtitle">{{ t('import_section_link_desc') }}</p>
+          <p class="muted-label import-help-line">{{ t('import_section_link_helper') }}</p>
+          <p v-if="!socialImportAvailable" class="muted-label import-help-line">{{ t('import_social_unavailable_hint') }}</p>
+          <div class="url-row">
+            <input ref="urlInputRef" v-model="url" type="url" :placeholder="t('import_placeholder')" :disabled="loading" />
+            <button class="btn-primary" id="btn-import-go" :disabled="loading" @click="submit">{{ t('import_btn') }}</button>
+          </div>
+          <div v-if="showImportStatus" class="status-msg" :class="status.type">{{ status.message }}</div>
+          <div v-if="diagnostic && status.type === 'err'" class="import-diagnostics" style="display:block" aria-live="polite">
+            <div class="import-diagnostics-title">{{ t('import_diag_user_title') }}</div>
+            <p class="import-diagnostics-summary">{{ t('import_diag_user_desc') }}</p>
+            <details class="import-diagnostics-hint">
+              <summary>{{ t('import_diag_details_toggle') }}</summary>
+              <div class="import-diagnostics-item"><span class="import-diagnostics-label">{{ t('import_diag_domain') }}:</span> <span class="import-diagnostics-value">{{ diagnostic.domain }}</span></div>
+              <div class="import-diagnostics-item"><span class="import-diagnostics-label">{{ t('import_diag_adapter') }}:</span> <span class="import-diagnostics-value">{{ diagnostic.adapter }}</span></div>
+              <div class="import-diagnostics-item"><span class="import-diagnostics-label">{{ t('import_diag_stage') }}:</span> <span class="import-diagnostics-value">{{ diagnostic.stage }}</span></div>
+              <div class="import-diagnostics-item"><span class="import-diagnostics-label">{{ t('import_diag_reason') }}:</span> <span class="import-diagnostics-value">{{ diagnostic.reason }}</span></div>
+              <div v-if="diagnostic.hint" class="import-diagnostics-hint-body">
+                <strong>{{ t('import_diag_hint') }}:</strong>
+                <div>{{ diagnostic.hint }}</div>
+              </div>
+            </details>
+          </div>
+          <details class="import-supported-sites">
+            <summary>{{ t('import_supported_sites_label') }}</summary>
+            <div class="source-pills source-pills-static">
+              <span class="src-pill web">cucchiaio.it</span>
+              <span class="src-pill web">misya.info</span>
+              <span class="src-pill web">fattoincasadabenedetta.it</span>
+              <span class="src-pill web">ricette-bimby.net</span>
+              <span class="src-pill web">ricetteperbimby.it</span>
+              <span class="src-pill web">giallozafferano.it</span>
+              <span class="src-pill web">{{ t('import_supported_sites_more') }}</span>
             </div>
           </details>
         </div>
-        </div>
 
-        <div id="import-manual-card" class="card import-flow-card" :class="{ 'import-manual-active': showManualForm }">
+        <div class="card import-start-card import-secondary-card">
+          <h2>{{ t('import_start_title') }}</h2>
+          <p class="muted-label import-section-subtitle">{{ t('import_start_desc') }}</p>
+          <div class="import-start-actions">
+            <button class="btn-secondary btn-secondary-strong" id="manual-open" :disabled="loading" @click="openManualForm({ focus: true })">{{ t('import_start_manual') }}</button>
+            <button class="btn-secondary" :disabled="loading" @click="openCollectionsPanel(activeCollectionKey)">{{ t('import_start_collections') }}</button>
+          </div>
+        </div>
+      </div>
+
+      <div v-if="showManualForm" id="import-manual-card" class="card import-flow-card import-manual-active">
         <div class="import-flow-head">
           <div>
             <h2>{{ t('import_section_manual_title') }}</h2>
             <p class="muted-label import-section-subtitle">{{ t('import_section_manual_desc') }}</p>
             <p class="muted-label import-help-line">{{ t('import_section_manual_helper') }}</p>
           </div>
-          <button class="btn-secondary btn-secondary-strong" id="manual-open" @click="openManualForm({ focus: true })">{{ t('import_section_manual_btn') }}</button>
+          <button class="btn-ghost" id="manual-close" @click="closeManualForm">{{ t('import_section_manual_close') }}</button>
         </div>
         <div v-if="showManualForm" class="manual-form-wrap">
-          <div class="manual-form-top-actions">
-            <button class="btn-ghost" id="manual-close" @click="closeManualForm">{{ t('import_section_manual_close') }}</button>
-          </div>
           <h3 class="manual-form-title">{{ t('manual_title') }}</h3>
           <p class="muted-label" style="margin-bottom:12px">{{ t('manual_desc') }}</p>
           <div class="edit-section edit-metadata">
@@ -678,6 +594,96 @@ function savePreview() {
           </div>
         </div>
       </div>
+
+      <div v-if="showCollectionBrowser && activeCollection" id="import-collection-browser" class="card collection-browser">
+        <div class="collection-browser-top">
+          <div>
+            <h3>{{ activeCollectionTitle }}</h3>
+            <p class="muted-label">{{ activeCollectionDesc }}</p>
+            <p class="muted-label">{{ activeCollectionSource }}</p>
+          </div>
+          <button class="btn-ghost" @click="closeCollectionBrowser">{{ t('import_collection_close') }}</button>
+        </div>
+        <div class="import-featured-grid">
+          <div
+            v-for="collection in featuredCollections"
+            :key="collection.key"
+            class="card import-duemme-featured"
+            :class="collection.accentClass"
+          >
+            <div class="import-duemme-featured-head">
+              <span class="import-duemme-featured-kicker">{{ collection.key === 'ninja' ? t('import_ninja_feature_kicker') : t('import_duemme_feature_kicker') }}</span>
+              <h2>{{ collection.title }}</h2>
+            </div>
+            <p class="muted-label import-section-subtitle">{{ collection.description }}</p>
+            <div class="import-duemme-featured-meta">
+              <span class="chip-featured">{{ collection.countLabel }}</span>
+              <span class="chip-featured">{{ collection.sourceLabel }}</span>
+            </div>
+            <div class="import-duemme-featured-actions">
+              <button class="btn-secondary btn-secondary-strong" :disabled="collection.loading" @click="setActiveCollection(collection.key)">{{ collection.browseLabel }}</button>
+              <button class="btn-primary" :disabled="collection.loading" @click="setActiveCollection(collection.key); quickImportFeaturedCollection()">{{ collection.importAllLabel }}</button>
+            </div>
+          </div>
+        </div>
+        <div class="collection-switcher" :aria-label="t('import_collection_switcher_label')">
+          <button
+            v-for="collection in featuredCollections"
+            :key="collection.key"
+            class="collection-switcher-btn"
+            :class="{ active: activeCollectionKey === collection.key }"
+            @click="setActiveCollection(collection.key)"
+          >
+            <span>{{ collection.key === 'ninja' ? t('import_collection_ninja_short') : t('import_collection_duemme_short') }}</span>
+            <small>{{ collection.loading ? '…' : collection.recipes.length }}</small>
+          </button>
+        </div>
+        <div class="collection-browser-grid">
+          <div class="collection-list">
+            <div class="collection-list-actions">
+              <button class="btn-ghost" @click="selectAllCollectionRecipes">{{ t('import_collection_select_all') }}</button>
+              <button class="btn-ghost" @click="clearCollectionSelection">{{ t('import_collection_clear') }}</button>
+            </div>
+            <div class="collection-list-items">
+              <label
+                v-for="recipe in collectionRecipes"
+                :key="recipe.id"
+                class="collection-item"
+                :class="{ active: selectedCollectionId === recipe.id }"
+              >
+                <input
+                  type="checkbox"
+                  :checked="selectedCollectionIds.includes(recipe.id)"
+                  @change="toggleCollectionSelection(recipe.id)"
+                />
+                <button class="collection-item-main" @click="selectedCollectionId = recipe.id">
+                  <span class="collection-item-name">{{ recipe.name }}</span>
+                  <span class="collection-item-meta">{{ joinMetaParts([recipe.category, recipe.time]) }}</span>
+                </button>
+              </label>
+            </div>
+          </div>
+          <div v-if="selectedCollectionRecipe" class="collection-preview">
+            <h4>{{ selectedCollectionRecipe.emoji || '🍴' }} {{ selectedCollectionRecipe.name }}</h4>
+            <p class="muted-label">{{ collectionPreviewMeta }}</p>
+            <div class="sec-label">{{ t('detail_ingredients') }}</div>
+            <ul class="ing-list collection-preview-list">
+              <li v-for="ingredient in selectedCollectionRecipe.ingredients" :key="ingredient">{{ ingredient }}</li>
+            </ul>
+            <div class="sec-label" style="margin-top:1rem">{{ t('detail_steps') }}</div>
+            <div class="collection-preview-steps">
+              <div v-for="(step, index) in selectedCollectionRecipe.steps" :key="`${selectedCollectionRecipe.id}-${index}`" class="step-row">
+                <span class="step-n">{{ index + 1 }}</span>
+                <p class="step-txt">{{ step }}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="collection-browser-bottom">
+          <span class="muted-label">{{ t('import_collection_selected', { n: collectionSelectedCount }) }}</span>
+          <div class="collection-browser-actions">
+            <button class="btn-primary" :disabled="!collectionSelectedCount" @click="importSelectedCollectionRecipes">{{ t('import_collection_import') }}</button>
+          </div>
         </div>
       </div>
 
@@ -741,6 +747,7 @@ function savePreview() {
         <button class="btn-primary" @click="savePreview">{{ t('import_save') }}</button>
         <button class="btn-ghost" @click="discardPreview">{{ t('import_discard') }}</button>
       </div>
+    </div>
     </div>
   </section>
 </template>
