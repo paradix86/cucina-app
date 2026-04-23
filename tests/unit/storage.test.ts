@@ -11,11 +11,15 @@ import {
 import {
   addRecipe,
   clearWeeklyPlanner,
+  getStorageAdapter,
   loadRecipeBook,
   loadWeeklyPlanner,
+  resetStorageAdapter,
   saveWeeklyPlanner,
+  setStorageAdapter,
   updateWeeklyPlannerSlot,
 } from '../../src/lib/storage';
+import type { StorageAdapter } from '../../src/lib/persistence/storageAdapter';
 import { createEmptyWeeklyPlanner } from '../../src/lib/planner';
 import type { Recipe, ShoppingItem, ParsedIngredient } from '../../src/types';
 
@@ -37,6 +41,7 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.clearAllMocks();
+  resetStorageAdapter();
 });
 
 describe('normalizePreparationTypeValue', () => {
@@ -573,5 +578,74 @@ describe('weekly planner persistence', () => {
     expect(plan.friday.breakfast).toBeNull();
     expect(plan.friday.lunch).toBeNull();
     expect(plan.friday.dinner).toBeNull();
+  });
+});
+
+describe('storage adapter boundary', () => {
+  it('delegates public storage calls to the active adapter', () => {
+    const adapter: StorageAdapter = {
+      recipeBook: {
+        migrateFromV2: vi.fn(),
+        load: vi.fn(() => []),
+        save: vi.fn(),
+        add: vi.fn(() => true),
+        remove: vi.fn(),
+        update: vi.fn(() => true),
+        updateNotes: vi.fn(() => true),
+        toggleFavorite: vi.fn(() => true),
+        markViewed: vi.fn(() => true),
+        exportBackup: vi.fn(() => 0),
+        importBackup: vi.fn(async () => ({ total: 0, added: 0 })),
+      },
+      shoppingList: {
+        load: vi.fn(() => []),
+        save: vi.fn(),
+        add: vi.fn(() => 0),
+        addWithScale: vi.fn(() => 0),
+        removeByRecipe: vi.fn(() => 0),
+        toggleItem: vi.fn(() => false),
+        removeItem: vi.fn(() => false),
+        clear: vi.fn(),
+      },
+      weeklyPlanner: {
+        load: vi.fn(createEmptyWeeklyPlanner),
+        save: vi.fn(),
+        updateSlot: vi.fn((day, slot, recipeId) => ({
+          ...createEmptyWeeklyPlanner(),
+          [day]: {
+            ...createEmptyWeeklyPlanner()[ day ],
+            [slot]: recipeId,
+          },
+        })),
+        clear: vi.fn(),
+      },
+    };
+
+    setStorageAdapter(adapter);
+
+    const result = updateWeeklyPlannerSlot('wednesday', 'dinner', 'recipe-999');
+
+    expect(adapter.weeklyPlanner.updateSlot).toHaveBeenCalledWith('wednesday', 'dinner', 'recipe-999');
+    expect(result.wednesday.dinner).toBe('recipe-999');
+  });
+
+  it('resets back to the built-in localStorage adapter', () => {
+    const original = getStorageAdapter();
+    const replacement: StorageAdapter = {
+      recipeBook: original.recipeBook,
+      shoppingList: original.shoppingList,
+      weeklyPlanner: {
+        ...original.weeklyPlanner,
+        load: vi.fn(createEmptyWeeklyPlanner),
+      },
+    };
+
+    setStorageAdapter(replacement);
+    expect(getStorageAdapter()).toBe(replacement);
+
+    resetStorageAdapter();
+
+    expect(getStorageAdapter()).not.toBe(replacement);
+    expect(loadWeeklyPlanner().monday.breakfast).toBeNull();
   });
 });

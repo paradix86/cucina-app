@@ -39,9 +39,13 @@ The adapters directory structure:
 
 ### Storage & schema
 
-`src/lib/storage.ts` handles all localStorage CRUD. Saved recipes may be in legacy Italian shape (`nome`, `cat`, `fonte`) or v3 English shape — `normalizeStoredRecipe()` bridges both. **Never bypass this normalization.**
+`src/lib/storage.ts` is the public persistence facade. It currently delegates to an active synchronous `StorageAdapter`, with a built-in localStorage implementation as the default backend. The adapter contract lives in `src/lib/persistence/storageAdapter.ts`.
+
+Saved recipes may be in legacy Italian shape (`nome`, `cat`, `fonte`) or v3 English shape — `normalizeStoredRecipe()` bridges both. **Never bypass this normalization.**
 
 Write failures throw `StorageWriteError` (exported from `storage.ts`). Both Pinia stores catch this in every mutation method and show a `toast_storage_write_error` toast. Callers above the store layer do not need to handle storage errors — the store is the catch boundary.
+
+The current adapter boundary is still synchronous for compatibility with the existing stores. A future Dexie/IndexedDB migration should enter through the adapter seam first, not by wiring IndexedDB calls directly into stores or views.
 
 ### Routing
 

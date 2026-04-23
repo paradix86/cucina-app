@@ -26,7 +26,8 @@ Extended reference for AI agents working in this repository. Start with `CLAUDE.
 | `src/composables/useImportFlow.ts` | Per-instance import state and logic |
 | `src/composables/useTimers.js` | Global timer state + interval/visibility lifecycle |
 | `src/composables/useTimerAlerts.js` | Timer sound engine and alert modal state |
-| `src/lib/storage.ts` | localStorage CRUD + normalization + shopping parsing/grouping |
+| `src/lib/storage.ts` | Public persistence facade + default localStorage adapter wiring |
+| `src/lib/persistence/storageAdapter.ts` | Storage adapter contracts and future async seam |
 | `src/lib/i18n.js` | `t('key')` translation function |
 | `src/lib/i18nData.js` | Translation strings (IT, EN, DE, FR, ES) |
 | `src/lib/builtinData.js` | Built-in recipe dataset |
@@ -79,6 +80,7 @@ Extended reference for AI agents working in this repository. Start with `CLAUDE.
 - **Stale service worker**: the cache-first SW can serve old JS/CSS in a deployed environment; always bump `CACHE_NAME` after changing cached assets in production
 - **Pinia ref unwrapping**: accessing `store.someRef` in script returns the unwrapped value; use `storeToRefs()` when you need the actual `Ref<T>` object
 - **localStorage schema**: saved recipes may be in legacy Italian shape (`nome`, `cat`, `fonte`) or v3 English shape; `normalizeStoredRecipe()` in `storage.ts` handles this — do not bypass it
+- **Storage adapter seam**: `src/lib/storage.ts` is now the public persistence facade over an active synchronous `StorageAdapter`. Keep stores importing the facade, not a concrete backend implementation, so a future IndexedDB/Dexie adapter can be introduced without rewiring store call sites.
 - **Storage write errors**: `saveRecipeBook` and `saveShoppingList` throw `StorageWriteError` (exported from `storage.ts`) on quota-exceeded or any write failure. Both Pinia stores catch this in every mutation method. Do not add storage try/catch above the store layer. When adding a new write path in a store, wrap with try/catch, call the local `onWriteError(e)` helper, then call `refresh()`.
 - **HMR and Pinia**: during HMR, stale Pinia instances can produce momentary errors — these clear on full reload and are not real bugs
 - **Timer lifecycle**: `useTimers.js` owns the singleton interval, page-visibility catch-up, and HMR/test cleanup. Preserve that explicit cleanup model when changing timers.

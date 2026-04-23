@@ -6,6 +6,11 @@ backend in `src/lib/storage.ts` to a Dexie/IndexedDB-backed persistence layer.
 It is intentionally planning-only. It does not authorize a runtime migration by
 itself.
 
+Status note: the codebase now has a synchronous `StorageAdapter` seam in
+`src/lib/persistence/storageAdapter.ts`, with `src/lib/storage.ts` acting as the
+public facade over the active adapter. `localStorage` remains the only concrete
+backend in production.
+
 ## Current State
 
 The app currently persists three separate aggregates in `localStorage`:
@@ -22,9 +27,9 @@ The storage layer already owns:
 - backup export/import for the recipe book
 - write-failure hardening via `StorageWriteError`
 
-Pinia stores currently treat `src/lib/storage.ts` as a synchronous repository.
-Each store mutates persistence first, then refreshes in-memory state from the
-backend.
+Pinia stores currently treat `src/lib/storage.ts` as a synchronous repository
+facade. Each store mutates persistence first, then refreshes in-memory state
+from the backend.
 
 ## Dexie Fit Assessment
 

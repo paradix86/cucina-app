@@ -11,11 +11,19 @@
  */
 import type {
   PlannerDayId,
+  PlannerMealSlot,
   PreparationType,
   Recipe,
   ShoppingItem,
   WeeklyPlanner,
 } from '../types';
+import type {
+  AddShoppingOptions,
+  ImportResult,
+  RecipeInput,
+  RecipeMeta,
+  StorageAdapter,
+} from './persistence/storageAdapter';
 import {
   getPreparationType,
   normalizePreparationTypeValue,
@@ -53,19 +61,7 @@ type LegacyV2Recipe = {
   difficolta?: string;
 };
 
-type RecipeInput = Partial<Recipe> & {
-  id?: string;
-  nome?: string;
-  cat?: string;
-  tempo?: string;
-  porzioni?: string;
-  fonte?: string;
-  ingredienti?: string[];
-};
-
 type RecipeBookStorageValue = RecipeInput[];
-type RecipeMeta = { id?: string; name?: string };
-type AddShoppingOptions = { scaleFactor?: number };
 
 export class StorageWriteError extends Error {
   readonly storageKey: string;
@@ -165,7 +161,7 @@ function normalizeStoredRecipe(recipe: RecipeInput): Recipe {
 /**
  * One-time migration: v2 (Italian field names) → v3 (English field names).
  */
-export function migrateFromV2(): void {
+function migrateFromV2WithLocalStorage(): void {
   if (!localStorage.getItem(STORAGE_KEY_V2)) return;
   if (localStorage.getItem(STORAGE_KEY)) return;
 
@@ -191,7 +187,7 @@ export function migrateFromV2(): void {
       difficolta: r.difficolta || undefined,
     }));
 
-    saveRecipeBook(migrated as Recipe[]);
+    saveRecipeBookToLocalStorage(migrated as Recipe[]);
     localStorage.removeItem(STORAGE_KEY_V2);
   } catch (e) {
     console.warn('Migration v2→v3 failed:', e);
@@ -200,12 +196,12 @@ export function migrateFromV2(): void {
 
 // ── Recipe book CRUD ──────────────────────────────────────────────────────
 
-export function loadRecipeBook(): Recipe[] {
+function loadRecipeBookFromLocalStorage(): Recipe[] {
   const arr = parseJson<RecipeBookStorageValue>(localStorage.getItem(STORAGE_KEY) || '[]', []);
   return Array.isArray(arr) ? arr.map(normalizeStoredRecipe) : [];
 }
 
-export function saveRecipeBook(arr: Recipe[]): void {
+function saveRecipeBookToLocalStorage(arr: Recipe[]): void {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify((arr || []).map(normalizeStoredRecipe)));
   } catch (e) {
@@ -214,58 +210,58 @@ export function saveRecipeBook(arr: Recipe[]): void {
   }
 }
 
-export function addRecipe(recipe: RecipeInput): boolean {
-  const arr = loadRecipeBook();
+function addRecipeToLocalStorage(recipe: RecipeInput): boolean {
+  const arr = loadRecipeBookFromLocalStorage();
   if (arr.find(r => r.id === recipe.id)) return false;
   arr.unshift(normalizeStoredRecipe(recipe));
-  saveRecipeBook(arr);
+  saveRecipeBookToLocalStorage(arr);
   return true;
 }
 
-export function deleteRecipe(id: string): void {
-  saveRecipeBook(loadRecipeBook().filter(r => r.id !== id));
+function deleteRecipeFromLocalStorage(id: string): void {
+  saveRecipeBookToLocalStorage(loadRecipeBookFromLocalStorage().filter(r => r.id !== id));
 }
 
-export function updateRecipe(id: string, updates: Partial<Recipe>): boolean {
-  const arr = loadRecipeBook();
+function updateRecipeInLocalStorage(id: string, updates: Partial<Recipe>): boolean {
+  const arr = loadRecipeBookFromLocalStorage();
   const idx = arr.findIndex(recipe => recipe.id === id);
   if (idx === -1) return false;
   arr[ idx ] = normalizeStoredRecipe({ ...arr[ idx ], ...updates, id: arr[ idx ].id });
-  saveRecipeBook(arr);
+  saveRecipeBookToLocalStorage(arr);
   return true;
 }
 
-export function updateRecipeNotes(id: string, notes: string): boolean {
-  const arr = loadRecipeBook();
+function updateRecipeNotesInLocalStorage(id: string, notes: string): boolean {
+  const arr = loadRecipeBookFromLocalStorage();
   const idx = arr.findIndex(recipe => recipe.id === id);
   if (idx === -1) return false;
   arr[ idx ] = { ...arr[ idx ], notes: notes || '' };
-  saveRecipeBook(arr);
+  saveRecipeBookToLocalStorage(arr);
   return true;
 }
 
-export function toggleRecipeFavorite(id: string): boolean {
-  const arr = loadRecipeBook();
+function toggleRecipeFavoriteInLocalStorage(id: string): boolean {
+  const arr = loadRecipeBookFromLocalStorage();
   const idx = arr.findIndex(recipe => recipe.id === id);
   if (idx === -1) return false;
   arr[ idx ].favorite = !arr[ idx ].favorite;
-  saveRecipeBook(arr);
+  saveRecipeBookToLocalStorage(arr);
   return true;
 }
 
-export function markRecipeViewed(id: string): boolean {
-  const arr = loadRecipeBook();
+function markRecipeViewedInLocalStorage(id: string): boolean {
+  const arr = loadRecipeBookFromLocalStorage();
   const idx = arr.findIndex(recipe => recipe.id === id);
   if (idx === -1) return false;
   arr[ idx ].lastViewedAt = Date.now();
-  saveRecipeBook(arr);
+  saveRecipeBookToLocalStorage(arr);
   return true;
 }
 
 // ── Recipe book export / import ───────────────────────────────────────────
 
-export function exportRecipeBook(): number {
-  const arr = loadRecipeBook();
+function exportRecipeBookFromLocalStorage(): number {
+  const arr = loadRecipeBookFromLocalStorage();
   const blob = new Blob([ JSON.stringify(arr, null, 2) ], { type: 'application/json' });
   const a = document.createElement('a');
   const url = URL.createObjectURL(blob);
@@ -276,9 +272,7 @@ export function exportRecipeBook(): number {
   return arr.length;
 }
 
-export type ImportResult = { total: number; added: number };
-
-export function importRecipeBook(file: File): Promise<ImportResult> {
+function importRecipeBookFromLocalStorage(file: File): Promise<ImportResult> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = e => {
@@ -286,11 +280,11 @@ export function importRecipeBook(file: File): Promise<ImportResult> {
         const arr = parseJson<RecipeInput[]>(String(e.target?.result || '[]'), []);
         if (!Array.isArray(arr)) throw new Error('Invalid format');
         const incoming = arr.map(normalizeStoredRecipe);
-        const existing = loadRecipeBook();
+        const existing = loadRecipeBookFromLocalStorage();
         const existingIds = new Set(existing.map(r => r.id));
         const added = incoming.filter(r => !existingIds.has(r.id)).length;
         const merged = [ ...incoming, ...existing.filter(r => !incoming.find(a => a.id === r.id)) ];
-        saveRecipeBook(merged);
+        saveRecipeBookToLocalStorage(merged);
         resolve({ total: merged.length, added });
       } catch (err) {
         reject(err);
@@ -302,7 +296,7 @@ export function importRecipeBook(file: File): Promise<ImportResult> {
 
 // ── Shopping list CRUD ────────────────────────────────────────────────────
 
-export function loadShoppingList(): ShoppingItem[] {
+function loadShoppingListFromLocalStorage(): ShoppingItem[] {
   const arr = parseJson<unknown[]>(localStorage.getItem(SHOPPING_LIST_KEY) || '[]', []);
   if (!Array.isArray(arr)) return [];
   return arr
@@ -316,7 +310,7 @@ export function loadShoppingList(): ShoppingItem[] {
     }));
 }
 
-export function saveShoppingList(items: ShoppingItem[]): void {
+function saveShoppingListToLocalStorage(items: ShoppingItem[]): void {
   try {
     localStorage.setItem(SHOPPING_LIST_KEY, JSON.stringify(items || []));
   } catch (e) {
@@ -327,12 +321,12 @@ export function saveShoppingList(items: ShoppingItem[]): void {
 
 // ── Weekly planner CRUD ───────────────────────────────────────────────────
 
-export function loadWeeklyPlanner(): WeeklyPlanner {
+function loadWeeklyPlannerFromLocalStorage(): WeeklyPlanner {
   const raw = parseJson<unknown>(localStorage.getItem(WEEKLY_PLANNER_KEY) || '{}', {});
   return normalizeWeeklyPlanner(raw);
 }
 
-export function saveWeeklyPlanner(plan: WeeklyPlanner): void {
+function saveWeeklyPlannerToLocalStorage(plan: WeeklyPlanner): void {
   try {
     localStorage.setItem(WEEKLY_PLANNER_KEY, JSON.stringify(normalizeWeeklyPlanner(plan)));
   } catch (e) {
@@ -341,19 +335,19 @@ export function saveWeeklyPlanner(plan: WeeklyPlanner): void {
   }
 }
 
-export function updateWeeklyPlannerSlot(day: PlannerDayId, slot: keyof WeeklyPlanner[PlannerDayId], recipeId: string | null): WeeklyPlanner {
-  const current = loadWeeklyPlanner();
+function updateWeeklyPlannerSlotInLocalStorage(day: PlannerDayId, slot: PlannerMealSlot, recipeId: string | null): WeeklyPlanner {
+  const current = loadWeeklyPlannerFromLocalStorage();
   current[day][slot] = recipeId && recipeId.trim() ? recipeId.trim() : null;
-  saveWeeklyPlanner(current);
+  saveWeeklyPlannerToLocalStorage(current);
   return current;
 }
 
-export function clearWeeklyPlanner(): void {
-  saveWeeklyPlanner(createEmptyWeeklyPlanner());
+function clearWeeklyPlannerInLocalStorage(): void {
+  saveWeeklyPlannerToLocalStorage(createEmptyWeeklyPlanner());
 }
 
-export function addShoppingListItems(items: string[], recipeMeta: RecipeMeta = {}): number {
-  const existing = loadShoppingList();
+function addShoppingListItemsToLocalStorage(items: string[], recipeMeta: RecipeMeta = {}): number {
+  const existing = loadShoppingListFromLocalStorage();
   const timestamp = Date.now();
   const additions = (items || [])
     .filter(Boolean)
@@ -367,12 +361,12 @@ export function addShoppingListItems(items: string[], recipeMeta: RecipeMeta = {
     }))
     .filter(item => item.text) as ShoppingItem[];
 
-  saveShoppingList([ ...existing, ...additions ]);
+  saveShoppingListToLocalStorage([ ...existing, ...additions ]);
   return additions.length;
 }
 
-export function addShoppingListItemsWithScale(items: string[], recipeMeta: RecipeMeta = {}, options: AddShoppingOptions = {}): number {
-  const existing = loadShoppingList();
+function addShoppingListItemsWithScaleToLocalStorage(items: string[], recipeMeta: RecipeMeta = {}, options: AddShoppingOptions = {}): number {
+  const existing = loadShoppingListFromLocalStorage();
   const timestamp = Date.now();
   const factor = Number.isFinite(options.scaleFactor) && (options.scaleFactor || 0) > 0 ? Number(options.scaleFactor) : 1;
   const additions = (items || [])
@@ -386,36 +380,176 @@ export function addShoppingListItemsWithScale(items: string[], recipeMeta: Recip
     }))
     .filter(item => item.text) as ShoppingItem[];
 
-  saveShoppingList([ ...existing, ...additions ]);
+  saveShoppingListToLocalStorage([ ...existing, ...additions ]);
   return additions.length;
 }
 
-export function removeShoppingListItemsByRecipe(recipeId: string): number {
+function removeShoppingListItemsByRecipeFromLocalStorage(recipeId: string): number {
   if (!recipeId) return 0;
-  const items = loadShoppingList();
+  const items = loadShoppingListFromLocalStorage();
   const next = items.filter(item => item.sourceRecipeId !== recipeId);
   const removed = items.length - next.length;
-  if (removed > 0) saveShoppingList(next);
+  if (removed > 0) saveShoppingListToLocalStorage(next);
   return removed;
 }
 
-export function toggleShoppingListItem(id: string): boolean {
-  const items = loadShoppingList();
+function toggleShoppingListItemInLocalStorage(id: string): boolean {
+  const items = loadShoppingListFromLocalStorage();
   const idx = items.findIndex(item => item.id === id);
   if (idx === -1) return false;
   items[ idx ].checked = !items[ idx ].checked;
-  saveShoppingList(items);
+  saveShoppingListToLocalStorage(items);
   return true;
+}
+
+function removeShoppingListItemFromLocalStorage(id: string): boolean {
+  const items = loadShoppingListFromLocalStorage();
+  const next = items.filter(item => item.id !== id);
+  if (next.length === items.length) return false;
+  saveShoppingListToLocalStorage(next);
+  return true;
+}
+
+function clearShoppingListInLocalStorage(): void {
+  saveShoppingListToLocalStorage([]);
+}
+
+function createLocalStorageAdapter(): StorageAdapter {
+  return {
+    recipeBook: {
+      migrateFromV2: migrateFromV2WithLocalStorage,
+      load: loadRecipeBookFromLocalStorage,
+      save: saveRecipeBookToLocalStorage,
+      add: addRecipeToLocalStorage,
+      remove: deleteRecipeFromLocalStorage,
+      update: updateRecipeInLocalStorage,
+      updateNotes: updateRecipeNotesInLocalStorage,
+      toggleFavorite: toggleRecipeFavoriteInLocalStorage,
+      markViewed: markRecipeViewedInLocalStorage,
+      exportBackup: exportRecipeBookFromLocalStorage,
+      importBackup: importRecipeBookFromLocalStorage,
+    },
+    shoppingList: {
+      load: loadShoppingListFromLocalStorage,
+      save: saveShoppingListToLocalStorage,
+      add: addShoppingListItemsToLocalStorage,
+      addWithScale: addShoppingListItemsWithScaleToLocalStorage,
+      removeByRecipe: removeShoppingListItemsByRecipeFromLocalStorage,
+      toggleItem: toggleShoppingListItemInLocalStorage,
+      removeItem: removeShoppingListItemFromLocalStorage,
+      clear: clearShoppingListInLocalStorage,
+    },
+    weeklyPlanner: {
+      load: loadWeeklyPlannerFromLocalStorage,
+      save: saveWeeklyPlannerToLocalStorage,
+      updateSlot: updateWeeklyPlannerSlotInLocalStorage,
+      clear: clearWeeklyPlannerInLocalStorage,
+    },
+  };
+}
+
+let activeStorageAdapter: StorageAdapter = createLocalStorageAdapter();
+
+export function getStorageAdapter(): StorageAdapter {
+  return activeStorageAdapter;
+}
+
+export function setStorageAdapter(adapter: StorageAdapter): void {
+  activeStorageAdapter = adapter;
+}
+
+export function resetStorageAdapter(): void {
+  activeStorageAdapter = createLocalStorageAdapter();
+}
+
+export function migrateFromV2(): void {
+  getStorageAdapter().recipeBook.migrateFromV2();
+}
+
+export function loadRecipeBook(): Recipe[] {
+  return getStorageAdapter().recipeBook.load();
+}
+
+export function saveRecipeBook(arr: Recipe[]): void {
+  getStorageAdapter().recipeBook.save(arr);
+}
+
+export function addRecipe(recipe: RecipeInput): boolean {
+  return getStorageAdapter().recipeBook.add(recipe);
+}
+
+export function deleteRecipe(id: string): void {
+  getStorageAdapter().recipeBook.remove(id);
+}
+
+export function updateRecipe(id: string, updates: Partial<Recipe>): boolean {
+  return getStorageAdapter().recipeBook.update(id, updates);
+}
+
+export function updateRecipeNotes(id: string, notes: string): boolean {
+  return getStorageAdapter().recipeBook.updateNotes(id, notes);
+}
+
+export function toggleRecipeFavorite(id: string): boolean {
+  return getStorageAdapter().recipeBook.toggleFavorite(id);
+}
+
+export function markRecipeViewed(id: string): boolean {
+  return getStorageAdapter().recipeBook.markViewed(id);
+}
+
+export function exportRecipeBook(): number {
+  return getStorageAdapter().recipeBook.exportBackup();
+}
+
+export function importRecipeBook(file: File): Promise<ImportResult> {
+  return getStorageAdapter().recipeBook.importBackup(file);
+}
+
+export function loadShoppingList(): ShoppingItem[] {
+  return getStorageAdapter().shoppingList.load();
+}
+
+export function saveShoppingList(items: ShoppingItem[]): void {
+  getStorageAdapter().shoppingList.save(items);
+}
+
+export function loadWeeklyPlanner(): WeeklyPlanner {
+  return getStorageAdapter().weeklyPlanner.load();
+}
+
+export function saveWeeklyPlanner(plan: WeeklyPlanner): void {
+  getStorageAdapter().weeklyPlanner.save(plan);
+}
+
+export function updateWeeklyPlannerSlot(day: PlannerDayId, slot: PlannerMealSlot, recipeId: string | null): WeeklyPlanner {
+  return getStorageAdapter().weeklyPlanner.updateSlot(day, slot, recipeId);
+}
+
+export function clearWeeklyPlanner(): void {
+  getStorageAdapter().weeklyPlanner.clear();
+}
+
+export function addShoppingListItems(items: string[], recipeMeta: RecipeMeta = {}): number {
+  return getStorageAdapter().shoppingList.add(items, recipeMeta);
+}
+
+export function addShoppingListItemsWithScale(items: string[], recipeMeta: RecipeMeta = {}, options: AddShoppingOptions = {}): number {
+  return getStorageAdapter().shoppingList.addWithScale(items, recipeMeta, options);
+}
+
+export function removeShoppingListItemsByRecipe(recipeId: string): number {
+  return getStorageAdapter().shoppingList.removeByRecipe(recipeId);
+}
+
+export function toggleShoppingListItem(id: string): boolean {
+  return getStorageAdapter().shoppingList.toggleItem(id);
 }
 
 export function removeShoppingListItem(id: string): boolean {
-  const items = loadShoppingList();
-  const next = items.filter(item => item.id !== id);
-  if (next.length === items.length) return false;
-  saveShoppingList(next);
-  return true;
+  return getStorageAdapter().shoppingList.removeItem(id);
 }
 
 export function clearShoppingList(): void {
-  saveShoppingList([]);
+  getStorageAdapter().shoppingList.clear();
 }
