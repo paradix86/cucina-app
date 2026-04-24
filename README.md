@@ -109,7 +109,7 @@ src/
         generic.ts
 public/
   sw.js
-  manifest.json
+  manifest.webmanifest
   icons/
 ```
 

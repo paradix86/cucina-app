@@ -44,7 +44,7 @@ src/
     import/            typed import pipeline (core.ts, web.ts, adapters/)
 public/
   sw.js                service worker
-  manifest.json        PWA manifest
+  manifest.webmanifest        PWA manifest
   icons/               PWA icons
 ```
 

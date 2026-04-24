@@ -4,7 +4,7 @@ const CACHE_NAME = 'cucina-vue-v4';
 // (e.g. GitHub Pages under /cucina-app/)
 const STATIC_ASSETS = [
   './',
-  './manifest.json',
+  './manifest.webmanifest',
   './icons/icon-192.svg',
   './icons/icon-512.svg',
 ];
@@ -36,7 +36,7 @@ function updateCache(request, response) {
   const clone = response.clone();
   caches.open(CACHE_NAME)
     .then(cache => cache.put(request, clone))
-    .catch(() => {});
+    .catch(() => { });
   return response;
 }
 

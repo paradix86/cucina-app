@@ -7,7 +7,7 @@ const CACHE_NAME = 'cucina-v31';
 const STATIC_ASSETS = [
   './',
   './index.html',
-  './manifest.json',
+  './manifest.webmanifest',
   './css/style.css',
   './js/i18n.js',
   './js/data.js',

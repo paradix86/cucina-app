@@ -67,7 +67,7 @@ The app has gone through a full architectural migration:
 - [x] VueUse targeted adoption
 - [x] Adapter-based website import architecture
 - [x] Internationalisation (IT, EN, DE, FR, ES)
-- [x] PWA / service worker (`public/sw.js`, `public/manifest.json`)
+- [x] PWA / service worker (`public/sw.js`, `public/manifest.webmanifest`)
 
 ## Technical debt backlog (do before next feature wave)
 

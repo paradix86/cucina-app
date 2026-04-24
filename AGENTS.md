@@ -41,7 +41,7 @@ Extended reference for AI agents working in this repository. Start with `CLAUDE.
 | `src/types.ts` | Shared domain/import/storage TypeScript types |
 | `src/components/CookingModeView.vue` | Step-by-step cooking UI with per-step timer |
 | `public/sw.js` | Cache-first service worker |
-| `public/manifest.json` | PWA manifest |
+| `public/manifest.webmanifest` | PWA manifest |
 | `css/style.css` | All app styles, organized with `/* ---- Section ---- */` markers |
 
 ## Non-negotiables
