@@ -77,7 +77,7 @@ function openBuiltinDetail(recipe) {
 
 defineExpose({
   goHome() {
-    router.replace('/recipes').catch(() => {});
+    router.replace('/recipe-book').catch(() => {});
   },
 });
 </script>

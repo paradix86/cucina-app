@@ -275,6 +275,7 @@ defineExpose({
           {{ t('backup_import') }}
           <input hidden type="file" accept="application/json,.json" @change="onImportBackup" />
         </label>
+        <button class="btn-ghost" @click="router.push({ name: 'recipes' })">{{ t('empty_cta_browse') }}</button>
       </div>
       <div v-if="recipes.length" class="saved-filter-mobile-toggle-wrap">
         <button class="btn-ghost saved-filter-mobile-toggle" :aria-expanded="mobileFiltersOpen ? 'true' : 'false'" @click="mobileFiltersOpen = !mobileFiltersOpen">

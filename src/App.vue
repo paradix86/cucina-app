@@ -40,7 +40,6 @@ const { timerAlert, dismissTimerAlert } = useTimerAlerts();
 const tabs = computed(() => [
   { path: '/recipe-book', label: t('nav_recipebook') },
   { path: '/import',      label: t('nav_import') },
-  { path: '/recipes',     label: t('nav_recipes') },
   { path: '/shopping-list', label: t('nav_shopping') },
   { path: '/planner',     label: t('nav_planner') },
   { path: '/timer',       label: t('nav_timer') },
