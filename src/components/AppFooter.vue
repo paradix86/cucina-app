@@ -6,6 +6,21 @@ import { refreshAppRuntime } from '../composables/useServiceWorker.js';
 
 const year = computed(() => new Date().getFullYear());
 const creditsOpen = ref(false);
+
+function buildReportProblemHref() {
+  const pageUrl = typeof window !== 'undefined' ? window.location.href : '';
+  const userAgent = typeof navigator !== 'undefined' ? navigator.userAgent : '';
+  const subject = 'Cucina App - Problema';
+  const body = [
+    'Pagina:',
+    pageUrl,
+    '',
+    'User agent:',
+    userAgent,
+  ].join('\n');
+
+  return `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+}
 </script>
 
 <template>
@@ -13,6 +28,7 @@ const creditsOpen = ref(false);
     <span class="footer-meta">{{ APP_META.authorLine }} · {{ year }} · {{ APP_META.version }}+{{ APP_META.commit }} · build {{ formatEuropeanDate(APP_META.buildDate) }}</span>
     <div class="footer-actions">
       <button class="footer-link-btn" id="footer-credits-btn" @click="creditsOpen = true">{{ t('credits_link') }}</button>
+      <a class="footer-link-btn footer-report-link" :href="buildReportProblemHref()">{{ t('report_problem') }}</a>
       <button class="footer-refresh" @click="refreshAppRuntime">{{ t('app_refresh') }}</button>
     </div>
   </footer>

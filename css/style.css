@@ -130,6 +130,7 @@ body {
   cursor: pointer;
   font-size: 12px;
   font-family: var(--font);
+  text-decoration: none;
 }
 .footer-link-btn:hover {
   background: var(--bg-secondary);
