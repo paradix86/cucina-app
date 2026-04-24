@@ -106,6 +106,20 @@ test('backup import fully restores snapshot and removes post-export marker recip
 
   await expect(page.locator('.confirm-overlay')).toBeVisible();
   await page.locator('.confirm-ok').click();
+
+  // Backup import is async (FileReader + store refresh). Wait for local storage
+  // snapshot replacement before reloading to avoid racing the import completion.
+  await page.waitForFunction((storageKey: string) => {
+    try {
+      const parsed = JSON.parse(localStorage.getItem(storageKey) || '[]');
+      return Array.isArray(parsed)
+        && parsed.length === 1
+        && parsed[0]?.name === 'Seed Backup Recipe';
+    } catch {
+      return false;
+    }
+  }, STORAGE_KEY);
+
   await page.reload();
   await gotoRoute(page, 'recipe-book');
 
