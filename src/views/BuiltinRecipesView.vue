@@ -28,7 +28,7 @@ const filteredRecipes = computed(() => BUILTIN_RECIPES
   .filter(recipe => recipeMatchesQuery(recipe, debouncedSearch.value.trim()))
   .filter(recipe => selectedCategory.value === '__all__' || recipe.category === selectedCategory.value)
   .filter(recipe => selectedPrep.value === 'all' || getPreparationType(recipe) === selectedPrep.value)
-  .filter(recipe => parseRecipeTime(recipe.time) <= maxTime.value));
+  .filter(recipe => maxTime.value >= 120 || parseRecipeTime(recipe.time) <= maxTime.value));
 const resultsLabel = computed(() => filteredRecipes.value.length < BUILTIN_RECIPES.length ? t('results_showing', { n: filteredRecipes.value.length, total: BUILTIN_RECIPES.length }) : '');
 const activeFilterCount = computed(() => {
   let count = 0;

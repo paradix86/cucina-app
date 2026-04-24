@@ -4292,6 +4292,8 @@ mark {
     scroll-snap-type: x proximity;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
+    -webkit-mask-image: linear-gradient(to right, black calc(100% - 44px), transparent 100%);
+    mask-image: linear-gradient(to right, black calc(100% - 44px), transparent 100%);
   }
   .tabs::-webkit-scrollbar {
     display: none;

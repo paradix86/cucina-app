@@ -166,7 +166,7 @@ watch(() => route.fullPath, () => {
           <button
             :id="`tab-${tab.path.slice(1)}`"
             class="tab"
-            :class="{ active: isActive }"
+            :class="{ active: isActive || (tab.path === '/recipe-book' && route.path.startsWith('/recipes')) }"
             role="tab"
             :aria-selected="isActive"
             @click="navigate"

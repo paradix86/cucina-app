@@ -47,7 +47,7 @@ export const useRecipeBookStore = defineStore('recipeBook', () => {
   }
 
   function refresh(): Promise<void> {
-    return hydrate(true);
+    return persistQueue.then(() => hydrate(true));
   }
 
   function onWriteError(e: unknown): void {

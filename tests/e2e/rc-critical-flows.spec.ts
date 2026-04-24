@@ -28,7 +28,15 @@ async function gotoRoute(page: Page, route: string): Promise<void> {
 }
 
 async function seedState(page: Page, state: SeedState): Promise<void> {
+  // First navigation: reach the app origin so we can write localStorage.
+  // Wait for the app to be visually stable so Dexie's async bootstrap
+  // (open DB → read migration flag → write snapshot → set flag) has settled
+  // before we overwrite localStorage.  Without this wait the bootstrap may
+  // still hold an open read-write transaction when the second navigation fires.
   await page.goto(APP_ROOT);
+  await expect(page.locator('main.app')).toBeVisible();
+  await expect(page.locator('main.app .panel.active').first()).toBeVisible();
+
   await page.evaluate(({ recipes, shoppingList, planner, storageKey, shoppingKey, plannerKey }) => {
     localStorage.clear();
     localStorage.setItem(storageKey, JSON.stringify(recipes || []));
@@ -42,16 +50,25 @@ async function seedState(page: Page, state: SeedState): Promise<void> {
     shoppingKey: SHOPPING_LIST_KEY,
     plannerKey: WEEKLY_PLANNER_KEY,
   });
-  await page.evaluate(async () => {
-    if (typeof indexedDB === 'undefined') return;
-    await new Promise<void>(resolve => {
-      const req = indexedDB.deleteDatabase('cucina-db');
-      req.onsuccess = () => resolve();
-      req.onerror = () => resolve();
-      req.onblocked = () => resolve();
-    });
-  });
-  await page.reload();
+
+  // Second navigation: reload so the Pinia stores re-hydrate from the seed
+  // localStorage we just wrote.  The Dexie bootstrap on this second load will
+  // see migrationFlag=true, find an empty Dexie snapshot (bootstrapped from the
+  // empty localStorage of the first load), and fall through to read the seed
+  // data from localStorage — exactly the desired behaviour.
+  //
+  // We use page.goto instead of page.reload() to avoid a race that caused
+  // intermittent ERR_ABORTED:  the old code called indexedDB.deleteDatabase
+  // which was always BLOCKED (Dexie keeps its connection open), resolved via
+  // onblocked without actually deleting, and then page.reload() fired while
+  // Dexie's in-flight bootstrap transactions were still being torn down by the
+  // browser — causing Playwright to lose track of the frame.
+  //
+  // The delete was never needed: every Playwright test starts in a fresh
+  // BrowserContext (test-scoped `page` fixture) with empty IndexedDB.
+  await page.goto(APP_ROOT);
+  await expect(page.locator('main.app')).toBeVisible();
+  await expect(page.locator('main.app .panel.active').first()).toBeVisible();
 }
 
 async function createManualRecipe(page: Page, name: string): Promise<void> {
