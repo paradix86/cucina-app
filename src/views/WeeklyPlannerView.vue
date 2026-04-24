@@ -186,7 +186,11 @@ function addWeekToShopping() {
 }
 
 function openRecipe(recipeId: string) {
-  router.push(`/recipe-book/${recipeId}`).catch(() => {});
+  router.push({
+    name: 'recipe-book-detail',
+    params: { id: recipeId },
+    query: { returnTo: 'planner' },
+  }).catch(() => {});
 }
 
 function goToImport() {

@@ -1,6 +1,6 @@
 <script setup>
-import { computed, onMounted, provide, ref } from 'vue';
-import { useRouter } from 'vue-router';
+import { computed, onMounted, provide, ref, watch } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 import AppHeader from './components/AppHeader.vue';
 import AppFooter from './components/AppFooter.vue';
 import ToastStack from './components/ToastStack.vue';
@@ -17,7 +17,9 @@ import { useShoppingListStore } from './stores/shoppingList';
 import { useWeeklyPlannerStore } from './stores/weeklyPlanner';
 
 const router = useRouter();
+const route = useRoute();
 const cookingRecipe = ref(null);
+const cookingReturnTo = ref('');
 const currentView = ref(null);
 const confirmState = ref({
   open: false,
@@ -80,6 +82,7 @@ provide('requestConfirm', requestConfirm);
 
 function goHome() {
   cookingRecipe.value = null;
+  cookingReturnTo.value = '';
   recipeBook.refresh();
   shoppingList.refresh();
   weeklyPlanner.refresh();
@@ -90,6 +93,29 @@ function goHome() {
 function handleRecipeTimer(recipe) {
   timers.startRecipeTimer(recipe.name, recipe.timerMinutes);
   router.push('/timer');
+}
+
+function normalizeReturnTo(value) {
+  const raw = Array.isArray(value) ? value[0] : value;
+  return raw === 'planner' || raw === 'shopping-list' ? raw : '';
+}
+
+function handleStartCooking(recipe) {
+  cookingReturnTo.value = normalizeReturnTo(route.query.returnTo);
+  cookingRecipe.value = recipe;
+}
+
+function handleCookingExit() {
+  const returnTo = cookingReturnTo.value;
+  cookingRecipe.value = null;
+  cookingReturnTo.value = '';
+  if (returnTo === 'planner') {
+    router.push('/planner').catch(() => {});
+    return;
+  }
+  if (returnTo === 'shopping-list') {
+    router.push('/shopping-list').catch(() => {});
+  }
 }
 
 function handleAddToShopping(recipe) {
@@ -114,6 +140,12 @@ function handleToast(message, type = 'info') {
 onMounted(() => {
   initServiceWorkerUpdates();
 });
+
+watch(() => route.fullPath, () => {
+  if (!cookingRecipe.value) return;
+  cookingRecipe.value = null;
+  cookingReturnTo.value = '';
+});
 </script>
 
 <template>
@@ -121,7 +153,7 @@ onMounted(() => {
 
   <main class="app">
     <template v-if="cookingRecipe">
-      <CookingModeView :recipe="cookingRecipe" @exit="cookingRecipe = null" />
+      <CookingModeView :recipe="cookingRecipe" @exit="handleCookingExit" />
     </template>
     <template v-else>
       <nav class="tabs" role="tablist">
@@ -151,7 +183,7 @@ onMounted(() => {
           :id="Array.isArray(route.params.id) ? route.params.id[0] : route.params.id"
           ref="currentView"
           @start-recipe-timer="handleRecipeTimer"
-          @start-cooking="cookingRecipe = $event"
+          @start-cooking="handleStartCooking"
           @add-to-shopping="handleAddToShopping"
           @toast="handleToast"
           @go-home="goHome"

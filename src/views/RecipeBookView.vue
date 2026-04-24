@@ -1,7 +1,7 @@
 <script setup>
 import { computed, inject, ref, watch } from 'vue';
 import { storeToRefs } from 'pinia';
-import { useRouter } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import { useDebounce } from '@vueuse/core';
 import RecipeDetailView from '../components/RecipeDetailView.vue';
 import { useRecipeBookStore } from '../stores/recipeBook';
@@ -13,6 +13,7 @@ const props = defineProps({
   id: { type: String, default: '' },
 });
 const router = useRouter();
+const route = useRoute();
 const store = useRecipeBookStore();
 const { recipes } = storeToRefs(store);
 const requestConfirm = inject('requestConfirm', null);
@@ -161,6 +162,17 @@ function onCardCoverError(recipeId) {
 function openDetail(recipe) {
   router.push({ name: 'recipe-book-detail', params: { id: recipe.id } }).catch(() => {});
   store.viewed(recipe.id);
+}
+
+function returnTarget() {
+  const raw = Array.isArray(route.query.returnTo) ? route.query.returnTo[0] : route.query.returnTo;
+  if (raw === 'planner') return '/planner';
+  if (raw === 'shopping-list') return '/shopping-list';
+  return '/recipe-book';
+}
+
+function handleDetailBack() {
+  router.push(returnTarget()).catch(() => {});
 }
 
 async function confirmDelete(id) {
@@ -406,7 +418,7 @@ defineExpose({
       <RecipeDetailView
         :recipe="selectedRecipe"
         saved-mode
-        @back="router.push('/recipe-book')"
+        @back="handleDetailBack"
         @start-recipe-timer="emit('start-recipe-timer', $event)"
         @start-cooking="emit('start-cooking', $event)"
         @add-to-shopping="emit('add-to-shopping', $event)"

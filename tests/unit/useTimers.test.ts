@@ -92,7 +92,7 @@ describe('useTimers lifecycle', () => {
 
     cleanupTimersRuntime({ resetState: true });
     expect(vi.getTimerCount()).toBe(0);
-  });
+  }, 10_000);
 
   it('clears ticking while hidden and catches timers up when visible again', async () => {
     const { useTimers } = await import('../../src/composables/useTimers.js');

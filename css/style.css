@@ -1705,14 +1705,14 @@ input[type="number"] {
   cursor: pointer;
 }
 .saved-filter-panel {
-  background: var(--bg-tertiary);
-  border: 0.5px solid var(--border);
+  background: color-mix(in srgb, var(--bg-secondary) 62%, var(--bg) 38%);
+  border: 0.5px solid color-mix(in srgb, var(--border) 78%, transparent);
   border-radius: var(--radius-md);
-  padding: .65rem .85rem;
+  padding: .55rem .7rem;
   margin-bottom: .75rem;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
 .saved-filter-mobile-toggle-wrap {
   display: none;
@@ -1745,6 +1745,8 @@ input[type="number"] {
 .saved-filter-panel .filter-row {
   justify-content: flex-start;
   margin-bottom: 0;
+  gap: 5px;
+  row-gap: 5px;
 }
 .saved-filter-group {
   margin-bottom: 10px;
@@ -1752,14 +1754,15 @@ input[type="number"] {
 .filter-group--labeled {
   display: flex;
   align-items: flex-start;
-  gap: 10px;
+  gap: 8px;
 }
 .filter-group--labeled > .filter-group-label {
   display: block;
   margin-bottom: 0;
-  padding-top: 10px;
+  padding-top: 8px;
   white-space: nowrap;
   flex-shrink: 0;
+  width: 72px;
 }
 .filter-group--labeled > .filter-row {
   flex: 1;
@@ -1767,23 +1770,37 @@ input[type="number"] {
 }
 .filter-group-label {
   display: block;
-  font-size: 12px;
+  font-size: 10px;
   color: var(--text-muted);
-  font-weight: 500;
+  font-weight: 700;
+  letter-spacing: .04em;
+  text-transform: uppercase;
   margin-bottom: 6px;
 }
-.type-pill,
-.site-pill {
+.saved-filter-panel .type-pill,
+.saved-filter-panel .site-pill {
   min-height: 36px;
-  padding: 7px 12px;
-  font-size: 12px;
+  padding: 5px 10px;
+  font-size: 11px;
   font-weight: 500;
-  border: 0.5px solid var(--border-md);
+  border: 0.5px solid color-mix(in srgb, var(--border-md) 80%, transparent);
   border-radius: var(--radius-pill);
   cursor: pointer;
   color: var(--text-muted);
-  background: var(--bg-secondary);
+  background: color-mix(in srgb, var(--bg) 82%, var(--bg-secondary) 18%);
   transition: all .15s;
+}
+.saved-filter-panel .src-pill {
+  min-height: 36px;
+  padding: 5px 10px;
+  font-size: 11px;
+  background: color-mix(in srgb, var(--bg) 82%, var(--bg-secondary) 18%);
+}
+.saved-filter-panel .site-pill {
+  max-width: min(220px, 100%);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .type-pill.active,
 .site-pill.active {

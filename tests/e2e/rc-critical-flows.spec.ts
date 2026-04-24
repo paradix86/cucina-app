@@ -207,3 +207,99 @@ test('planner to shopping list actions persist ingredients after reload', async 
   await expect(page.locator('#shopping-list')).toContainText('egg');
   await expect(page.locator('#shopping-list')).toContainText('spinach');
 });
+
+test('planner recipe detail and cooking exit return to planner context', async ({ page }) => {
+  await seedState(page, {
+    recipes: [
+      {
+        id: 'planner-nav-recipe',
+        name: 'Planner Navigation Recipe',
+        source: 'manual',
+        preparationType: 'classic',
+        ingredients: [ '1 tomato' ],
+        steps: [ 'Slice tomato', 'Serve tomato' ],
+      },
+    ],
+    planner: {
+      ...EMPTY_PLANNER,
+      monday: { breakfast: 'planner-nav-recipe', lunch: null, dinner: null },
+    },
+  });
+
+  await gotoRoute(page, 'planner');
+  await page.locator('.planner-day-card').first().locator('.planner-slot-action').filter({ hasText: 'Open recipe' }).click();
+  await expect(page).toHaveURL(/returnTo=planner/);
+  await expect(page.locator('#saved-detail-view')).toContainText('Planner Navigation Recipe');
+
+  await page.locator('.detail-back').click();
+  await expect(page).toHaveURL(/#\/planner$/);
+  await expect(page.locator('.planner-day-card').first()).toContainText('Planner Navigation Recipe');
+
+  await page.locator('.planner-day-card').first().locator('.planner-slot-action').filter({ hasText: 'Open recipe' }).click();
+  await expect(page.locator('#saved-detail-view')).toContainText('Planner Navigation Recipe');
+  await page.locator('.detail-top-start').click();
+  await expect(page.locator('.cooking-mode')).toContainText('Planner Navigation Recipe');
+  await page.locator('.cooking-exit').click();
+  await expect(page).toHaveURL(/#\/planner$/);
+  await expect(page.locator('.planner-day-card').first()).toContainText('Planner Navigation Recipe');
+
+  await page.locator('.planner-day-card').first().locator('.planner-slot-action').filter({ hasText: 'Open recipe' }).click();
+  await expect(page).toHaveURL(/returnTo=planner/);
+  await page.goBack();
+  await expect(page).toHaveURL(/#\/planner$/);
+});
+
+test('direct recipe detail back falls back to recipe book', async ({ page }) => {
+  await seedState(page, {
+    recipes: [
+      {
+        id: 'direct-nav-recipe',
+        name: 'Direct Navigation Recipe',
+        source: 'manual',
+        preparationType: 'classic',
+        ingredients: [ '1 tomato' ],
+        steps: [ 'Slice tomato' ],
+      },
+    ],
+  });
+
+  await gotoRoute(page, 'recipe-book/direct-nav-recipe');
+  await expect(page.locator('#saved-detail-view')).toContainText('Direct Navigation Recipe');
+  await page.locator('.detail-back').click();
+  await expect(page).toHaveURL(/#\/recipe-book$/);
+  await expect(page.locator('#saved-grid')).toContainText('Direct Navigation Recipe');
+});
+
+test('recipe book detail navigation and cooking exit stay in recipe book context', async ({ page }) => {
+  await seedState(page, {
+    recipes: [
+      {
+        id: 'recipe-book-nav-recipe',
+        name: 'Recipe Book Navigation Recipe',
+        source: 'manual',
+        preparationType: 'classic',
+        ingredients: [ '1 tomato' ],
+        steps: [ 'Slice tomato', 'Serve tomato' ],
+      },
+    ],
+  });
+
+  await gotoRoute(page, 'recipe-book');
+  await page.locator('.ricetta-card').filter({ hasText: 'Recipe Book Navigation Recipe' }).click();
+  await expect(page).toHaveURL(/recipe-book\/recipe-book-nav-recipe/);
+  await page.locator('.detail-back').click();
+  await expect(page).toHaveURL(/#\/recipe-book$/);
+
+  await page.locator('.ricetta-card').filter({ hasText: 'Recipe Book Navigation Recipe' }).click();
+  await expect(page.locator('#saved-detail-view')).toContainText('Recipe Book Navigation Recipe');
+  await page.locator('.detail-top-start').click();
+  await expect(page.locator('.cooking-mode')).toContainText('Recipe Book Navigation Recipe');
+  await page.locator('.cooking-exit').click();
+  await expect(page).toHaveURL(/recipe-book\/recipe-book-nav-recipe/);
+  await expect(page.locator('#saved-detail-view')).toContainText('Recipe Book Navigation Recipe');
+
+  await page.locator('.detail-back').click();
+  await page.locator('.ricetta-card').filter({ hasText: 'Recipe Book Navigation Recipe' }).click();
+  await page.goBack();
+  await expect(page).toHaveURL(/#\/recipe-book$/);
+});
