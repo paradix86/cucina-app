@@ -4042,12 +4042,12 @@ mark {
 /* ---- RESPONSIVE ---- */
 @media (max-width: 600px) {
   .app {
-    padding: .9rem .7rem 3.25rem;
+    padding: .55rem .7rem 3rem;
   }
   .card,
   .detail-wrap,
   .shopping-card {
-    padding: 1rem;
+    padding: .9rem;
   }
   h2 {
     font-size: 18px;
@@ -4061,6 +4061,19 @@ mark {
   .planner-day-head {
     flex-direction: column;
     align-items: stretch;
+  }
+  .planner-view {
+    gap: 10px;
+  }
+  .planner-summary-card {
+    gap: 10px;
+  }
+  .planner-summary-card h1 {
+    font-size: 28px;
+    line-height: 1.1;
+  }
+  .planner-summary-desc {
+    margin-top: 4px;
   }
   .planner-summary-side {
     width: 100%;
@@ -4118,20 +4131,41 @@ mark {
     margin-bottom: 10px;
   }
   .app-header {
-    flex-wrap: wrap;
-    align-items: flex-start;
+    flex-wrap: nowrap;
+    align-items: center;
     gap: 8px;
-    padding: 12px .9rem;
+    padding: 7px .75rem;
+  }
+  .app-brand {
+    gap: 7px;
+    min-width: 0;
+  }
+  .app-logo {
+    font-size: 18px;
+  }
+  .app-header h1 {
+    font-size: 16px;
+    white-space: nowrap;
   }
   .header-right {
-    width: 100%;
+    width: auto;
     justify-content: flex-end;
-    gap: 8px;
+    margin-left: auto;
+    min-width: 0;
+  }
+  .header-controls {
+    opacity: .78;
+    flex-shrink: 0;
+  }
+  .header-controls:focus-within,
+  .header-controls:hover {
+    opacity: 1;
   }
   .header-controls select {
     min-height: 40px;
-    font-size: 14px;
-    padding: 6px 10px;
+    font-size: 12px;
+    padding: 5px 6px;
+    max-width: 86px;
   }
   .cooking-mode {
     gap: .85rem;
@@ -4231,13 +4265,28 @@ mark {
   }
 
   .tabs {
-    gap: 8px;
-    margin-bottom: 1rem;
+    gap: 6px;
+    margin: 0 calc(-.7rem) .65rem;
+    padding: 0 .7rem .2rem;
+    overflow-x: auto;
+    overflow-y: hidden;
+    flex-wrap: nowrap;
+    scroll-behavior: smooth;
+    scroll-snap-type: x proximity;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .tabs::-webkit-scrollbar {
+    display: none;
   }
   .tab {
-    min-height: 44px;
-    flex: 1 1 calc(50% - 8px);
-    font-size: 14px;
+    min-height: 40px;
+    flex: 0 0 auto;
+    min-width: max-content;
+    padding: 8px 14px;
+    font-size: 13px;
+    white-space: nowrap;
+    scroll-snap-align: start;
   }
 
   .ricette-grid {
@@ -4273,7 +4322,10 @@ mark {
 
   .saved-header,
   .shopping-header {
-    gap: 10px;
+    gap: 8px;
+  }
+  .saved-header {
+    margin-bottom: .55rem;
   }
   .saved-header input {
     min-height: 44px;
@@ -4283,14 +4335,14 @@ mark {
     width: 100%;
   }
   .backup-actions {
-    margin-bottom: 8px;
+    margin-bottom: 6px;
   }
   .backup-actions .btn-ghost {
     min-height: 40px;
   }
   .saved-filter-mobile-toggle-wrap {
     display: block;
-    margin-bottom: .5rem;
+    margin-bottom: .45rem;
   }
   .saved-filter-panel.mobile-collapsible {
     padding: .6rem .7rem;
@@ -4314,10 +4366,11 @@ mark {
   .import-flow-head {
     flex-direction: column;
     align-items: stretch;
-    gap: 10px;
+    gap: 8px;
   }
   .import-work-sections {
     grid-template-columns: 1fr;
+    gap: .7rem;
   }
   .import-start-actions {
     flex-direction: column;
