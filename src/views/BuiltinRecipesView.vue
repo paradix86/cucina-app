@@ -85,6 +85,10 @@ defineExpose({
 <template>
   <section class="panel active">
     <div v-if="!selectedRecipe">
+      <div class="builtin-intro">
+        <h1>{{ t('builtin_title') }}</h1>
+        <p class="muted-label">{{ t('builtin_desc') }}</p>
+      </div>
       <div id="builtin-toolbar">
         <div class="saved-header">
           <input v-model="search" type="text" :placeholder="t('builtin_search')" />

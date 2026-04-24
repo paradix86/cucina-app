@@ -205,6 +205,13 @@ function isSuggested(recipe: Recipe) {
   if (!activeSelection.value) return false;
   return (recipe.mealOccasion || []).includes(slotOccasionMap[activeSelection.value.slot]);
 }
+
+function suggestedLabel() {
+  if (!activeSelection.value) return t('planner_recipe_suggested', { slot: '' });
+  return t('planner_recipe_suggested', {
+    slot: t(`planner_slot_${activeSelection.value.slot}`).toLowerCase(),
+  });
+}
 </script>
 
 <template>
@@ -299,7 +306,7 @@ function isSuggested(recipe: Recipe) {
               <span class="planner-picker-item-meta">
                 <span v-if="recipe.favorite" class="planner-picker-pill">{{ t('planner_recipe_favorite') }}</span>
                 <span v-if="isSuggested(recipe)" class="planner-picker-pill planner-picker-pill--suggested">
-                  {{ t('planner_recipe_suggested') }}
+                  {{ suggestedLabel() }}
                 </span>
                 <span v-if="recipe.time">{{ recipe.time }}</span>
               </span>

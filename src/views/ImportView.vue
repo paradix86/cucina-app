@@ -472,6 +472,7 @@ function savePreview() {
           <div v-if="diagnostic && status.type === 'err'" class="import-diagnostics" style="display:block" aria-live="polite">
             <div class="import-diagnostics-title">{{ t('import_diag_user_title') }}</div>
             <p class="import-diagnostics-summary">{{ t('import_diag_user_desc') }}</p>
+            <p class="import-diagnostics-summary import-diagnostics-next">{{ t('import_error_recovery') }}</p>
             <details class="import-diagnostics-hint">
               <summary>{{ t('import_diag_details_toggle') }}</summary>
               <div class="import-diagnostics-item"><span class="import-diagnostics-label">{{ t('import_diag_domain') }}:</span> <span class="import-diagnostics-value">{{ diagnostic.domain }}</span></div>
@@ -724,8 +725,15 @@ function savePreview() {
       </div>
 
     <div v-if="previewRecipe" class="preview-box card" style="display:block">
-      <h3 id="preview-title">{{ previewRecipe.emoji || '🍴' }} {{ previewRecipe.name }}</h3>
-      <p id="preview-meta" class="muted-label" style="margin-bottom:12px">{{ previewMeta }}</p>
+      <div class="preview-review-head">
+        <div>
+          <span class="preview-unsaved-pill">{{ t('import_preview_unsaved') }}</span>
+          <h3 id="preview-title">{{ previewRecipe.emoji || '🍴' }} {{ previewRecipe.name }}</h3>
+          <p id="preview-meta" class="muted-label">{{ previewMeta }}</p>
+          <p class="preview-save-helper">{{ t('import_preview_help') }}</p>
+        </div>
+        <button class="btn-primary preview-save-top" @click="savePreview">{{ t('import_save') }}</button>
+      </div>
       <div class="preview-metadata">
         <div v-if="previewRecipe.sourceDomain" class="preview-meta-row">
           <span class="preview-meta-label">{{ t('import_source_site') }}:</span>

@@ -781,6 +781,10 @@ input[type="number"] {
   margin: 0 0 6px;
   color: var(--text-muted);
 }
+.import-diagnostics-next {
+  color: var(--text);
+  font-weight: 600;
+}
 .import-diagnostics-item {
   display: flex;
   gap: 0.5rem;
@@ -929,6 +933,39 @@ input[type="number"] {
   margin-top: 8px;
 }
 .preview-box { margin-top: 1rem; }
+.preview-review-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 14px;
+}
+.preview-unsaved-pill {
+  display: inline-flex;
+  align-items: center;
+  min-height: 26px;
+  padding: 4px 10px;
+  margin-bottom: 8px;
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--orange) 14%, var(--bg) 86%);
+  border: 1px solid color-mix(in srgb, var(--orange) 38%, var(--border) 62%);
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 700;
+}
+.preview-review-head #preview-meta {
+  margin-bottom: 6px;
+}
+.preview-save-helper {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 13px;
+  line-height: 1.4;
+}
+.preview-save-top {
+  flex-shrink: 0;
+  min-height: 44px;
+}
 .preview-actions { display: flex; gap: 8px; margin-top: 1rem; flex-wrap: wrap; }
 .preview-actions .btn-primary,
 .preview-actions .btn-ghost {
@@ -1801,6 +1838,14 @@ input[type="number"] {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+.saved-filter-panel .src-pill.active,
+.saved-filter-panel .type-pill.active,
+.saved-filter-panel .site-pill.active {
+  background: var(--bg);
+  color: var(--text);
+  border-color: var(--border-md);
+  box-shadow: 0 1px 3px rgba(0,0,0,.06);
 }
 .type-pill.active,
 .site-pill.active {
@@ -2944,6 +2989,18 @@ input[type="number"] {
 #builtin-toolbar {
   max-width: 980px;
   margin: 0 auto 1rem;
+}
+.builtin-intro {
+  max-width: 980px;
+  margin: 0 auto .8rem;
+}
+.builtin-intro h1 {
+  margin: 0 0 4px;
+  font-size: clamp(1.45rem, 2.4vw, 2rem);
+  line-height: 1.15;
+}
+.builtin-intro p {
+  margin: 0;
 }
 #builtin-cats,
 #builtin-filters {
@@ -4422,6 +4479,13 @@ mark {
   }
   .preview-actions .btn-primary,
   .preview-actions .btn-ghost {
+    width: 100%;
+  }
+  .preview-review-head {
+    flex-direction: column;
+    gap: 10px;
+  }
+  .preview-save-top {
     width: 100%;
   }
   .timer-settings-head {
