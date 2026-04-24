@@ -329,41 +329,45 @@ async function shareExportText() {
               v-show="!hideCompleted || !isGroupChecked(group)"
             >
               <div class="shopping-group-header">
-                <label class="shopping-item-main">
-                  <input
-                    type="checkbox"
-                    class="shopping-item-checkbox shopping-group-checkbox"
-                    :checked="isGroupChecked(group)"
-                    @change="toggleGroup(group.items.map(item => item.id), $event.target.checked)"
-                  />
-                  <span class="shopping-item-text shopping-item-total">
-                    <span class="shopping-item-total-name">{{ groupPrimaryLabel(group) }}</span>
-                    <span v-if="groupQuantityLabel(group)" class="shopping-item-total-qty">{{ groupQuantityLabel(group) }}</span>
-                  </span>
+                <div class="shopping-row-primary">
+                  <label class="shopping-item-main">
+                    <input
+                      type="checkbox"
+                      class="shopping-item-checkbox shopping-group-checkbox"
+                      :checked="isGroupChecked(group)"
+                      @change="toggleGroup(group.items.map(item => item.id), $event.target.checked)"
+                    />
+                    <span class="shopping-item-text shopping-item-total">
+                      <span class="shopping-item-total-name">{{ groupPrimaryLabel(group) }}</span>
+                      <span v-if="groupQuantityLabel(group)" class="shopping-item-total-qty">{{ groupQuantityLabel(group) }}</span>
+                    </span>
+                  </label>
+                </div>
+                <div class="shopping-row-secondary">
                   <span v-if="sourceSummaryForGroup(group)" class="shopping-item-sub">
                     {{ sourceSummaryForGroup(group) }}
                   </span>
-                </label>
-                <div class="shopping-group-side">
-                  <span class="shopping-state-pill" :class="{ 'is-checked': isGroupChecked(group), 'is-partial': isGroupPartial(group) }">
-                    {{ groupStateLabel(group) }}
-                  </span>
-                  <span class="shopping-group-progress">
-                    <span class="shopping-group-progress-value">{{ checkedCount(group) }}/{{ group.items.length }}</span>
-                    <span class="shopping-group-progress-track" aria-hidden="true">
-                      <span class="shopping-group-progress-fill" :style="{ width: `${groupCompletionPercent(group)}%` }"></span>
+                  <div class="shopping-group-side">
+                    <span class="shopping-state-pill" :class="{ 'is-checked': isGroupChecked(group), 'is-partial': isGroupPartial(group) }">
+                      {{ groupStateLabel(group) }}
                     </span>
-                  </span>
-                  <button
-                    v-if="group.items.length > 1"
-                    class="shopping-group-toggle"
-                    :aria-label="isGroupExpanded(group) ? t('shopping_hide_details') : t('shopping_show_details')"
-                    @click="toggleGroupExpanded(group)"
-                  >
-                    <span>{{ isGroupExpanded(group) ? t('shopping_hide_details') : t('shopping_show_details') }}</span>
-                    <span class="shopping-group-toggle-icon" aria-hidden="true">{{ isGroupExpanded(group) ? '▾' : '▸' }}</span>
-                  </button>
-                  <button class="shopping-remove" :aria-label="t('shopping_remove')" @click="removeMany(group.items.map(item => item.id))">✕</button>
+                    <span class="shopping-group-progress">
+                      <span class="shopping-group-progress-value">{{ checkedCount(group) }}/{{ group.items.length }}</span>
+                      <span class="shopping-group-progress-track" aria-hidden="true">
+                        <span class="shopping-group-progress-fill" :style="{ width: `${groupCompletionPercent(group)}%` }"></span>
+                      </span>
+                    </span>
+                    <button
+                      v-if="group.items.length > 1"
+                      class="shopping-group-toggle"
+                      :aria-label="isGroupExpanded(group) ? t('shopping_hide_details') : t('shopping_show_details')"
+                      @click="toggleGroupExpanded(group)"
+                    >
+                      <span>{{ isGroupExpanded(group) ? t('shopping_hide_details') : t('shopping_show_details') }}</span>
+                      <span class="shopping-group-toggle-icon" aria-hidden="true">{{ isGroupExpanded(group) ? '▾' : '▸' }}</span>
+                    </button>
+                    <button class="shopping-remove" :aria-label="t('shopping_remove')" @click="removeMany(group.items.map(item => item.id))">✕</button>
+                  </div>
                 </div>
               </div>
               <div v-if="isGroupExpanded(group)" class="shopping-group-breakdown">
@@ -382,14 +386,18 @@ async function shareExportText() {
             </div>
 
             <div v-for="item in section.ungrouped" :key="item.id" class="shopping-item" :class="{ 'is-checked': item.checked }" v-show="!hideCompleted || !item.checked">
-              <label class="shopping-item-main">
-                <input type="checkbox" class="shopping-item-checkbox" :checked="item.checked" @change="toggleItem(item.id)" />
-                <span class="shopping-item-copy">
-                  <span class="shopping-item-text">{{ item.text }}</span>
-                  <span v-if="sourceSummaryForItem(item)" class="shopping-item-sub">{{ sourceSummaryForItem(item) }}</span>
-                </span>
-              </label>
-              <button class="shopping-remove" :aria-label="t('shopping_remove')" @click="removeItem(item.id)">✕</button>
+              <div class="shopping-row-primary">
+                <label class="shopping-item-main">
+                  <input type="checkbox" class="shopping-item-checkbox" :checked="item.checked" @change="toggleItem(item.id)" />
+                  <span class="shopping-item-copy">
+                    <span class="shopping-item-text">{{ item.text }}</span>
+                  </span>
+                </label>
+              </div>
+              <div class="shopping-row-secondary">
+                <span v-if="sourceSummaryForItem(item)" class="shopping-item-sub">{{ sourceSummaryForItem(item) }}</span>
+                <button class="shopping-remove" :aria-label="t('shopping_remove')" @click="removeItem(item.id)">✕</button>
+              </div>
             </div>
           </div>
         </div>

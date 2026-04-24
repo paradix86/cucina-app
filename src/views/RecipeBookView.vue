@@ -257,9 +257,9 @@ defineExpose({
         <input v-model="search" type="text" :placeholder="t('recipebook_search')" />
         <span id="saved-count" class="muted-label">{{ savedCountLabel }}</span>
       </div>
-      <div v-if="recipes.length" class="backup-actions">
+      <div v-if="recipes.length" class="backup-actions" aria-label="Backup and restore">
         <button class="btn-ghost" @click="onExportBackup">{{ t('backup_export') }}</button>
-        <label class="btn-ghost" style="display:inline-flex;align-items:center;justify-content:center;cursor:pointer">
+        <label class="btn-ghost backup-import-label">
           {{ t('backup_import') }}
           <input hidden type="file" accept="application/json,.json" @change="onImportBackup" />
         </label>

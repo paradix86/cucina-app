@@ -236,6 +236,7 @@ function printRecipe() {
         </div>
         <h2 class="detail-title">{{ recipe.emoji || '🍴' }} {{ recipe.name }}</h2>
         <p class="detail-meta">{{ joinMetaParts([recipe.category, recipe.time, recipe.difficolta]) }}</p>
+        <button class="btn-start-cooking detail-top-start" @click="emit('start-cooking', recipe)">{{ t('cooking_start') }}</button>
         <p class="detail-print-servings print-only">{{ t('detail_servings') }}: {{ servings }}</p>
       </div>
 

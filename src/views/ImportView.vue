@@ -58,6 +58,8 @@ function toggleManualMealOccasion(occasion) {
 }
 
 function setSuccessNotice(options) {
+  showCollectionBrowser.value = false;
+  showManualForm.value = false;
   successNotice.value = {
     tone: options?.tone || 'success',
     kicker: options?.kicker || t('import_success_banner_kicker'),
@@ -262,6 +264,12 @@ watch(() => route.query.start, rawMode => {
     startWithLink();
   }
 }, { immediate: true });
+
+watch(previewRecipe, recipe => {
+  if (!recipe) return;
+  showCollectionBrowser.value = false;
+  showManualForm.value = false;
+});
 
 watch(featuredCollections, collections => {
   if (!collections.length) {
