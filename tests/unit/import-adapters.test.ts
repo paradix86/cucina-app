@@ -823,31 +823,36 @@ Usare funghi porcini secchi per un sapore più intenso. Reidratarli in acqua tie
 
 // Page with Conservazione only (same as GZ_MARKDOWN_WITH_AGGIUNGI — no dedicated fixture needed)
 
-describe('GialloZafferano adapter — editorial notes extraction', () => {
+describe('GialloZafferano adapter — editorial tips extraction', () => {
   const adapter = getImportAdapterForDomain('giallozafferano.it')!;
   const url = 'https://ricette.giallozafferano.it/test.html';
 
-  it('extracts Conservazione into notes (from GZ_MARKDOWN_WITH_AGGIUNGI)', () => {
+  it('extracts Conservazione into importedInfo.tips (from GZ_MARKDOWN_WITH_AGGIUNGI)', () => {
     const result = adapter.parse(GZ_MARKDOWN_WITH_AGGIUNGI, url);
-    expect(result.notes).toContain('Conservazione:');
-    expect(result.notes).toContain('Consumare subito');
+    const tips = result.importedInfo?.tips ?? [];
+    const conserv = tips.find(t => t.title === 'Conservazione');
+    expect(conserv).toBeDefined();
+    expect(conserv?.text).toContain('Consumare subito');
   });
 
-  it('extracts Consiglio into notes', () => {
+  it('extracts Consiglio into importedInfo.tips', () => {
     const result = adapter.parse(GZ_MARKDOWN_WITH_CONSIGLIO_AND_ASCOLTA, url);
-    expect(result.notes).toContain('Consiglio:');
-    expect(result.notes).toContain('funghi porcini');
+    const tips = result.importedInfo?.tips ?? [];
+    const consiglio = tips.find(t => t.title === 'Consiglio');
+    expect(consiglio).toBeDefined();
+    expect(consiglio?.text).toContain('funghi porcini');
   });
 
-  it('excludes Ascolta la ricetta from notes', () => {
+  it('excludes Ascolta la ricetta from importedInfo.tips', () => {
     const result = adapter.parse(GZ_MARKDOWN_WITH_CONSIGLIO_AND_ASCOLTA, url);
-    expect(result.notes ?? '').not.toContain('Ascolta');
-    expect(result.notes ?? '').not.toContain('Podcast');
+    const tips = result.importedInfo?.tips ?? [];
+    expect(tips.every(t => !t.title.includes('Ascolta'))).toBe(true);
+    expect(tips.every(t => !t.text.includes('Podcast'))).toBe(true);
   });
 
-  it('notes absent when no editorial sections (GZ_MARKDOWN_PLAIN_ING_HEADING_AND_JINA_TITLE)', () => {
+  it('importedInfo absent when no editorial sections (GZ_MARKDOWN_PLAIN_ING_HEADING_AND_JINA_TITLE)', () => {
     const result = adapter.parse(GZ_MARKDOWN_PLAIN_ING_HEADING_AND_JINA_TITLE, url);
-    expect(result.notes ?? '').toBe('');
+    expect(result.importedInfo?.tips ?? []).toHaveLength(0);
   });
 
   it('steps not polluted with Conservazione content', () => {
@@ -868,25 +873,26 @@ describe('GialloZafferano adapter — editorial notes extraction', () => {
   });
 });
 
-describe('Vegolosi adapter — Conservazione extracted into notes', () => {
+describe('Vegolosi adapter — Conservazione extracted into importedInfo', () => {
   const adapter = getImportAdapterForDomain('vegolosi.it')!;
   const url = 'https://vegolosi.it/ricette-vegane/pasta-al-pesto/';
   const url2 = 'https://vegolosi.it/ricette-vegane/cheesecake-frutti-bosco/';
 
-  it('extracts ### Conservazione content into notes', () => {
+  it('extracts ### Conservazione content into importedInfo.tips', () => {
     const result = adapter.parse(VEGOLOSI_OLD_H3_WITH_CONSERVAZIONE, url);
-    expect(result.notes).toContain('Conservazione:');
-    expect(result.notes).toContain('frigo');
+    const tip = result.importedInfo?.tips?.[0];
+    expect(tip?.title).toBe('Conservazione');
+    expect(tip?.text).toContain('frigo');
   });
 
-  it('notes absent when no Conservazione section (new bold format)', () => {
+  it('importedInfo absent when no Conservazione section (new bold format)', () => {
     const result = adapter.parse(VEGOLOSI_NEW_BOLD_FORMAT, url2);
-    expect(result.notes ?? '').toBe('');
+    expect(result.importedInfo?.tips ?? []).toHaveLength(0);
   });
 
-  it('notes absent when no Conservazione section (noise-boundary fixture)', () => {
+  it('importedInfo absent when no Conservazione section (noise-boundary fixture)', () => {
     const result = adapter.parse(VEGOLOSI_OLD_H3_NOISE_BOUNDARY, 'https://vegolosi.it/ricette-vegane/zuppa-lenticchie/');
-    expect(result.notes ?? '').toBe('');
+    expect(result.importedInfo?.tips ?? []).toHaveLength(0);
   });
 
   it('steps not polluted with Conservazione content', () => {
@@ -900,19 +906,21 @@ describe('Vegolosi adapter — Conservazione extracted into notes', () => {
   });
 });
 
-describe('Ricette-Bimby.net adapter — Note section extracted into notes', () => {
+describe('Ricette-Bimby.net adapter — Note section extracted into importedInfo', () => {
   const adapterRbn = getImportAdapterForDomain('ricette-bimby.net')!;
   const rbnUrl = 'https://ricette-bimby.net/pancake-allo-yogurt-bimby/';
   const rbnUrl2 = 'https://ricette-bimby.net/risotto-funghi/';
 
-  it('extracts ### Note content into notes', () => {
+  it('extracts ### Note content into importedInfo.tips', () => {
     const result = adapterRbn.parse(RBN_MARKDOWN_WITH_STANDALONE_PARENTHESES_NOTE, rbnUrl);
-    expect(result.notes).toBe('Note: Fine.');
+    const tip = result.importedInfo?.tips?.[0];
+    expect(tip?.title).toBe('Note');
+    expect(tip?.text).toBe('Fine.');
   });
 
-  it('notes absent when no ### Note section', () => {
+  it('importedInfo absent when no ### Note section', () => {
     const result = adapterRbn.parse(RBN_MARKDOWN_TITLE_HYPHEN, rbnUrl2);
-    expect(result.notes ?? '').toBe('');
+    expect(result.importedInfo?.tips ?? []).toHaveLength(0);
   });
 
   it('steps not polluted with Note content', () => {
@@ -1381,31 +1389,36 @@ describe('RicettePerBimby adapter — truncated page fails cleanly', () => {
   });
 });
 
-describe('RicettePerBimby adapter — ## Consigli extracted into notes', () => {
+describe('RicettePerBimby adapter — ## Consigli extracted into importedInfo', () => {
   const adapter = getImportAdapterForDomain('ricetteperbimby.it')!;
   const url = 'https://www.ricetteperbimby.it/ricette/pizza-bimby';
 
-  it('notes contains the Consigli section', () => {
+  it('importedInfo.tips contains the Consigli section', () => {
     const result = adapter.parse(RPB_WITH_NOTES, url);
-    expect(result.notes).toContain('Consigli:');
-    expect(result.notes).toContain('farina manitoba');
+    const tips = result.importedInfo?.tips ?? [];
+    const consigli = tips.find(t => t.title === 'Consigli');
+    expect(consigli).toBeDefined();
+    expect(consigli?.text).toContain('farina manitoba');
   });
 
-  it('notes contains the Come conservare section', () => {
+  it('importedInfo.tips contains the Come conservare section', () => {
     const result = adapter.parse(RPB_WITH_NOTES, url);
-    expect(result.notes).toContain('Come conservare:');
-    expect(result.notes).toContain('frigorifero');
+    const tips = result.importedInfo?.tips ?? [];
+    const conserva = tips.find(t => t.title === 'Come conservare');
+    expect(conserva).toBeDefined();
+    expect(conserva?.text).toContain('frigorifero');
   });
 
-  it('notes content is not included in steps', () => {
+  it('importedInfo content is not included in steps', () => {
     const result = adapter.parse(RPB_WITH_NOTES, url);
     expect(result.steps.every(s => !s.includes('farina manitoba'))).toBe(true);
     expect(result.steps.every(s => !s.includes('frigorifero'))).toBe(true);
   });
 
-  it('promo sections (Ti potrebbe interessare, Accessori) are excluded from notes', () => {
+  it('promo sections (Ti potrebbe interessare, Accessori) are excluded from importedInfo', () => {
     const result = adapter.parse(RPB_WITH_NOTES, url);
-    expect(result.notes ?? '').not.toMatch(/promo|Accessori|Ti potrebbe/i);
+    const tips = result.importedInfo?.tips ?? [];
+    expect(tips.every(t => !/promo|Accessori|Ti potrebbe/i.test(t.title + ' ' + t.text))).toBe(true);
   });
 
   it('cooking steps are preserved correctly', () => {
@@ -1415,14 +1428,16 @@ describe('RicettePerBimby adapter — ## Consigli extracted into notes', () => {
   });
 });
 
-describe('RicettePerBimby adapter — ## Conservazione extracted into notes', () => {
+describe('RicettePerBimby adapter — ## Conservazione extracted into importedInfo', () => {
   const adapter = getImportAdapterForDomain('ricetteperbimby.it')!;
   const url = 'https://www.ricetteperbimby.it/ricette/pasta-frolla-classica-bimby';
 
-  it('notes contains the Conservazione section', () => {
+  it('importedInfo.tips contains the Conservazione section', () => {
     const result = adapter.parse(RPB_WITH_CONSERVAZIONE, url);
-    expect(result.notes).toContain('Conservazione:');
-    expect(result.notes).toContain('frigo');
+    const tips = result.importedInfo?.tips ?? [];
+    const conserv = tips.find(t => t.title === 'Conservazione');
+    expect(conserv).toBeDefined();
+    expect(conserv?.text).toContain('frigo');
   });
 
   it('Conservazione content does not bleed into steps', () => {
@@ -1439,18 +1454,18 @@ describe('RicettePerBimby adapter — ## Conservazione extracted into notes', ()
 });
 
 describe('RicettePerBimby adapter — other adapters unaffected by RPB changes', () => {
-  it('GialloZafferano adapter still parses steps and now extracts editorial notes', () => {
+  it('GialloZafferano adapter still parses steps and extracts editorial tips', () => {
     const adapter = getImportAdapterForDomain('giallozafferano.it')!;
     const result = adapter.parse(GZ_MARKDOWN_WITH_AGGIUNGI, 'https://ricette.giallozafferano.it/test.html');
     expect(result.steps.length).toBeGreaterThanOrEqual(2);
-    expect(result.notes).toContain('Conservazione'); // GZ now extracts editorial notes
+    expect(result.importedInfo?.tips?.some(t => t.title === 'Conservazione')).toBe(true);
   });
 
-  it('Vegolosi adapter still parses steps and now extracts Conservazione notes', () => {
+  it('Vegolosi adapter still parses steps and extracts Conservazione tip', () => {
     const adapter = getImportAdapterForDomain('vegolosi.it')!;
     const result = adapter.parse(VEGOLOSI_OLD_H3_WITH_CONSERVAZIONE, 'https://vegolosi.it/ricette-vegane/pasta-al-pesto/');
     expect(result.steps.length).toBeGreaterThanOrEqual(2);
-    expect(result.notes).toContain('Conservazione'); // Vegolosi now extracts Conservazione notes
+    expect(result.importedInfo?.tips?.some(t => t.title === 'Conservazione')).toBe(true);
   });
 });
 

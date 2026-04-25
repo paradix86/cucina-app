@@ -176,6 +176,7 @@ function normalizeStoredRecipe(recipe: RecipeInput): Recipe {
     lastViewedAt: recipe?.lastViewedAt || undefined,
     tags: asStringArray(recipe?.tags),
     mealOccasion: mealOccasion.length > 0 ? mealOccasion : undefined,
+    importedInfo: recipe.importedInfo ?? undefined,
   };
 }
 

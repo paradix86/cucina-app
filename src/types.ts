@@ -3,6 +3,20 @@ export type PlannerDayId = 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'fr
 export type PlannerMealSlot = 'breakfast' | 'lunch' | 'dinner';
 export type WeeklyPlanner = Record<PlannerDayId, Record<PlannerMealSlot, string | null>>;
 
+export interface ImportedRecipeTip { title: string; text: string; }
+export interface ImportedRecipeNutritionValue { label: string; value: string; unit?: string; }
+export interface ImportedRecipeInfo {
+  nutrition?: {
+    label?: string;
+    calories?: string;
+    values?: ImportedRecipeNutritionValue[];
+    source?: string;
+  };
+  facts?: Array<{ label: string; value: string }>;
+  tips?: ImportedRecipeTip[];
+  tags?: string[];
+}
+
 export interface Recipe {
   id: string;
   name: string;
@@ -25,6 +39,7 @@ export interface Recipe {
   notes?: string;
   tags?: string[];
   mealOccasion?: string[];
+  importedInfo?: ImportedRecipeInfo;
 }
 
 export interface ShoppingItem {

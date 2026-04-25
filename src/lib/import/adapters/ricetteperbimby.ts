@@ -1,4 +1,4 @@
-import type { ImportPreviewRecipe, WebsiteImportAdapter } from '../../../types';
+import type { ImportedRecipeTip, ImportPreviewRecipe, WebsiteImportAdapter } from '../../../types';
 import { normalizeSourceDomain } from '../core';
 import {
   normalizeImportText,
@@ -64,20 +64,20 @@ function extractRpbTitle(md: string, url: string): string {
 
 /**
  * Scans the document from stepsStart and collects recipe-specific extra
- * sections (Consigli, Conservazione, etc.) into a notes string.
+ * sections (Consigli, Conservazione, etc.) into an array of tips.
  * Stops at promotional/site sections.
  * Does NOT affect step extraction.
  */
-function extractRpbNotes(md: string, stepsStart: number): string {
+function extractRpbTips(md: string, stepsStart: number): ImportedRecipeTip[] {
   const section = stepsStart >= 0 ? md.slice(stepsStart) : md;
   const lines = section.split('\n');
-  const parts: string[] = [];
+  const tips: ImportedRecipeTip[] = [];
   let label = '';
   let content: string[] = [];
 
   const flush = () => {
     if (label && content.length > 0) {
-      parts.push(`${label}: ${content.join(' ').trim()}`);
+      tips.push({ title: label, text: content.join(' ').trim() });
     }
     label = '';
     content = [];
@@ -101,7 +101,7 @@ function extractRpbNotes(md: string, stepsStart: number): string {
   }
 
   flush();
-  return parts.join('\n');
+  return tips;
 }
 
 // ─── Adapter ──────────────────────────────────────────────────────────────────
@@ -169,8 +169,8 @@ function parseRicettePerBimbyAdapter(markdown: string, url: string): ImportPrevi
     );
   }
 
-  // Notes extraction (RPB-only: Consigli, Conservazione, etc.)
-  const extractedNotes = extractRpbNotes(md, stepsStart);
+  // Extra sections extraction (RPB-only: Consigli, Conservazione, etc.)
+  const tips = extractRpbTips(md, stepsStart);
 
   const prep  = prepTimeMatch  ? prepTimeMatch[1].trim()  : '';
   const total = totalTimeMatch ? totalTimeMatch[1].trim() : '';
@@ -189,7 +189,7 @@ function parseRicettePerBimbyAdapter(markdown: string, url: string): ImportPrevi
     difficolta: difficultyMatch ? difficultyMatch[1].trim() : '',
     ingredients,
     steps,
-    ...(extractedNotes ? { notes: extractedNotes } : {}),
+    ...(tips.length ? { importedInfo: { tips } } : {}),
     timerMinutes: parseImportMinutes(total || prep),
     preparationType: 'bimby',
     tags: suggestImportTags(domain, 'bimby', category, title),

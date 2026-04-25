@@ -109,8 +109,8 @@ function parseRicetteBimbyNetAdapter(markdown: string, url: string): ImportPrevi
 
   if (!titleMatch || !ingredients.length || !steps.length) throw new Error('RBN_PARSE_INCOMPLETE');
 
-  // Extract ### Note section into notes (Note is already a steps stop boundary)
-  let extractedNotes = '';
+  // Extract ### Note section into importedInfo (Note is already a steps stop boundary)
+  let noteTip: { title: string; text: string } | null = null;
   const noteStartRel = prepTail.search(/^###?\s+Note\b/m);
   if (noteStartRel >= 0) {
     const noteSection = prepTail.slice(noteStartRel);
@@ -128,7 +128,7 @@ function parseRicetteBimbyNetAdapter(markdown: string, url: string): ImportPrevi
         .filter(Boolean)
         .join(' ')
         .trim();
-      if (collected) extractedNotes = `Note: ${collected}`;
+      if (collected) noteTip = { title: 'Note', text: collected };
     }
   }
 
@@ -146,7 +146,7 @@ function parseRicetteBimbyNetAdapter(markdown: string, url: string): ImportPrevi
     servings: servingsMatch ? normalizeImportedServings(servingsMatch[ 1 ], '1') : '1',
     ingredients,
     steps,
-    ...(extractedNotes ? { notes: extractedNotes } : {}),
+    ...(noteTip ? { importedInfo: { tips: [noteTip] } } : {}),
     timerMinutes: parseImportMinutes(total),
     preparationType: 'bimby',
     tags: suggestImportTags(domain, 'bimby', category, cleanTitle),

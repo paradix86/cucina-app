@@ -1,4 +1,4 @@
-import type { ImportPreviewRecipe, WebsiteImportAdapter } from '../../../types';
+import type { ImportedRecipeTip, ImportPreviewRecipe, WebsiteImportAdapter } from '../../../types';
 import { normalizeSourceDomain } from '../core';
 import {
   normalizeImportText,
@@ -88,16 +88,16 @@ const GZ_NOTES_LABEL_MAP: Record<string, string> = {
 
 /**
  * Collect useful editorial sections (Conservazione, Consiglio, etc.) that
- * come after the steps into a notes string.  Stops at link-headings and
+ * come after the steps into an array of tips.  Stops at link-headings and
  * ignores "Ascolta la ricetta".
  */
-function extractGzEditorialNotes(
+function extractGzEditorialTips(
   md: string,
   sectionHeadings: Array<{ raw: string; index: number }>,
   stepsEnd: number,
-): string {
+): ImportedRecipeTip[] {
   const afterSteps = sectionHeadings.filter((h) => h.index >= stepsEnd);
-  const parts: string[] = [];
+  const tips: ImportedRecipeTip[] = [];
   for (let i = 0; i < afterSteps.length; i++) {
     const heading = afterSteps[i];
     const cleaned = cleanGialloZafferanoHeading(heading.raw).toLowerCase();
@@ -109,9 +109,9 @@ function extractGzEditorialNotes(
     const content = normalizeImportText(
       stripImportLinksAndImages(md.slice(lineEnd, nextIdx))
     ).trim();
-    if (content) parts.push(`${label}: ${content}`);
+    if (content) tips.push({ title: label, text: content });
   }
-  return parts.join('\n');
+  return tips;
 }
 
 function isGialloZafferanoPreparationHeading(heading: string): boolean {
@@ -198,7 +198,7 @@ function parseGialloZafferanoAdapter(markdown: string, url: string): ImportPrevi
   const presentationSection = (md.match(/## PRESENTAZIONE\s*\n([\s\S]*?)(?:\n##\s*|$)/i) || [])[ 1 ] || '';
   const category = normalizeImportCategory(localCategory || inferImportCategoryFromTitleAndText(cleanTitle, presentationSection));
   const domain = normalizeSourceDomain(url);
-  const notes = extractGzEditorialNotes(md, sectionHeadings, stepsEnd);
+  const tips = extractGzEditorialTips(md, sectionHeadings, stepsEnd);
 
   return buildImportedRecipe(url, {
     name: cleanTitle,
@@ -209,7 +209,7 @@ function parseGialloZafferanoAdapter(markdown: string, url: string): ImportPrevi
     difficolta: difficultyMatch ? difficultyMatch[ 1 ].trim() : '',
     ingredients,
     steps,
-    ...(notes ? { notes } : {}),
+    ...(tips.length ? { importedInfo: { tips } } : {}),
     timerMinutes: parseImportMinutes(cook),
     preparationType: 'classic',
     tags: suggestImportTags(domain, 'classic', category, cleanTitle),

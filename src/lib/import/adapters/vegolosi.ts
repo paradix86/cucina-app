@@ -156,8 +156,8 @@ function parseVegolositAdapter(markdown: string, url: string): ImportPreviewReci
 
   if (!ingredients.length || !steps.length) throw new Error('VEGOLOSI_PARSE_INCOMPLETE');
 
-  // Extract ### Conservazione content into notes (already used as stepsEnd boundary)
-  let extractedNotes = '';
+  // Extract ### Conservazione content into importedInfo (already used as stepsEnd boundary)
+  let conservazioneTip: { title: string; text: string } | null = null;
   if (conservStart >= 0) {
     const conservSection = md.slice(conservStart);
     const lineEnd = conservSection.indexOf('\n');
@@ -173,7 +173,7 @@ function parseVegolositAdapter(markdown: string, url: string): ImportPreviewReci
       const content = normalizeImportText(
         stripImportLinksAndImages(afterHeading.slice(0, stopRel))
       ).trim();
-      if (content) extractedNotes = `Conservazione: ${content}`;
+      if (content) conservazioneTip = { title: 'Conservazione', text: content };
     }
   }
 
@@ -190,7 +190,7 @@ function parseVegolositAdapter(markdown: string, url: string): ImportPreviewReci
     ingredients,
     steps,
     servings,
-    ...(extractedNotes ? { notes: extractedNotes } : {}),
+    ...(conservazioneTip ? { importedInfo: { tips: [conservazioneTip] } } : {}),
     preparationType: 'classic',
     tags: suggestImportTags(domain, 'classic', category, cleanTitle),
   });

@@ -382,6 +382,14 @@ function closeQr() {
         <div class="steps-list" v-html="steps"></div>
       </div>
 
+      <div v-if="recipe.importedInfo && recipe.importedInfo.tips && recipe.importedInfo.tips.length" class="imported-info-wrap card">
+        <p class="sec-label">{{ t('recipe_imported_info') }}</p>
+        <div v-for="tip in recipe.importedInfo.tips" :key="tip.title" class="imported-tip">
+          <span class="imported-tip-title">{{ tip.title }}</span>
+          <span class="imported-tip-text">{{ tip.text }}</span>
+        </div>
+      </div>
+
       <div class="detail-actions-shell">
         <div class="detail-action-primary">
           <button class="btn-start-cooking" @click="emit('start-cooking', recipe)">{{ t('cooking_start') }}</button>
@@ -637,5 +645,32 @@ function closeQr() {
   flex: 1;
   min-width: 100px;
   min-height: 40px;
+}
+
+.imported-info-wrap {
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.imported-tip {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.imported-tip-title {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.imported-tip-text {
+  font-size: 0.9rem;
+  color: var(--text);
+  line-height: 1.5;
 }
 </style>
