@@ -80,7 +80,10 @@ The app has gone through a full architectural migration:
 
 ### Wave 1 — Code quality (2–4 days, feature-neutral)
 - [x] Split `src/lib/import/adapters.ts` (1171 lines) into `adapters/index.ts` + one file per adapter + `jsonld.ts` + `generic.ts`
+- [ ] Code-splitting delle view con route lazy-loading — caricare le route on demand invece di includerle tutte nel main bundle
+- [ ] Bundle audit — verificare se pack, markdown, guide o raccolte ricette finiscono ancora nel main bundle
 - [ ] Lazy-load the Ninja built-in pack (7558-line JSON currently bundled at build time) — dynamic `import()` on first access
+- [ ] Valutare `chunkSizeWarningLimit` solo dopo il bundle audit — alzarlo temporaneamente solo se il warning diventa rumore noto e accettato
 - [ ] Extend TypeScript to `useTimers.js` and remaining JS composables (opportunistically, when touching files)
 
 ### Wave 3 — Storage architecture
