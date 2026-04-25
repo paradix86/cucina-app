@@ -1,5 +1,6 @@
 <script setup>
 import { computed, nextTick, onMounted, ref, watch } from 'vue';
+import { storeToRefs } from 'pinia';
 import { useRoute } from 'vue-router';
 import { useImportFlow } from '../composables/useImportFlow';
 import { getSourceDomainLabel, joinMetaParts, suggestMealOccasions, MEAL_OCCASION_OPTIONS } from '../lib/recipes.js';
@@ -10,8 +11,27 @@ import { getNinjaVettedPack } from '../lib/ninjaVettedPack.js';
 
 const emit = defineEmits(['toast', 'go-home']);
 const route = useRoute();
-const { url, loading, status, diagnostic, previewRecipe, importRecipeFromUrl, updatePreparationType, togglePreviewMealOccasion, savePreviewedRecipe, discardPreview, removeTag, addTag, socialImportAvailable } = useImportFlow();
+const { url, loading, status, diagnostic, previewRecipe, importRecipeFromUrl, updatePreparationType, togglePreviewMealOccasion, savePreviewedRecipe, discardPreview, removeTag, addTag, addTagValue, socialImportAvailable } = useImportFlow();
 const recipeBookStore = useRecipeBookStore();
+const { recipes: savedRecipes } = storeToRefs(recipeBookStore);
+
+const allSavedTags = computed(() => {
+  const seen = new Set();
+  const tags = [];
+  for (const recipe of savedRecipes.value) {
+    for (const tag of recipe.tags || []) {
+      const lower = tag.toLowerCase();
+      if (!seen.has(lower)) { seen.add(lower); tags.push(tag); }
+    }
+  }
+  return tags.sort((a, b) => a.localeCompare(b));
+});
+
+const tagSuggestions = computed(() => {
+  if (!previewRecipe.value) return [];
+  const active = new Set((previewRecipe.value.tags || []).map(t => t.toLowerCase()));
+  return allSavedTags.value.filter(t => !active.has(t.toLowerCase())).slice(0, 10);
+});
 
 const ninjaPackData = ref([]);
 const ninjaPackLoading = ref(true);
@@ -753,6 +773,15 @@ function savePreview() {
             </span>
             <input ref="tagInputRef" class="tag-add-input" type="text" :placeholder="t('import_tag_add_placeholder')" @keydown.enter.prevent="addTag(tagInputRef)" />
             <button class="tag-add-btn" @click="addTag(tagInputRef)">+</button>
+          </div>
+          <div v-if="tagSuggestions.length" class="tag-suggestions">
+            <button
+              v-for="suggestion in tagSuggestions"
+              :key="suggestion"
+              class="tag-suggestion-chip"
+              type="button"
+              @click="addTagValue(suggestion)"
+            >{{ suggestion }}</button>
           </div>
         </div>
         <div class="preview-meta-row preview-meta-row--meal">

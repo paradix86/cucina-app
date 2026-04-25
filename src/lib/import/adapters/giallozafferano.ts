@@ -75,6 +75,37 @@ function isGialloZafferanoEditorialHeading(heading: string): boolean {
   return /^(?:conservazione|consiglio|sapevate che\.\.\.|sapevate che|curiosita|curiosità|ascolta la ricetta)$/i.test(cleaned);
 }
 
+// Text patterns that mark the start of site/social/community pollution zones.
+// Any content at or after the first match must not be imported.
+const GZ_POLLUTION_MARKERS: RegExp[] = [
+  /\bIscriviti al canale WhatsApp\b/i,
+  /\bScopri di pi[uù] sugli ingredienti\b/i,
+  /\bPresente in:/i,
+  /(?:^|\n)STAMPA(?:\n|$)/,
+  /(?:^|\n)CONDIVIDI(?:\n|$)/,
+  /(?:^|\n)INVIA FOTO(?:\n|$)/,
+  /(?:^|\n)COMMENTI(?:\n|$)/,
+  /(?:^|\n)FATTE DA VOI(?:\n|$)/,
+  /(?:^|\n)RICETTE CORRELATE(?:\n|$)/,
+  /(?:^|\n)ULTIME RICETTE(?:\n|$)/,
+  /(?:^|\n)SCOPRI\b/,
+  /Scarica l[''']App/i,
+  /Iscriviti alla Newsletter/i,
+  /(?:^|\n)Seguici(?:\n|$)/i,
+  /©\s*\d{4}/,
+  /facebook\.com|pinterest\.com|twitter\.com|whatsapp\.com/i,
+];
+
+function findGzContentBoundary(md: string, searchFrom: number): number {
+  const tail = md.slice(searchFrom);
+  let earliest = tail.length;
+  for (const marker of GZ_POLLUTION_MARKERS) {
+    const match = tail.search(marker);
+    if (match >= 0 && match < earliest) earliest = match;
+  }
+  return searchFrom + earliest;
+}
+
 // Map of useful editorial headings → display labels for notes.
 // "Ascolta la ricetta" is editorial but audio-only — excluded.
 const GZ_NOTES_LABEL_MAP: Record<string, string> = {
@@ -88,15 +119,16 @@ const GZ_NOTES_LABEL_MAP: Record<string, string> = {
 
 /**
  * Collect useful editorial sections (Conservazione, Consiglio, etc.) that
- * come after the steps into an array of tips.  Stops at link-headings and
- * ignores "Ascolta la ricetta".
+ * come after the steps into an array of tips.  Stops at pollution markers
+ * (social/share/comment/footer content) and ignores "Ascolta la ricetta".
  */
 function extractGzEditorialTips(
   md: string,
   sectionHeadings: Array<{ raw: string; index: number }>,
   stepsEnd: number,
 ): ImportedRecipeTip[] {
-  const afterSteps = sectionHeadings.filter((h) => h.index >= stepsEnd);
+  const hardStop = findGzContentBoundary(md, stepsEnd);
+  const afterSteps = sectionHeadings.filter((h) => h.index >= stepsEnd && h.index < hardStop);
   const tips: ImportedRecipeTip[] = [];
   for (let i = 0; i < afterSteps.length; i++) {
     const heading = afterSteps[i];
@@ -105,7 +137,7 @@ function extractGzEditorialTips(
     if (!label) continue;
     const lineEnd = md.indexOf('\n', heading.index);
     if (lineEnd === -1) continue;
-    const nextIdx = afterSteps[i + 1]?.index ?? md.length;
+    const nextIdx = Math.min(afterSteps[i + 1]?.index ?? md.length, hardStop);
     const content = normalizeImportText(
       stripImportLinksAndImages(md.slice(lineEnd, nextIdx))
     ).trim();

@@ -76,22 +76,29 @@ export function useImportFlow() {
     } as ImportPreviewRecipe;
   }
 
+  function addTagValue(value: string): void {
+    if (!previewRecipe.value || !value.trim()) return;
+    const trimmed = value.trim();
+    const existingLower = (previewRecipe.value.tags || []).map((t: string) => t.toLowerCase());
+    if (existingLower.includes(trimmed.toLowerCase())) return;
+    previewRecipe.value = { ...previewRecipe.value, tags: [ ...(previewRecipe.value.tags || []), trimmed ] };
+  }
+
   function addTag(inputRef: any): void {
     const input = inputRef?.value;
     if (!input || !previewRecipe.value) return;
     const value = input.value.trim();
     if (!value) return;
-    const tags = new Set(previewRecipe.value.tags || []);
-    tags.add(value);
-    previewRecipe.value = { ...previewRecipe.value, tags: [ ...tags ] };
+    addTagValue(value);
     input.value = '';
+    input.focus();
   }
 
   function removeTag(tag: string): void {
     if (!previewRecipe.value) return;
     previewRecipe.value = {
       ...previewRecipe.value,
-      tags: (previewRecipe.value.tags || []).filter(item => item !== tag),
+      tags: (previewRecipe.value.tags || []).filter((item: string) => item !== tag),
     };
   }
 
@@ -274,6 +281,7 @@ Rispondi SOLO con un oggetto JSON valido, senza backtick, senza testo aggiuntivo
     previewRecipe,
     canSave,
     addTag,
+    addTagValue,
     removeTag,
     importRecipeFromUrl,
     updatePreparationType,

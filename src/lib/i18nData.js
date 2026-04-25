@@ -413,6 +413,7 @@ export const TRANSLATIONS = {
     favorite_remove: 'Rimuovi dai preferiti',
 
     // Misc
+    delete_recipe: 'Elimina ricetta',
     delete_confirm: 'Eliminare questa ricetta dal ricettario?',
     confirm_title: 'Conferma azione',
     confirm_confirm: 'Conferma',
@@ -848,6 +849,7 @@ export const TRANSLATIONS = {
     favorite_add: 'Add to favorites',
     favorite_remove: 'Remove from favorites',
 
+    delete_recipe: 'Delete recipe',
     delete_confirm: 'Remove this recipe from your book?',
     confirm_title: 'Confirm action',
     confirm_confirm: 'Confirm',
@@ -1283,6 +1285,7 @@ export const TRANSLATIONS = {
     favorite_add: 'Zu Favoriten hinzufügen',
     favorite_remove: 'Aus Favoriten entfernen',
 
+    delete_recipe: 'Rezept löschen',
     delete_confirm: 'Dieses Rezept aus dem Buch entfernen?',
     confirm_title: 'Aktion bestätigen',
     confirm_confirm: 'Bestätigen',
@@ -1718,6 +1721,7 @@ export const TRANSLATIONS = {
     favorite_add: 'Ajouter aux favoris',
     favorite_remove: 'Retirer des favoris',
 
+    delete_recipe: 'Supprimer la recette',
     delete_confirm: 'Supprimer cette recette du livre?',
     confirm_title: 'Confirmer l’action',
     confirm_confirm: 'Confirmer',
@@ -2153,6 +2157,7 @@ export const TRANSLATIONS = {
     favorite_add: 'Añadir a favoritos',
     favorite_remove: 'Quitar de favoritos',
 
+    delete_recipe: 'Eliminar receta',
     delete_confirm: '¿Eliminar esta receta del recetario?',
     confirm_title: 'Confirmar acción',
     confirm_confirm: 'Confirmar',

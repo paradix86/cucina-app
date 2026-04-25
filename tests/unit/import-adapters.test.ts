@@ -823,6 +823,68 @@ Usare funghi porcini secchi per un sapore più intenso. Reidratarli in acqua tie
 
 // Page with Conservazione only (same as GZ_MARKDOWN_WITH_AGGIUNGI — no dedicated fixture needed)
 
+// Crepes-style page: Conservazione present, then heavy social/comment/footer pollution
+const GZ_MARKDOWN_WITH_POLLUTED_TAIL = `# Crepes dolci e salate
+
+*   Difficoltà: **Facile**
+*   Preparazione: **10 min**
+*   Cottura: **20 min**
+*   Dosi per: **4 persone**
+
+## PRESENTAZIONE
+
+La ricetta base delle crepes.
+
+## INGREDIENTI
+
+[Farina 00](https://ricette.giallozafferano.it/) 130 g [Uova](https://ricette.giallozafferano.it/) 2 [Latte intero](https://ricette.giallozafferano.it/) 300 ml
+
+[AGGIUNGI ALLA LISTA DELLA SPESA](https://ricette.giallozafferano.it/Crepes-dolci-e-salate-ricetta-base.html#)
+
+Preparazione
+
+## Come preparare le Crepes
+
+Sbattere uova, farina e latte fino a ottenere un composto liscio.
+
+Cuocere in padella antiaderente calda.
+
+## Conservazione
+
+Conservare le crepes in frigo avvolte in pellicola per 2-3 giorni.
+
+## Consiglio
+
+Lasciare riposare la pastella per 30 minuti in frigo prima di cuocere.
+
+CONDIVIDI
+
+STAMPA
+
+INVIA FOTO
+
+Iscriviti al canale WhatsApp
+
+Scopri di più sugli ingredienti
+
+Presente in: Antipasti, Primi piatti
+
+## COMMENTI
+
+Lascia un commento...
+
+## FATTE DA VOI
+
+Foto degli utenti
+
+## RICETTE CORRELATE
+
+## ULTIME RICETTE
+
+Seguici su Instagram
+
+© 2024 GialloZafferano S.r.l.`;
+
 describe('GialloZafferano adapter — editorial tips extraction', () => {
   const adapter = getImportAdapterForDomain('giallozafferano.it')!;
   const url = 'https://ricette.giallozafferano.it/test.html';
@@ -853,6 +915,37 @@ describe('GialloZafferano adapter — editorial tips extraction', () => {
   it('importedInfo absent when no editorial sections (GZ_MARKDOWN_PLAIN_ING_HEADING_AND_JINA_TITLE)', () => {
     const result = adapter.parse(GZ_MARKDOWN_PLAIN_ING_HEADING_AND_JINA_TITLE, url);
     expect(result.importedInfo?.tips ?? []).toHaveLength(0);
+  });
+
+  it('extracts Conservazione and Consiglio from polluted-tail page, excludes social/comment/footer', () => {
+    const result = adapter.parse(GZ_MARKDOWN_WITH_POLLUTED_TAIL, url);
+    const tips = result.importedInfo?.tips ?? [];
+    const conserv = tips.find(t => t.title === 'Conservazione');
+    const consiglio = tips.find(t => t.title === 'Consiglio');
+    expect(conserv).toBeDefined();
+    expect(consiglio).toBeDefined();
+    expect(conserv?.text).toContain('2-3 giorni');
+    expect(consiglio?.text).toContain('pastella');
+  });
+
+  it('polluted tail: COMMENTI/FATTE DA VOI/STAMPA/CONDIVIDI not in any tip', () => {
+    const result = adapter.parse(GZ_MARKDOWN_WITH_POLLUTED_TAIL, url);
+    const allText = (result.importedInfo?.tips ?? []).map(t => t.title + ' ' + t.text).join(' ');
+    expect(allText).not.toMatch(/COMMENTI/i);
+    expect(allText).not.toMatch(/FATTE DA VOI/i);
+    expect(allText).not.toMatch(/STAMPA/i);
+    expect(allText).not.toMatch(/CONDIVIDI/i);
+    expect(allText).not.toMatch(/facebook\.com|pinterest\.com|whatsapp/i);
+    expect(allText).not.toMatch(/ULTIME RICETTE/i);
+    expect(allText).not.toMatch(/©/);
+    expect(allText).not.toMatch(/Seguici/i);
+    expect(allText).not.toMatch(/Newsletter/i);
+  });
+
+  it('polluted tail: steps are extracted correctly', () => {
+    const result = adapter.parse(GZ_MARKDOWN_WITH_POLLUTED_TAIL, url);
+    expect(result.steps.length).toBeGreaterThanOrEqual(2);
+    expect(result.steps.some(s => s.includes('pastella') || s.includes('Sbattere') || s.includes('Cuocere'))).toBe(true);
   });
 
   it('steps not polluted with Conservazione content', () => {

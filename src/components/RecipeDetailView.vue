@@ -20,6 +20,7 @@ const emit = defineEmits([
   'add-to-shopping',
   'save-builtin',
   'toggle-favorite',
+  'delete-recipe',
   'save-notes',
   'duplicate-recipe',
   'save-recipe-edit',
@@ -310,7 +311,32 @@ function closeQr() {
 
 <template>
   <div>
-    <button class="detail-back" @click="emit('back')">{{ backLabel || t('detail_back') }}</button>
+    <div class="detail-top-bar">
+      <button class="detail-back" @click="emit('back')">{{ backLabel || t('detail_back') }}</button>
+      <div v-if="savedMode && !isEditing" class="detail-quick-actions">
+        <button
+          class="detail-quick-btn detail-quick-fav"
+          :class="{ 'is-fav': recipe.favorite }"
+          :title="recipe.favorite ? t('favorite_remove') : t('favorite_add')"
+          type="button"
+          @click="emit('toggle-favorite', recipe)"
+        >
+          <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" :fill="recipe.favorite ? 'currentColor' : 'none'" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+          </svg>
+        </button>
+        <button
+          class="detail-quick-btn detail-quick-del"
+          :title="t('delete_recipe')"
+          type="button"
+          @click="emit('delete-recipe', recipe)"
+        >
+          <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+          </svg>
+        </button>
+      </div>
+    </div>
     <div v-if="!isEditing" class="detail-wrap">
       <div class="detail-head">
         <div class="detail-cover-wrap">
@@ -399,16 +425,6 @@ function closeQr() {
           <button class="btn-secondary detail-action-shopping" @click="onShoppingAction">{{ shoppingActionLabel }}</button>
           <button v-if="recipe.timerMinutes" class="btn-secondary" @click="emit('start-recipe-timer', recipe)">
             {{ t('detail_timer_btn', { t: formatTimerLabel(recipe.timerMinutes) }) }}
-          </button>
-          <button
-            v-if="savedMode"
-            class="btn-secondary btn-favorite"
-            :class="{ active: recipe.favorite }"
-            @click="emit('toggle-favorite', recipe)"
-            type="button"
-          >
-            <span class="button-icon">★</span>
-            {{ recipe.favorite ? t('favorite_remove') : t('favorite_add') }}
           </button>
           <button v-if="canSaveBuiltin" class="btn-secondary" @click="emit('save-builtin', recipe)">{{ t('builtin_save') }}</button>
         </div>
@@ -574,6 +590,50 @@ function closeQr() {
 </template>
 
 <style scoped>
+.detail-top-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 0;
+}
+
+.detail-quick-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.detail-quick-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--card-bg, var(--bg));
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  flex-shrink: 0;
+}
+
+.detail-quick-btn:hover {
+  background: var(--hover-bg, rgba(0,0,0,0.06));
+  color: var(--text);
+}
+
+.detail-quick-fav.is-fav {
+  color: var(--accent, #e8a020);
+}
+
+.detail-quick-del:hover {
+  color: var(--danger, #d9534f);
+  border-color: var(--danger, #d9534f);
+}
+
 .qr-overlay {
   position: fixed;
   inset: 0;

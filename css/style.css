@@ -1169,6 +1169,27 @@ input[type="number"] {
   line-height: 1.4;
 }
 .tag-add-btn:hover { background: var(--bg-tertiary); }
+.tag-suggestions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 6px;
+}
+.tag-suggestion-chip {
+  font-size: 0.78rem;
+  padding: 2px 8px;
+  border: 1px solid var(--border-md);
+  border-radius: var(--radius-pill);
+  background: var(--bg-secondary);
+  color: var(--text-muted);
+  cursor: pointer;
+  line-height: 1.5;
+  transition: background 0.12s, color 0.12s;
+}
+.tag-suggestion-chip:hover {
+  background: var(--accent-soft, rgba(232, 160, 32, 0.15));
+  color: var(--text);
+}
 
 /* ---- GUIDES ---- */
 .guide-article {

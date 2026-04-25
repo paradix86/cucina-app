@@ -424,6 +424,7 @@ defineExpose({
         @start-cooking="emit('start-cooking', $event)"
         @add-to-shopping="emit('add-to-shopping', $event)"
         @toggle-favorite="toggleFavorite($event.id)"
+        @delete-recipe="confirmDelete($event.id)"
         @save-notes="saveRecipeNotes"
         @duplicate-recipe="duplicateRecipe"
         @save-recipe-edit="saveRecipeEdit"
