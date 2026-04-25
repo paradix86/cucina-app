@@ -71,7 +71,7 @@ function normalizeUnit(unit: string): ParsedIngredientUnit | null {
 function normalizeName(name: string): string {
   if (!name) return '';
   let n = String(name).toLowerCase().trim();
-  n = n.replace(/\s+(fresco|congelato|secco|in\s+polvere|macinato|grattugiato)$/i, '');
+  n = n.replace(/\s+(fresco|congelato|secco|in\s+polvere|grattugiato)$/i, '');
   return n;
 }
 
@@ -145,6 +145,30 @@ function normalizeGroupingKeyName(name: string): string {
   return INGREDIENT_ALIASES[joined] ?? joined;
 }
 
+function stripQuantityUnit(text: string): string {
+  const units = '(?:g|gr|gram|grams|grammi|kg|chilogrammi|kilogram|kilograms|ml|millilitre|milliliter|millilitri|l|litre|liter|litri)';
+  return String(text || '')
+    .replace(new RegExp(`^\\s*\\d+(?:[.,]\\d+)?\\s*${units}\\s+`, 'i'), ' ')
+    .replace(new RegExp(`\\s+\\d+(?:[.,]\\d+)?\\s*${units}\\s*$`, 'i'), ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+export function normalizeIngredientName(raw: string): string {
+  const cleaned = normalizeShoppingIngredientText(raw)
+    .toLowerCase()
+    .replace(/[.,;:]+/g, ' ')
+    .replace(/[()]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  if (!cleaned) return '';
+
+  const withoutQuantity = stripQuantityUnit(cleaned)
+    .replace(/\s+/g, ' ')
+    .trim();
+  return normalizeGroupingKeyName(withoutQuantity) || withoutQuantity;
+}
+
 // ── Quantity unit conversion ──────────────────────────────────────────────
 
 function toBaseUnits(qty: number | null, unit: ParsedIngredientUnit | null): number | null {
@@ -210,7 +234,24 @@ export function parseIngredient(text: string): ParsedIngredient {
       if (normalizedUnit) {
         result.parsedQty = qty;
         result.parsedUnit = normalizedUnit;
-        result.parsedName = normalizeName(nameRaw);
+        result.parsedName = normalizeIngredientName(nameRaw);
+        result.confidence = 'high';
+      }
+    }
+  }
+
+  // Also support NAME QUANTITY UNIT — e.g. "maiale macinato 250 g" or "maiale macinato 250g".
+  if (result.confidence !== 'high') {
+    const trailingMatch = trimmed.match(/^(.+?)\s+(\d+(?:[.,]\d+)?)\s*([a-zA-Z°º]+)$/);
+    if (trailingMatch) {
+      const nameRaw = trailingMatch[ 1 ].trim();
+      const qty = parseFloat(trailingMatch[ 2 ].replace(',', '.'));
+      const normalizedUnit = normalizeUnit(trailingMatch[ 3 ].toLowerCase());
+
+      if (!isNaN(qty) && qty > 0 && normalizedUnit) {
+        result.parsedQty = qty;
+        result.parsedUnit = normalizedUnit;
+        result.parsedName = normalizeIngredientName(nameRaw);
         result.confidence = 'high';
       }
     }

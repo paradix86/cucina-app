@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref, watch } from 'vue';
+import { computed, nextTick, ref, watch } from 'vue';
 import { storeToRefs } from 'pinia';
 import { buildStepsHtml, formatTimerLabel, getPreparationInfo, getSourceDomainLabel, joinMetaParts, scaleIngredients, suggestMealOccasions } from '../lib/recipes.js';
 import { t } from '../lib/i18n.js';
@@ -223,15 +223,7 @@ function scheduleShareClear() {
   shareStatusTimer = setTimeout(() => { shareStatus.value = ''; }, 3000);
 }
 
-async function shareRecipe() {
-  if (props.recipe.id === '__shared_preview__') return;
-  const result = buildShareUrl(props.recipe);
-  if ('error' in result) {
-    shareStatus.value = 'too_long';
-    scheduleShareClear();
-    return;
-  }
-  const { url } = result;
+async function copyUrlToClipboard(url) {
   if (navigator.clipboard?.writeText) {
     try {
       await navigator.clipboard.writeText(url);
@@ -243,6 +235,76 @@ async function shareRecipe() {
     shareStatus.value = 'err';
   }
   scheduleShareClear();
+}
+
+async function shareRecipe() {
+  if (props.recipe.id === '__shared_preview__') return;
+  const result = buildShareUrl(props.recipe);
+  if ('error' in result) {
+    shareStatus.value = 'too_long';
+    scheduleShareClear();
+    return;
+  }
+  const { url } = result;
+  if (typeof navigator.share === 'function') {
+    try {
+      await navigator.share({ title: props.recipe.name || 'Cucina App', url });
+      return; // native sheet handled it — no extra feedback needed
+    } catch (e) {
+      if (e && e.name === 'AbortError') return; // user cancelled — silent
+      // real error: fall through to clipboard
+    }
+  }
+  await copyUrlToClipboard(url);
+}
+
+// QR state
+const showQr = ref(false);
+const qrDataUrl = ref('');
+const qrModalUrl = ref('');
+const qrCopyStatus = ref(''); // '' | 'ok' | 'err'
+let qrCopyTimer = null;
+
+async function openQr() {
+  if (props.recipe.id === '__shared_preview__') return;
+  const result = buildShareUrl(props.recipe);
+  if ('error' in result) {
+    shareStatus.value = 'too_long';
+    scheduleShareClear();
+    return;
+  }
+  const { url } = result;
+  qrModalUrl.value = url;
+  qrDataUrl.value = '';
+  showQr.value = true;
+  await nextTick();
+  try {
+    const QRCode = (await import('qrcode')).default;
+    qrDataUrl.value = await QRCode.toDataURL(url, { width: 240, margin: 2, color: { dark: '#1a1a18', light: '#ffffff' } });
+  } catch {
+    // if QR generation fails, the modal still shows with copy-link option
+  }
+}
+
+async function copyQrLink() {
+  if (!qrModalUrl.value) return;
+  if (navigator.clipboard?.writeText) {
+    try {
+      await navigator.clipboard.writeText(qrModalUrl.value);
+      qrCopyStatus.value = 'ok';
+    } catch {
+      qrCopyStatus.value = 'err';
+    }
+  } else {
+    qrCopyStatus.value = 'err';
+  }
+  if (qrCopyTimer) clearTimeout(qrCopyTimer);
+  qrCopyTimer = setTimeout(() => { qrCopyStatus.value = ''; }, 2500);
+}
+
+function closeQr() {
+  showQr.value = false;
+  qrCopyStatus.value = '';
 }
 </script>
 
@@ -353,15 +415,13 @@ async function shareRecipe() {
             {{ t('recipe_edit') }}
           </button>
           <button class="btn-ghost btn-print btn-utility" @click="printRecipe" type="button">🖨 {{ t('recipe_print') }}</button>
-          <button
-            v-if="recipe.id !== '__shared_preview__'"
-            class="btn-ghost btn-utility btn-share"
-            type="button"
-            @click="shareRecipe"
-          >🔗 {{ t('share_recipe') }}</button>
-          <span v-if="shareStatus === 'ok'" class="share-feedback share-ok">{{ t('share_copy_ok') }}</span>
-          <span v-else-if="shareStatus === 'too_long'" class="share-feedback share-err">{{ t('share_too_long') }}</span>
-          <span v-else-if="shareStatus === 'err'" class="share-feedback share-err">{{ t('share_copy_err') }}</span>
+          <template v-if="recipe.id !== '__shared_preview__'">
+            <button class="btn-ghost btn-utility btn-share" type="button" @click="shareRecipe">🔗 {{ t('share_recipe') }}</button>
+            <button class="btn-ghost btn-utility btn-qr" type="button" @click="openQr">{{ t('share_qr_btn') }}</button>
+            <span v-if="shareStatus === 'ok'" class="share-feedback share-ok">{{ t('share_copy_ok') }}</span>
+            <span v-else-if="shareStatus === 'too_long'" class="share-feedback share-err">{{ t('share_too_long') }}</span>
+            <span v-else-if="shareStatus === 'err'" class="share-feedback share-err">{{ t('share_copy_err') }}</span>
+          </template>
         </div>
       </div>
     </div>
@@ -486,5 +546,96 @@ async function shareRecipe() {
         <button class="btn-primary" @click="emit('save-notes', { recipe, notes: noteDraft })">{{ t('recipe_notes_save') }}</button>
       </div>
     </div>
+
+    <div v-if="showQr" class="qr-overlay" role="dialog" aria-modal="true" @click.self="closeQr" @keydown.esc="closeQr">
+      <div class="qr-modal card">
+        <p class="qr-modal-title">{{ t('share_recipe') }}</p>
+        <p class="qr-modal-name">{{ recipe.emoji || '🍴' }} {{ recipe.name }}</p>
+        <img v-if="qrDataUrl" :src="qrDataUrl" class="qr-img" alt="QR code" width="240" height="240" />
+        <div v-else class="qr-placeholder">…</div>
+        <p class="qr-modal-hint">{{ t('share_qr_hint') }}</p>
+        <div class="qr-modal-actions">
+          <button class="btn-secondary" type="button" @click="copyQrLink">
+            {{ qrCopyStatus === 'ok' ? t('share_copy_ok') : t('share_qr_copy') }}
+          </button>
+          <button class="btn-ghost" type="button" @click="closeQr">{{ t('share_qr_close') }}</button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
+
+<style scoped>
+.qr-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.qr-modal {
+  width: min(320px, 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 20px 16px;
+  text-align: center;
+}
+
+.qr-modal-title {
+  font-weight: 700;
+  font-size: 1rem;
+  margin: 0;
+  color: var(--text);
+}
+
+.qr-modal-name {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+.qr-img {
+  display: block;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+}
+
+.qr-placeholder {
+  width: 240px;
+  height: 240px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-hint);
+  font-size: 2rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.qr-modal-hint {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin: 0;
+  line-height: 1.4;
+}
+
+.qr-modal-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
+  width: 100%;
+}
+
+.qr-modal-actions button {
+  flex: 1;
+  min-width: 100px;
+  min-height: 40px;
+}
+</style>

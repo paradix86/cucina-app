@@ -4,6 +4,7 @@ import {
   normalizePreparationTypeValue,
   getPreparationType,
   parseIngredient,
+  normalizeIngredientName,
   assignSection,
   formatQuantity,
   groupShoppingItems,
@@ -153,6 +154,20 @@ describe('parseIngredient', () => {
     expect(result.parsedUnit).toBe('kg');
   });
 
+  it('should parse name-first quantity + unit ingredients', () => {
+    const spaced = parseIngredient('maiale macinato 250 g');
+    expect(spaced.parsedQty).toBe(250);
+    expect(spaced.parsedUnit).toBe('g');
+    expect(spaced.parsedName).toBe('maiale macinato');
+    expect(spaced.confidence).toBe('high');
+
+    const compact = parseIngredient('Maiale macinato 250g');
+    expect(compact.parsedQty).toBe(250);
+    expect(compact.parsedUnit).toBe('g');
+    expect(compact.parsedName).toBe('maiale macinato');
+    expect(compact.confidence).toBe('high');
+  });
+
   it('should reject vague quantities', () => {
     expect(parseIngredient('chicken q.b.').confidence).toBe('low');
     expect(parseIngredient('salt to taste').confidence).toBe('low');
@@ -182,6 +197,15 @@ describe('parseIngredient', () => {
   it('should handle empty or null input', () => {
     expect(parseIngredient('').confidence).toBe('low');
     expect(parseIngredient(null as any).confidence).toBe('low');
+  });
+});
+
+describe('normalizeIngredientName', () => {
+  it('should normalize casing, spacing, punctuation, and quantity position', () => {
+    expect(normalizeIngredientName('Maiale macinato 250 g')).toBe('maiale macinato');
+    expect(normalizeIngredientName('maiale macinato 250g')).toBe('maiale macinato');
+    expect(normalizeIngredientName('  250 g   MAIALE MACINATO, ')).toBe('maiale macinato');
+    expect(normalizeIngredientName('MAIALE MACINATO')).toBe('maiale macinato');
   });
 });
 
@@ -504,6 +528,35 @@ describe('groupShoppingItems', () => {
     expect(result.grouped[ 0 ].baseName).toBe('latte');
     expect(result.grouped[ 0 ].unit).toBe('l');
     expect(result.grouped[ 0 ].displayQty).toBe('1.3');
+  });
+
+  it('should merge duplicated name-first meat quantities from multiple recipes', () => {
+    const items: ShoppingItem[] = [
+      {
+        id: '1',
+        text: 'maiale macinato 250 g',
+        checked: true,
+        sourceRecipeId: 'recipe-a',
+        sourceRecipeName: 'Recipe A',
+        createdAt: Date.now(),
+      },
+      {
+        id: '2',
+        text: 'Maiale macinato 250g',
+        checked: false,
+        sourceRecipeId: 'recipe-b',
+        sourceRecipeName: 'Recipe B',
+        createdAt: Date.now(),
+      },
+    ];
+    const result = groupShoppingItems(items);
+    expect(result.ungrouped).toHaveLength(0);
+    expect(result.grouped).toHaveLength(1);
+    expect(result.grouped[ 0 ].baseName).toBe('maiale macinato');
+    expect(result.grouped[ 0 ].displayQty).toBe('500');
+    expect(result.grouped[ 0 ].unit).toBe('g');
+    expect(result.grouped[ 0 ].items).toHaveLength(2);
+    expect(result.grouped[ 0 ].items.filter(item => item.checked)).toHaveLength(1);
   });
 });
 
