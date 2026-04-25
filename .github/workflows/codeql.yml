@@ -1,26 +1,23 @@
-name: "CodeQL"
+name: CodeQL
 
 on:
   push:
-    branches: [ "main", "master", "develop" ]
+    branches: ["main"]
   pull_request:
-    branches: [ "main", "master", "develop" ]
+    branches: ["main"]
   schedule:
     - cron: "20 3 * * 1"
 
 jobs:
   analyze:
-    name: Analyze (${{ matrix.language }})
+    name: Analyze javascript-typescript
     runs-on: ubuntu-latest
+
     permissions:
       actions: read
       contents: read
       security-events: write
-
-    strategy:
-      fail-fast: false
-      matrix:
-        language: [ "javascript-typescript" ]
+      pull-requests: read
 
     steps:
       - name: Checkout repository
@@ -29,13 +26,15 @@ jobs:
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v3
         with:
-          languages: ${{ matrix.language }}
+          languages: javascript-typescript
           queries: security-extended,security-and-quality
           config: |
             paths-ignore:
-              - dist
-              - coverage
-              - node_modules
+              - dist/**
+              - coverage/**
+              - node_modules/**
+              - test-results/**
+              - playwright-report/**
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -51,3 +50,5 @@ jobs:
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:javascript-typescript"
