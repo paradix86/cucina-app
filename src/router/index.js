@@ -1,11 +1,12 @@
 import { createRouter, createWebHashHistory } from 'vue-router';
 import RecipeBookView from '../views/RecipeBookView.vue';
-import ImportView from '../views/ImportView.vue';
-import BuiltinRecipesView from '../views/BuiltinRecipesView.vue';
-import ShoppingListView from '../views/ShoppingListView.vue';
-import TimerView from '../views/TimerView.vue';
-import GuidesView from '../views/GuidesView.vue';
-import WeeklyPlannerView from '../views/WeeklyPlannerView.vue';
+
+const ImportView        = () => import('../views/ImportView.vue');
+const BuiltinRecipesView = () => import('../views/BuiltinRecipesView.vue');
+const ShoppingListView  = () => import('../views/ShoppingListView.vue');
+const WeeklyPlannerView = () => import('../views/WeeklyPlannerView.vue');
+const TimerView         = () => import('../views/TimerView.vue');
+const GuidesView        = () => import('../views/GuidesView.vue');
 
 const routes = [
   { path: '/', redirect: '/recipe-book' },

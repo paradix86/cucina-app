@@ -31,7 +31,20 @@ const { request: requestWakeLock, release: releaseWakeLock, isSupported: wakeLoc
 const prepInfo = computed(() => getPreparationInfo(props.recipe));
 const currentStep = computed(() => props.recipe.steps?.[stepIndex.value] || '');
 const isComplete = ref(false);
-const ingredientCount = computed(() => props.recipe.ingredients?.length || 0);
+const ingredientChecklist = ref({});
+const ingredientItems = computed(() => (
+  Array.isArray(props.recipe.ingredients)
+    ? props.recipe.ingredients.map(ingredient => String(ingredient || '').trim()).filter(Boolean)
+    : []
+));
+const ingredientCount = computed(() => ingredientItems.value.length);
+const checkedIngredientCount = computed(() => (
+  ingredientItems.value.reduce((count, _, index) => count + (ingredientChecklist.value[index] ? 1 : 0), 0)
+));
+const ingredientResetKey = computed(() => [
+  props.recipe.id || props.recipe.name || '',
+  ...ingredientItems.value,
+].join('\u0001'));
 
 const progressPct = computed(() => {
   const total = props.recipe.steps?.length || 1;
@@ -156,8 +169,13 @@ function nextStep() {
 
 function exitMode() {
   clearTimer();
+  resetIngredientChecklist();
   releaseCookingWakeLock();
   emit('exit');
+}
+
+function resetIngredientChecklist() {
+  ingredientChecklist.value = {};
 }
 
 async function acquireCookingWakeLock() {
@@ -199,8 +217,12 @@ watch(keepScreenAwake, enabled => {
   }
   releaseCookingWakeLock();
 }, { immediate: true });
+watch(ingredientResetKey, () => {
+  resetIngredientChecklist();
+}, { immediate: true });
 onBeforeUnmount(() => {
   clearTimer();
+  resetIngredientChecklist();
   document.removeEventListener('visibilitychange', handleVisibilityChange);
   releaseCookingWakeLock();
 });
@@ -221,11 +243,24 @@ onBeforeUnmount(() => {
     <details class="cooking-ingredients">
       <summary>
         <span>{{ t('detail_ingredients') }}</span>
-        <span class="cooking-ingredients-count">{{ ingredientCount }}</span>
+        <span class="cooking-ingredients-count">{{ checkedIngredientCount }}/{{ ingredientCount }}</span>
       </summary>
-      <ul class="ing-list">
-        <li v-for="ingredient in recipe.ingredients" :key="ingredient">{{ ingredient }}</li>
-      </ul>
+      <div class="cooking-ingredients-progress">{{ t('cooking_ingredients_ready', { checked: checkedIngredientCount, total: ingredientCount }) }}</div>
+      <div class="cooking-ingredient-checklist">
+        <label
+          v-for="(ingredient, index) in ingredientItems"
+          :key="`${index}-${ingredient}`"
+          class="cooking-ingredient-check"
+          :class="{ 'is-checked': ingredientChecklist[index] }"
+        >
+          <input
+            v-model="ingredientChecklist[index]"
+            type="checkbox"
+            :aria-label="t('cooking_ingredient_toggle_label', { ingredient })"
+          />
+          <span>{{ ingredient }}</span>
+        </label>
+      </div>
     </details>
 
     <div class="cooking-step-wrap">

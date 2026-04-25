@@ -3164,7 +3164,7 @@ input[type="number"] {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 28px;
+  min-width: 42px;
   min-height: 24px;
   padding: 0 8px;
   border-radius: var(--radius-pill);
@@ -3173,6 +3173,56 @@ input[type="number"] {
   font-size: 12px;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
+}
+.cooking-ingredients-progress {
+  margin: 10px 0 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+.cooking-ingredient-checklist {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 8px;
+}
+.cooking-ingredient-check {
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr);
+  align-items: start;
+  gap: 10px;
+  min-height: 46px;
+  padding: 8px 10px;
+  border: 0.5px solid color-mix(in srgb, var(--border) 78%, var(--bg));
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--bg) 76%, var(--bg-secondary));
+  color: var(--text);
+  cursor: pointer;
+  line-height: 1.45;
+}
+.cooking-ingredient-check input {
+  width: 26px;
+  height: 26px;
+  margin: 1px 0 0;
+  accent-color: var(--green);
+  cursor: pointer;
+}
+.cooking-ingredient-check span {
+  padding-top: 2px;
+  overflow-wrap: anywhere;
+}
+.cooking-ingredient-check.is-checked {
+  background: color-mix(in srgb, var(--bg-secondary) 72%, var(--bg));
+  color: var(--text-muted);
+}
+.cooking-ingredient-check.is-checked span {
+  text-decoration: line-through;
+  text-decoration-thickness: 1px;
+  text-decoration-color: color-mix(in srgb, var(--text-muted) 45%, transparent);
+}
+.cooking-ingredient-check:focus-within {
+  outline: 2px solid var(--green);
+  outline-offset: 2px;
 }
 .cooking-step-wrap {
   display: flex;
