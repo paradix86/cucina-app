@@ -874,6 +874,443 @@ describe('RicettePerBimby adapter — "Come cucinare" heading variant', () => {
   });
 });
 
+// ─── RicettePerBimby adapter — hardening fixtures ────────────────────────────
+
+// 1. No H1, but Title: metadata present
+const RPB_NO_H1_TITLE_META = `Title: Torta al Cioccolato Bimby - Ricette Bimby
+
+URL Source: https://www.ricetteperbimby.it/ricette/torta-al-cioccolato-bimby
+
+Difficoltà
+
+Facile
+
+Tempo totale
+
+45 min
+
+Quantità
+
+8 persone
+
+## Ingredienti
+
+* 200 g farina 00
+* 150 g burro
+* 200 g cioccolato fondente
+* 4 uova
+* 150 g zucchero
+
+## Come fare la torta al cioccolato con il Bimby
+
+1. Sciogliere cioccolato e burro nel boccale: 5 min. 60°C vel. 2.
+2. Aggiungere uova, zucchero e farina, mescolare: 30 sec. vel. 4.
+3. Versare in uno stampo e cuocere a 180° per 35 minuti.`;
+
+// 2. Intermediate prose and ## sub-section between Ingredienti and Come fare
+const RPB_PROSE_BETWEEN_SECTIONS = `# Pasta Risottata Pesto Gamberi Bimby
+
+Difficoltà
+
+Media
+
+Tempo totale
+
+30 min
+
+Quantità
+
+4 persone
+
+## Ingredienti
+
+* 320 g pasta
+* 200 g gamberi
+* 1 spicchio aglio
+* 2 cucchiai olio EVO
+* 500 ml brodo di pesce
+
+## Nota sugli ingredienti
+
+Usare gamberi freschi per un risultato migliore. Per i vegani sostituire il brodo.
+
+## Come fare la pasta risottata con gamberi con il Bimby
+
+1. Tritare l'aglio nel boccale: 3 sec. vel. 7.
+2. Aggiungere olio e soffriggere: 3 min. 120°C vel. 1.
+3. Unire pasta e brodo: 12 min. 100°C vel. 1, antiorario.`;
+
+// 3. Multi-subsection steps with plain-text sub-headers
+const RPB_MULTI_SUBSECTION_STEPS = `# Samosa Bimby
+
+Difficoltà
+
+Media
+
+Tempo totale
+
+60 min
+
+Quantità
+
+6 porzioni
+
+## Ingredienti
+
+* 200 g farina 00
+* 100 ml acqua tiepida
+* 2 patate
+* 100 g piselli
+* 2 cucchiaini curry
+
+## Come fare i samosa con il Bimby
+
+Per la pasta
+
+1. Mescolare farina e acqua nel boccale: 1 min. vel. spiga.
+2. Far riposare l'impasto avvolto nella pellicola.
+
+Per il ripieno
+
+3. Cuocere patate e piselli nel Varoma: 20 min. vel. 1, Varoma.
+4. Condire con curry e sale.
+
+Assemblare
+
+5. Stendere la pasta, farcire e friggere le samose.`;
+
+// 4a. ## Procedimento as steps heading
+const RPB_PROCEDIMENTO_HEADING = `# Crema Pasticcera Bimby
+
+Difficoltà
+
+Facile
+
+Tempo totale
+
+15 min
+
+Quantità
+
+4 persone
+
+## Ingredienti
+
+* 500 ml latte intero
+* 4 tuorli
+* 150 g zucchero
+* 50 g amido di mais
+
+## Procedimento
+
+1. Mettere tutti gli ingredienti nel boccale: 8 min. 90°C vel. 4.
+2. Versare in una ciotola e coprire con pellicola a contatto.`;
+
+// 4b. ## Preparazione as steps heading
+const RPB_PREPARAZIONE_HEADING = `# Tiramisù Bimby
+
+Difficoltà
+
+Media
+
+Tempo totale
+
+30 min
+
+Quantità
+
+6 persone
+
+## Ingredienti
+
+* 500 g mascarpone
+* 4 uova
+* 100 g zucchero
+* savoiardi q.b.
+* caffè q.b.
+
+## Preparazione
+
+1. Montare i tuorli con lo zucchero nel boccale: 5 min. vel. 4.
+2. Aggiungere il mascarpone e amalgamare: 30 sec. vel. 3.
+3. Comporre a strati con i savoiardi imbevuti nel caffè.`;
+
+// 5. Truncated — no Ingredienti or Come fare sections
+const RPB_TRUNCATED_NO_SECTIONS = `Title: Cappuccino Cremoso Bimby - Ricette Bimby
+
+URL Source: https://www.ricetteperbimby.it/ricette/cappuccino-cremoso-bimby
+
+Preparate una crema spumosa con il Bimby.
+
+Scopri la ricetta completa nel nostro libro.`;
+
+// 6–10. Notes extraction: Consigli, Come conservare, Conservazione + promo stop
+const RPB_WITH_NOTES = `# Pizza Bimby
+
+Difficoltà
+
+Facile
+
+Tempo totale
+
+90 min
+
+Quantità
+
+4 persone
+
+## Ingredienti
+
+* 500 g farina 00
+* 250 ml acqua tiepida
+* 25 g lievito di birra
+* 10 g sale
+
+## Come fare la pizza con il Bimby
+
+1. Sciogliere il lievito nell'acqua tiepida.
+2. Aggiungere nel boccale farina, acqua con lievito e sale: 2 min. vel. spiga.
+3. Far lievitare l'impasto per 1 ora.
+
+## Consigli
+
+Usare farina manitoba per un impasto più elastico. Stendere sottile.
+
+## Come conservare
+
+Conservare la pizza avanzata in frigorifero per 2 giorni avvolta nella pellicola.
+
+### Ti potrebbe interessare anche
+
+[promo link 1]
+
+### Accessori
+
+[accessory promo]`;
+
+const RPB_WITH_CONSERVAZIONE = `# Pasta Frolla Bimby
+
+Difficoltà
+
+Facile
+
+Tempo totale
+
+20 min
+
+Quantità
+
+1 dose
+
+## Ingredienti
+
+* 300 g farina 00
+* 150 g burro freddo
+* 100 g zucchero
+* 2 tuorli
+
+## Come fare la pasta frolla con il Bimby
+
+1. Inserire tutti gli ingredienti nel boccale: 20 sec. vel. 6.
+2. Compattare l'impasto e far riposare in frigo per 30 minuti.
+
+## Conservazione
+
+Conservare in frigo avvolta nella pellicola per 3 giorni o in freezer per 1 mese.`;
+
+describe('RicettePerBimby adapter — title fallback to Title: metadata', () => {
+  const adapter = getImportAdapterForDomain('ricetteperbimby.it')!;
+  const url = 'https://www.ricetteperbimby.it/ricette/torta-al-cioccolato-bimby';
+
+  it('extracts title from Title: metadata when H1 is absent', () => {
+    const result = adapter.parse(RPB_NO_H1_TITLE_META, url);
+    expect(result.name).toBe('Torta al Cioccolato Bimby');
+  });
+
+  it('strips "- Ricette Bimby" suffix from metadata title', () => {
+    const result = adapter.parse(RPB_NO_H1_TITLE_META, url);
+    expect(result.name).not.toContain('Ricette Bimby');
+  });
+
+  it('extracts ingredients and steps correctly despite absent H1', () => {
+    const result = adapter.parse(RPB_NO_H1_TITLE_META, url);
+    expect(result.ingredients.length).toBeGreaterThanOrEqual(4);
+    expect(result.steps.length).toBeGreaterThanOrEqual(3);
+  });
+});
+
+describe('RicettePerBimby adapter — intermediate prose between sections is ignored', () => {
+  const adapter = getImportAdapterForDomain('ricetteperbimby.it')!;
+  const url = 'https://www.ricetteperbimby.it/ricette/pasta-risottata-pesto-gamberetti-bimby';
+
+  it('does not include intermediate ## sub-heading as an ingredient', () => {
+    const result = adapter.parse(RPB_PROSE_BETWEEN_SECTIONS, url);
+    expect(result.ingredients.every(i => !i.startsWith('#'))).toBe(true);
+    expect(result.ingredients.some(i => /nota|usare|vegani/i.test(i))).toBe(false);
+  });
+
+  it('extracts only bullet ingredients, not prose lines', () => {
+    const result = adapter.parse(RPB_PROSE_BETWEEN_SECTIONS, url);
+    expect(result.ingredients.length).toBeGreaterThanOrEqual(4);
+    expect(result.ingredients.some(i => i.includes('pasta'))).toBe(true);
+    expect(result.ingredients.some(i => i.includes('gamberi'))).toBe(true);
+  });
+
+  it('parses steps correctly despite the extra ## section', () => {
+    const result = adapter.parse(RPB_PROSE_BETWEEN_SECTIONS, url);
+    expect(result.steps.length).toBeGreaterThanOrEqual(3);
+    expect(result.steps.some(s => s.includes('aglio'))).toBe(true);
+  });
+});
+
+describe('RicettePerBimby adapter — multi-subsection numbered steps', () => {
+  const adapter = getImportAdapterForDomain('ricetteperbimby.it')!;
+  const url = 'https://www.ricetteperbimby.it/ricette/samosa-bimby';
+
+  it('collects all numbered steps across subsection prose headers', () => {
+    const result = adapter.parse(RPB_MULTI_SUBSECTION_STEPS, url);
+    expect(result.steps.length).toBe(5);
+  });
+
+  it('step 1 is about mixing dough (Per la pasta)', () => {
+    const result = adapter.parse(RPB_MULTI_SUBSECTION_STEPS, url);
+    expect(result.steps.some(s => /farina|acqua/i.test(s))).toBe(true);
+  });
+
+  it('step 3 is about cooking filling (Per il ripieno)', () => {
+    const result = adapter.parse(RPB_MULTI_SUBSECTION_STEPS, url);
+    expect(result.steps.some(s => /patate|piselli/i.test(s))).toBe(true);
+  });
+
+  it('does not include prose sub-headers (Per la pasta, Assemblare) as steps', () => {
+    const result = adapter.parse(RPB_MULTI_SUBSECTION_STEPS, url);
+    expect(result.steps.every(s => !/^Per la|^Per il|^Assembl/i.test(s))).toBe(true);
+  });
+});
+
+describe('RicettePerBimby adapter — ## Procedimento heading', () => {
+  const adapter = getImportAdapterForDomain('ricetteperbimby.it')!;
+  const url = 'https://www.ricetteperbimby.it/ricette/crema-pasticcera-veloce-bimby';
+
+  it('parses steps when heading is ## Procedimento', () => {
+    const result = adapter.parse(RPB_PROCEDIMENTO_HEADING, url);
+    expect(result.steps.length).toBeGreaterThanOrEqual(2);
+    expect(result.steps.some(s => s.includes('boccale'))).toBe(true);
+  });
+
+  it('extracts ingredients correctly with Procedimento heading', () => {
+    const result = adapter.parse(RPB_PROCEDIMENTO_HEADING, url);
+    expect(result.ingredients.length).toBeGreaterThanOrEqual(4);
+    expect(result.ingredients.some(i => i.includes('latte'))).toBe(true);
+  });
+});
+
+describe('RicettePerBimby adapter — ## Preparazione heading', () => {
+  const adapter = getImportAdapterForDomain('ricetteperbimby.it')!;
+  const url = 'https://www.ricetteperbimby.it/ricette/tiramisu-classico-al-mascarpone-bimby';
+
+  it('parses steps when heading is ## Preparazione', () => {
+    const result = adapter.parse(RPB_PREPARAZIONE_HEADING, url);
+    expect(result.steps.length).toBeGreaterThanOrEqual(3);
+    expect(result.steps.some(s => s.includes('mascarpone'))).toBe(true);
+  });
+
+  it('Preparazione metadata time is not confused with steps heading', () => {
+    const result = adapter.parse(RPB_PREPARAZIONE_HEADING, url);
+    // Steps must be actual instructions, not the prep-time value
+    expect(result.steps.every(s => !/^\d+\s*min/.test(s))).toBe(true);
+  });
+});
+
+describe('RicettePerBimby adapter — truncated page fails cleanly', () => {
+  const adapter = getImportAdapterForDomain('ricetteperbimby.it')!;
+  const url = 'https://www.ricetteperbimby.it/ricette/cappuccino-cremoso-bimby';
+
+  it('throws RPB_SECTIONS_NOT_FOUND when neither Ingredienti nor steps heading exists', () => {
+    expect(() => adapter.parse(RPB_TRUNCATED_NO_SECTIONS, url)).toThrowError('RPB_SECTIONS_NOT_FOUND');
+  });
+
+  it('error message includes diagnostic headings info', () => {
+    let errorMsg = '';
+    try { adapter.parse(RPB_TRUNCATED_NO_SECTIONS, url); } catch (e) { errorMsg = String(e); }
+    expect(errorMsg).toContain('ingredientsFound=false');
+    expect(errorMsg).toContain('stepsFound=false');
+  });
+});
+
+describe('RicettePerBimby adapter — ## Consigli extracted into notes', () => {
+  const adapter = getImportAdapterForDomain('ricetteperbimby.it')!;
+  const url = 'https://www.ricetteperbimby.it/ricette/pizza-bimby';
+
+  it('notes contains the Consigli section', () => {
+    const result = adapter.parse(RPB_WITH_NOTES, url);
+    expect(result.notes).toContain('Consigli:');
+    expect(result.notes).toContain('farina manitoba');
+  });
+
+  it('notes contains the Come conservare section', () => {
+    const result = adapter.parse(RPB_WITH_NOTES, url);
+    expect(result.notes).toContain('Come conservare:');
+    expect(result.notes).toContain('frigorifero');
+  });
+
+  it('notes content is not included in steps', () => {
+    const result = adapter.parse(RPB_WITH_NOTES, url);
+    expect(result.steps.every(s => !s.includes('farina manitoba'))).toBe(true);
+    expect(result.steps.every(s => !s.includes('frigorifero'))).toBe(true);
+  });
+
+  it('promo sections (Ti potrebbe interessare, Accessori) are excluded from notes', () => {
+    const result = adapter.parse(RPB_WITH_NOTES, url);
+    expect(result.notes ?? '').not.toMatch(/promo|Accessori|Ti potrebbe/i);
+  });
+
+  it('cooking steps are preserved correctly', () => {
+    const result = adapter.parse(RPB_WITH_NOTES, url);
+    expect(result.steps.length).toBeGreaterThanOrEqual(3);
+    expect(result.steps.some(s => s.includes('lievito'))).toBe(true);
+  });
+});
+
+describe('RicettePerBimby adapter — ## Conservazione extracted into notes', () => {
+  const adapter = getImportAdapterForDomain('ricetteperbimby.it')!;
+  const url = 'https://www.ricetteperbimby.it/ricette/pasta-frolla-classica-bimby';
+
+  it('notes contains the Conservazione section', () => {
+    const result = adapter.parse(RPB_WITH_CONSERVAZIONE, url);
+    expect(result.notes).toContain('Conservazione:');
+    expect(result.notes).toContain('frigo');
+  });
+
+  it('Conservazione content does not bleed into steps', () => {
+    const result = adapter.parse(RPB_WITH_CONSERVAZIONE, url);
+    // "pellicola" and "3 giorni" are distinctive to the Conservazione section, not in the cooking steps
+    expect(result.steps.every(s => !s.includes('pellicola'))).toBe(true);
+    expect(result.steps.every(s => !s.includes('3 giorni'))).toBe(true);
+  });
+
+  it('extracts correct steps count', () => {
+    const result = adapter.parse(RPB_WITH_CONSERVAZIONE, url);
+    expect(result.steps.length).toBe(2);
+  });
+});
+
+describe('RicettePerBimby adapter — other adapters unaffected', () => {
+  it('GialloZafferano adapter still parses correctly', () => {
+    const adapter = getImportAdapterForDomain('giallozafferano.it')!;
+    const result = adapter.parse(GZ_MARKDOWN_WITH_AGGIUNGI, 'https://ricette.giallozafferano.it/test.html');
+    expect(result.steps.length).toBeGreaterThanOrEqual(2);
+    expect(result.notes ?? '').toBe('');
+  });
+
+  it('Vegolosi adapter still parses correctly', () => {
+    const adapter = getImportAdapterForDomain('vegolosi.it')!;
+    const result = adapter.parse(VEGOLOSI_OLD_H3_WITH_CONSERVAZIONE, 'https://vegolosi.it/ricette-vegane/pasta-al-pesto/');
+    expect(result.steps.length).toBeGreaterThanOrEqual(2);
+    expect(result.notes ?? '').toBe('');
+  });
+});
+
 // ─── RBN title cleanup ────────────────────────────────────────────────────────
 
 const RBN_MARKDOWN_TITLE_HYPHEN = `# Risotto ai Funghi - Ricette-Bimby

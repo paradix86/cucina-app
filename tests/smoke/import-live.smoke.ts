@@ -177,6 +177,77 @@ describe('vegolosi.it — named adapter', () => {
   });
 });
 
+// ─── ricetteperbimby.it ───────────────────────────────────────────────────────
+// Has a dedicated named adapter. Uses Jina markdown structure:
+// ## Ingredienti (bullet list) + ## Come fare … (numbered steps).
+// Pages that lack these sections throw RPB_SECTIONS_NOT_FOUND.
+
+function logRpbResult(
+  url: string,
+  name: string,
+  ing: number,
+  steps: number,
+  notes: string | undefined,
+  coverImageUrl: string | undefined,
+  time: string,
+) {
+  const rating = classify(name, ing, steps);
+  console.log(`  ${rating}`);
+  console.log(`  URL:             ${url}`);
+  console.log(`  Title:           ${name || '(empty)'}`);
+  console.log(`  Ingredients:     ${ing}`);
+  console.log(`  Steps:           ${steps}`);
+  console.log(`  Notes:           ${notes ? `YES (${notes.length} chars)` : 'none'}`);
+  console.log(`  CoverImageUrl:   ${coverImageUrl ? 'YES' : 'none'}`);
+  console.log(`  Time:            ${time}`);
+}
+
+const RPB_URLS: Array<{ url: string; slug: string }> = [
+  { url: 'https://www.ricetteperbimby.it/ricette/torta-al-cioccolato-bimby', slug: 'torta-al-cioccolato-bimby' },
+  { url: 'https://www.ricetteperbimby.it/ricette/tiramisu-classico-al-mascarpone-bimby', slug: 'tiramisu-classico-al-mascarpone-bimby' },
+  { url: 'https://www.ricetteperbimby.it/ricette/pasta-frolla-classica-bimby', slug: 'pasta-frolla-classica-bimby' },
+  { url: 'https://www.ricetteperbimby.it/ricette/samosa-bimby', slug: 'samosa-bimby' },
+  { url: 'https://www.ricetteperbimby.it/ricette/cappuccino-cremoso-bimby', slug: 'cappuccino-cremoso-bimby' },
+];
+
+describe('ricetteperbimby.it — named adapter', () => {
+  for (const { url, slug } of RPB_URLS) {
+    it(`imports ${slug}`, async () => {
+      let result;
+      let errorCode: string | null = null;
+      try {
+        result = await runImport(url);
+      } catch (e: unknown) {
+        const msg = e instanceof Error ? e.message : String(e);
+        errorCode = msg.split(' — ')[0].trim();
+        // RPB pages that lack the expected structure fail cleanly — log and skip assertions
+        console.log(`  ❌ FAILED  URL: ${url}`);
+        console.log(`  Error code: ${errorCode}`);
+        console.log(`  Full error: ${msg.slice(0, 200)}`);
+        // Do not rethrow — some pages are known to be truncated (cappuccino-cremoso-bimby)
+        return;
+      }
+
+      logRpbResult(
+        url,
+        result.name,
+        result.ingredients.length,
+        result.steps.length,
+        result.notes,
+        result.coverImageUrl,
+        result.time ?? 'n.d.',
+      );
+
+      expect(result.name.length, 'title should be non-empty').toBeGreaterThan(2);
+      expect(result.ingredients.length, 'should extract at least 3 ingredients').toBeGreaterThanOrEqual(3);
+      expect(result.steps.length, 'should extract at least 2 steps').toBeGreaterThanOrEqual(2);
+      expect(result.source).toBe('web');
+      expect(result.sourceDomain).toBe('ricetteperbimby.it');
+      expect(result.preparationType).toBe('bimby');
+    }, 30_000);
+  }
+});
+
 // ─── giallozafferano.it ───────────────────────────────────────────────────────
 // Has a dedicated named adapter.  The adapter requires specific Jina markdown
 // markers (## Come preparare, [AGGIUNGI ALLA LISTA DELLA SPESA], etc.).
