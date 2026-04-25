@@ -4,6 +4,7 @@ import { storeToRefs } from 'pinia';
 import { buildStepsHtml, formatTimerLabel, getPreparationInfo, getSourceDomainLabel, joinMetaParts, scaleIngredients, suggestMealOccasions } from '../lib/recipes.js';
 import { t } from '../lib/i18n.js';
 import { useShoppingListStore } from '../stores/shoppingList';
+import { buildShareUrl } from '../lib/recipeShare';
 
 const props = defineProps({
   recipe: { type: Object, required: true },
@@ -213,6 +214,36 @@ function onShoppingAction() {
 function printRecipe() {
   window.print();
 }
+
+const shareStatus = ref(''); // '' | 'ok' | 'err' | 'too_long'
+let shareStatusTimer = null;
+
+function scheduleShareClear() {
+  if (shareStatusTimer) clearTimeout(shareStatusTimer);
+  shareStatusTimer = setTimeout(() => { shareStatus.value = ''; }, 3000);
+}
+
+async function shareRecipe() {
+  if (props.recipe.id === '__shared_preview__') return;
+  const result = buildShareUrl(props.recipe);
+  if ('error' in result) {
+    shareStatus.value = 'too_long';
+    scheduleShareClear();
+    return;
+  }
+  const { url } = result;
+  if (navigator.clipboard?.writeText) {
+    try {
+      await navigator.clipboard.writeText(url);
+      shareStatus.value = 'ok';
+    } catch {
+      shareStatus.value = 'err';
+    }
+  } else {
+    shareStatus.value = 'err';
+  }
+  scheduleShareClear();
+}
 </script>
 
 <template>
@@ -322,6 +353,15 @@ function printRecipe() {
             {{ t('recipe_edit') }}
           </button>
           <button class="btn-ghost btn-print btn-utility" @click="printRecipe" type="button">🖨 {{ t('recipe_print') }}</button>
+          <button
+            v-if="recipe.id !== '__shared_preview__'"
+            class="btn-ghost btn-utility btn-share"
+            type="button"
+            @click="shareRecipe"
+          >🔗 {{ t('share_recipe') }}</button>
+          <span v-if="shareStatus === 'ok'" class="share-feedback share-ok">{{ t('share_copy_ok') }}</span>
+          <span v-else-if="shareStatus === 'too_long'" class="share-feedback share-err">{{ t('share_too_long') }}</span>
+          <span v-else-if="shareStatus === 'err'" class="share-feedback share-err">{{ t('share_copy_err') }}</span>
         </div>
       </div>
     </div>
