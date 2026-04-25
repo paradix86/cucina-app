@@ -14,7 +14,7 @@ Operational backlog and roadmap for both human and agent-assisted development.
 - Pinia 3 for shared reactive state
 - No backend, no server-side logic
 - All user-facing strings must go through `t('key')` — new keys must be added to all 5 languages
-- Persistence is `localStorage`-only
+- Persistence is local-first: Dexie / IndexedDB when available, with `localStorage` fallback and backward-compatible mirrors
 - `localStorage` backward compatibility must be preserved across upgrades
 - If a deployed cached asset changes, bump `CACHE_NAME` in `public/sw.js`
 
@@ -42,7 +42,7 @@ The app has gone through a full architectural migration:
 
 ### Milestone 3 — Planning
 - [x] Shopping list — with smart grouping, quantity merging, section assignment, merge across recipes
-- [ ] Weekly planner — **backlog**
+- [x] Weekly planner — **delivered** (Mon–Sun grid, breakfast/lunch/dinner slots, recipe picker, persistent local-first storage)
 
 ### Milestone 4 — Project Hygiene
 - [x] `AGENTS.md`
@@ -58,50 +58,69 @@ The app has gone through a full architectural migration:
 - [ ] Meal prep / batch cooking — **backlog**
 - [ ] Pantry suggestions — **backlog**
 
-### Milestone 6 — Architecture (completed)
+### Milestone 6 — Architecture (v1 foundation delivered)
 - [x] Vue 3 + Vite migration
-- [x] Vue Router (hash history, 5 routes)
-- [x] Pinia stores (recipeBook, shoppingList)
+- [x] Vue Router (hash history, app routes)
+- [x] Pinia stores (recipeBook, shoppingList, weeklyPlanner)
 - [x] TypeScript bootstrap (`tsconfig.json`, `allowJs`)
 - [x] TypeScript migration (stores, storage/domain, import parsing layer)
 - [x] VueUse targeted adoption
 - [x] Adapter-based website import architecture
 - [x] Internationalisation (IT, EN, DE, FR, ES)
 - [x] PWA / service worker (`public/sw.js`, `public/manifest.webmanifest`)
+- [x] Storage Phase 1/2 — `StorageAdapter` seam + Dexie-backed async adapter with fallback
+- [ ] Storage Phase 3 — remaining sync compatibility cleanup and legacy call-site reduction
 
 ## Technical debt backlog (do before next feature wave)
 
 ### Wave 0 — Quick wins (≤1 day each, no risk)
 - [ ] Surface `saveRecipeBook` errors to callers — currently swallowed silently; return a result so the UI can warn on localStorage full
-- [ ] Fix `useTimers.js` interval lifecycle — module-level singleton interval is never cleared on page hide or HMR; add `visibilitychange` cleanup and export `teardownTimers()`
+- [x] Fix `useTimers.js` interval lifecycle — visibility handling, interval cleanup, and test/HMR cleanup are implemented
 - [ ] Normalize `timerMinutes` → seconds in `normalizeStoredRecipe()` — cooking mode recomputes it, but the right place is normalization
 
 ### Wave 1 — Code quality (2–4 days, feature-neutral)
-- [ ] Split `src/lib/import/adapters.ts` (1171 lines) into `adapters/index.ts` + one file per adapter + `jsonld.ts` + `generic.ts`
+- [x] Split `src/lib/import/adapters.ts` (1171 lines) into `adapters/index.ts` + one file per adapter + `jsonld.ts` + `generic.ts`
 - [ ] Lazy-load the Ninja built-in pack (7558-line JSON currently bundled at build time) — dynamic `import()` on first access
 - [ ] Extend TypeScript to `useTimers.js` and remaining JS composables (opportunistically, when touching files)
 
-### Wave 3 — Architecture investments (after Wave 2 features)
-- [ ] IndexedDB migration via Dexie — `storage.ts` has the migration path comment; introduce a `StorageAdapter` interface first
-- [ ] Remove Pinia refresh-after-write round-trip — after IndexedDB lands only
+### Wave 3 — Storage architecture
+- [x] Phase 1: StorageAdapter interface — implemented in `src/lib/persistence/storageAdapter.ts`
+- [x] Phase 2: Dexie / IndexedDB adapter — implemented in `src/lib/persistence/dexieAdapter.ts`
+- [x] Phase 2: async Pinia hydration/write paths for recipe book, shopping list, and weekly planner
+- [x] Phase 2: localStorage fallback / mirror retained for backward compatibility
+- [ ] Phase 3: remove remaining legacy sync call sites and reduce refresh-after-write round trips
+- [ ] Phase 3: harden migration/fallback verification for Dexie/localStorage compatibility
 - [ ] Background SW update notification toast — `updatefound` event → "New version available, reload?" toast
 
 ## Active backlog
 
+### Completed
+1. ~~Weekly planner~~ — delivered in v0.10.0
+2. ~~Import adapter split~~ — adapter registry and per-site files delivered
+3. ~~Storage Phase 1/2~~ — adapter seam and Dexie-backed persistence delivered; Phase 3 remains
+
+### Post-v1 stabilization
+- [ ] RicettePerBimby live adapter hardening — verify against current live pages and add/update fixtures where stable
+- [ ] E2E stability monitoring — keep watching route churn, storage bootstrap, import failures, and planner navigation regressions
+- [ ] PWA manifest/installability polish — verify manifest path, icons, display mode, and install prompts across target browsers
+- [x] Lightweight report-problem footer link — mailto-based v1 entry point
+- [x] Selected Recipe Book filter chip text visibility fix
+
 ### P0
-1. Weekly planner
+- [ ] *(none currently)*
 
 ### P1
-1. Ingredient checklist in cooking mode
-2. Recipe sharing via JSON link/QR
-3. Meal prep / batch cooking view
-4. Pantry ingredient tracking
+1. Complete post-v1 stabilization items above before broader sharing
+2. Ingredient checklist in cooking mode
+3. Recipe sharing via JSON link/QR
+4. Meal prep / batch cooking view
 
 ### P2
-1. Recipe duplication
-2. Recipe collections / grouping
-3. Search by ingredient
-4. Diet / allergen filters
+1. Pantry ingredient tracking
+2. Recipe duplication
+3. Recipe collections / grouping
+4. Search by ingredient
+5. Diet / allergen filters
 
 ## Current product directions
 
@@ -114,9 +133,10 @@ Adapter-based pipeline for supported recipe websites:
 4. generic fallback
 5. tag and `preparationType` inference
 
-Current supported adapters: `giallozafferano.it`, `ricetteperbimby.it`
+Current supported adapters: `giallozafferano.it`, `ricetteperbimby.it`, `ricettebimbynet.it`, `vegolosi.it`
 
-New adapters go in `src/lib/import/adapters.ts`.
+New adapters go in `src/lib/import/adapters/` (split from single adapters.ts file).
+The adapter split is complete; live-site hardening remains ongoing, especially for RicettePerBimby.
 
 ### 2. Recipe metadata richness
 
@@ -141,24 +161,22 @@ Outcome delivered: users can create recipes without a URL from the Import view.
 
 Implemented MVP fields: name, category, servings, emoji, time, dynamic ingredients list, dynamic steps list, optional timer, preparation type.
 
-### Weekly Planner
+### Weekly Planner — delivered
 
-Outcome: assign recipes to day/meal slots over a week.
+Outcome: users can assign recipes to day/meal slots over a week.
 
-Suggested MVP: Monday–Sunday grid, lunch/dinner slots, recipe picker from saved book.
+Implemented: Monday–Sunday grid, breakfast/lunch/dinner slots, recipe picker from saved book, persistent local-first plan.
 
-Suggested v2: generate shopping list from the week, drag and drop.
-
-Files likely involved:
-- new `src/views/PlannerView.vue`
-- new `src/stores/planner.ts`
+Files involved:
+- `src/views/WeeklyPlannerView.vue`
+- `src/stores/weeklyPlanner.ts`
 - `src/router/index.js`
 - `src/lib/storage.ts`
 - `src/lib/i18nData.js`
 
 Acceptance criteria:
-- persistent plan in `localStorage`
-- simple add/remove workflow
+- [x] persistent plan in local-first storage
+- [x] simple add/remove workflow
 
 ## Recipe model reference
 
@@ -193,7 +211,7 @@ Additions to the model must be backward-compatible and handled in `normalizeStor
 A feature is complete when:
 - it has working UI
 - all new strings are in `src/lib/i18nData.js` (all 5 languages)
-- state persists correctly via Pinia store → `localStorage`
+- state persists correctly via Pinia store → local-first storage adapter
 - no console errors
 - `npm run build` passes
 - a targeted manual or Playwright verification was performed
