@@ -485,7 +485,7 @@ export function parseWprmRecipeFromHtml(
   // Pre-check: WPRM uses nested ingredient arrays — fast bail if not present
   if (!html.includes('"ingredients":[[') && !html.includes('"ingredients": [[')) return null;
 
-  const scriptRe = /<script\b[^>]*>([\s\S]*?)<\/script>/gi;
+  const scriptRe = /<script\b[^>]*>([\s\S]*?)<\/script\b[^>]*>/gi;
   let m: RegExpExecArray | null;
   while ((m = scriptRe.exec(html)) !== null) {
     const content = m[ 1 ];
