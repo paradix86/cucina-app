@@ -75,6 +75,45 @@ function isGialloZafferanoEditorialHeading(heading: string): boolean {
   return /^(?:conservazione|consiglio|sapevate che\.\.\.|sapevate che|curiosita|curiosità|ascolta la ricetta)$/i.test(cleaned);
 }
 
+// Map of useful editorial headings → display labels for notes.
+// "Ascolta la ricetta" is editorial but audio-only — excluded.
+const GZ_NOTES_LABEL_MAP: Record<string, string> = {
+  conservazione: 'Conservazione',
+  consiglio: 'Consiglio',
+  'sapevate che...': 'Lo sapevate?',
+  'sapevate che': 'Lo sapevate?',
+  curiosita: 'Curiosità',
+  curiosità: 'Curiosità',
+};
+
+/**
+ * Collect useful editorial sections (Conservazione, Consiglio, etc.) that
+ * come after the steps into a notes string.  Stops at link-headings and
+ * ignores "Ascolta la ricetta".
+ */
+function extractGzEditorialNotes(
+  md: string,
+  sectionHeadings: Array<{ raw: string; index: number }>,
+  stepsEnd: number,
+): string {
+  const afterSteps = sectionHeadings.filter((h) => h.index >= stepsEnd);
+  const parts: string[] = [];
+  for (let i = 0; i < afterSteps.length; i++) {
+    const heading = afterSteps[i];
+    const cleaned = cleanGialloZafferanoHeading(heading.raw).toLowerCase();
+    const label = GZ_NOTES_LABEL_MAP[cleaned];
+    if (!label) continue;
+    const lineEnd = md.indexOf('\n', heading.index);
+    if (lineEnd === -1) continue;
+    const nextIdx = afterSteps[i + 1]?.index ?? md.length;
+    const content = normalizeImportText(
+      stripImportLinksAndImages(md.slice(lineEnd, nextIdx))
+    ).trim();
+    if (content) parts.push(`${label}: ${content}`);
+  }
+  return parts.join('\n');
+}
+
 function isGialloZafferanoPreparationHeading(heading: string): boolean {
   const cleaned = cleanGialloZafferanoHeading(heading);
   if (!cleaned) return false;
@@ -159,6 +198,7 @@ function parseGialloZafferanoAdapter(markdown: string, url: string): ImportPrevi
   const presentationSection = (md.match(/## PRESENTAZIONE\s*\n([\s\S]*?)(?:\n##\s*|$)/i) || [])[ 1 ] || '';
   const category = normalizeImportCategory(localCategory || inferImportCategoryFromTitleAndText(cleanTitle, presentationSection));
   const domain = normalizeSourceDomain(url);
+  const notes = extractGzEditorialNotes(md, sectionHeadings, stepsEnd);
 
   return buildImportedRecipe(url, {
     name: cleanTitle,
@@ -169,6 +209,7 @@ function parseGialloZafferanoAdapter(markdown: string, url: string): ImportPrevi
     difficolta: difficultyMatch ? difficultyMatch[ 1 ].trim() : '',
     ingredients,
     steps,
+    ...(notes ? { notes } : {}),
     timerMinutes: parseImportMinutes(cook),
     preparationType: 'classic',
     tags: suggestImportTags(domain, 'classic', category, cleanTitle),

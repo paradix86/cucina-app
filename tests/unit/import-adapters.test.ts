@@ -783,6 +783,149 @@ describe('Vegolosi adapter — servings edge cases', () => {
   });
 });
 
+// ─── GialloZafferano editorial notes fixtures ────────────────────────────────
+
+// Page with both Consiglio and Ascolta la ricetta (the latter must be excluded)
+const GZ_MARKDOWN_WITH_CONSIGLIO_AND_ASCOLTA = `# Risotto ai Funghi
+
+*   Difficoltà: **Facile**
+*   Preparazione: **10 min**
+*   Cottura: **25 min**
+*   Dosi per: **4 persone**
+
+## PRESENTAZIONE
+
+Descrizione.
+
+## INGREDIENTI
+
+[Riso Carnaroli](https://ricette.giallozafferano.it/) 320 g [Funghi porcini](https://ricette.giallozafferano.it/) 300 g [Scalogno](https://ricette.giallozafferano.it/) 1
+
+[AGGIUNGI ALLA LISTA DELLA SPESA](https://ricette.giallozafferano.it/Risotto-ai-funghi.html#)
+
+Preparazione
+
+## Come preparare il Risotto ai Funghi
+
+Soffriggere lo scalogno con l'olio.
+
+Tostare il riso e sfumare con il vino bianco.
+
+Cuocere a fuoco lento aggiungendo il brodo.
+
+## Consiglio
+
+Usare funghi porcini secchi per un sapore più intenso. Reidratarli in acqua tiepida per 20 minuti.
+
+## Ascolta la ricetta
+
+[Podcast link](https://ricette.giallozafferano.it/podcast/risotto-funghi)`;
+
+// Page with Conservazione only (same as GZ_MARKDOWN_WITH_AGGIUNGI — no dedicated fixture needed)
+
+describe('GialloZafferano adapter — editorial notes extraction', () => {
+  const adapter = getImportAdapterForDomain('giallozafferano.it')!;
+  const url = 'https://ricette.giallozafferano.it/test.html';
+
+  it('extracts Conservazione into notes (from GZ_MARKDOWN_WITH_AGGIUNGI)', () => {
+    const result = adapter.parse(GZ_MARKDOWN_WITH_AGGIUNGI, url);
+    expect(result.notes).toContain('Conservazione:');
+    expect(result.notes).toContain('Consumare subito');
+  });
+
+  it('extracts Consiglio into notes', () => {
+    const result = adapter.parse(GZ_MARKDOWN_WITH_CONSIGLIO_AND_ASCOLTA, url);
+    expect(result.notes).toContain('Consiglio:');
+    expect(result.notes).toContain('funghi porcini');
+  });
+
+  it('excludes Ascolta la ricetta from notes', () => {
+    const result = adapter.parse(GZ_MARKDOWN_WITH_CONSIGLIO_AND_ASCOLTA, url);
+    expect(result.notes ?? '').not.toContain('Ascolta');
+    expect(result.notes ?? '').not.toContain('Podcast');
+  });
+
+  it('notes absent when no editorial sections (GZ_MARKDOWN_PLAIN_ING_HEADING_AND_JINA_TITLE)', () => {
+    const result = adapter.parse(GZ_MARKDOWN_PLAIN_ING_HEADING_AND_JINA_TITLE, url);
+    expect(result.notes ?? '').toBe('');
+  });
+
+  it('steps not polluted with Conservazione content', () => {
+    const result = adapter.parse(GZ_MARKDOWN_WITH_AGGIUNGI, url);
+    expect(result.steps.length).toBeGreaterThanOrEqual(2);
+    expect(result.steps.every(s => !s.includes('Consumare'))).toBe(true);
+  });
+
+  it('steps not polluted with Consiglio content', () => {
+    const result = adapter.parse(GZ_MARKDOWN_WITH_CONSIGLIO_AND_ASCOLTA, url);
+    expect(result.steps.length).toBeGreaterThanOrEqual(3);
+    expect(result.steps.every(s => !s.includes('Reidratarli'))).toBe(true);
+  });
+
+  it('ingredients unaffected', () => {
+    const result = adapter.parse(GZ_MARKDOWN_WITH_AGGIUNGI, url);
+    expect(result.ingredients.some(i => i.includes('Spaghetti'))).toBe(true);
+  });
+});
+
+describe('Vegolosi adapter — Conservazione extracted into notes', () => {
+  const adapter = getImportAdapterForDomain('vegolosi.it')!;
+  const url = 'https://vegolosi.it/ricette-vegane/pasta-al-pesto/';
+  const url2 = 'https://vegolosi.it/ricette-vegane/cheesecake-frutti-bosco/';
+
+  it('extracts ### Conservazione content into notes', () => {
+    const result = adapter.parse(VEGOLOSI_OLD_H3_WITH_CONSERVAZIONE, url);
+    expect(result.notes).toContain('Conservazione:');
+    expect(result.notes).toContain('frigo');
+  });
+
+  it('notes absent when no Conservazione section (new bold format)', () => {
+    const result = adapter.parse(VEGOLOSI_NEW_BOLD_FORMAT, url2);
+    expect(result.notes ?? '').toBe('');
+  });
+
+  it('notes absent when no Conservazione section (noise-boundary fixture)', () => {
+    const result = adapter.parse(VEGOLOSI_OLD_H3_NOISE_BOUNDARY, 'https://vegolosi.it/ricette-vegane/zuppa-lenticchie/');
+    expect(result.notes ?? '').toBe('');
+  });
+
+  it('steps not polluted with Conservazione content', () => {
+    const result = adapter.parse(VEGOLOSI_OLD_H3_WITH_CONSERVAZIONE, url);
+    expect(result.steps.every(s => !s.toLowerCase().includes('2 giorni'))).toBe(true);
+  });
+
+  it('ingredients unaffected', () => {
+    const result = adapter.parse(VEGOLOSI_OLD_H3_WITH_CONSERVAZIONE, url);
+    expect(result.ingredients.some(i => i.includes('basilico'))).toBe(true);
+  });
+});
+
+describe('Ricette-Bimby.net adapter — Note section extracted into notes', () => {
+  const adapterRbn = getImportAdapterForDomain('ricette-bimby.net')!;
+  const rbnUrl = 'https://ricette-bimby.net/pancake-allo-yogurt-bimby/';
+  const rbnUrl2 = 'https://ricette-bimby.net/risotto-funghi/';
+
+  it('extracts ### Note content into notes', () => {
+    const result = adapterRbn.parse(RBN_MARKDOWN_WITH_STANDALONE_PARENTHESES_NOTE, rbnUrl);
+    expect(result.notes).toBe('Note: Fine.');
+  });
+
+  it('notes absent when no ### Note section', () => {
+    const result = adapterRbn.parse(RBN_MARKDOWN_TITLE_HYPHEN, rbnUrl2);
+    expect(result.notes ?? '').toBe('');
+  });
+
+  it('steps not polluted with Note content', () => {
+    const result = adapterRbn.parse(RBN_MARKDOWN_WITH_STANDALONE_PARENTHESES_NOTE, rbnUrl);
+    expect(result.steps.every(s => !s.includes('Fine.'))).toBe(true);
+  });
+
+  it('ingredients unaffected', () => {
+    const result = adapterRbn.parse(RBN_MARKDOWN_WITH_STANDALONE_PARENTHESES_NOTE, rbnUrl);
+    expect(result.ingredients.some(i => i.includes('farina'))).toBe(true);
+  });
+});
+
 // ─── RicettePerBimby adapter fixtures ────────────────────────────────────────
 
 const RPB_MARKDOWN_COME_FARE = `# Budino al Cioccolato Bimby
@@ -1295,19 +1438,19 @@ describe('RicettePerBimby adapter — ## Conservazione extracted into notes', ()
   });
 });
 
-describe('RicettePerBimby adapter — other adapters unaffected', () => {
-  it('GialloZafferano adapter still parses correctly', () => {
+describe('RicettePerBimby adapter — other adapters unaffected by RPB changes', () => {
+  it('GialloZafferano adapter still parses steps and now extracts editorial notes', () => {
     const adapter = getImportAdapterForDomain('giallozafferano.it')!;
     const result = adapter.parse(GZ_MARKDOWN_WITH_AGGIUNGI, 'https://ricette.giallozafferano.it/test.html');
     expect(result.steps.length).toBeGreaterThanOrEqual(2);
-    expect(result.notes ?? '').toBe('');
+    expect(result.notes).toContain('Conservazione'); // GZ now extracts editorial notes
   });
 
-  it('Vegolosi adapter still parses correctly', () => {
+  it('Vegolosi adapter still parses steps and now extracts Conservazione notes', () => {
     const adapter = getImportAdapterForDomain('vegolosi.it')!;
     const result = adapter.parse(VEGOLOSI_OLD_H3_WITH_CONSERVAZIONE, 'https://vegolosi.it/ricette-vegane/pasta-al-pesto/');
     expect(result.steps.length).toBeGreaterThanOrEqual(2);
-    expect(result.notes ?? '').toBe('');
+    expect(result.notes).toContain('Conservazione'); // Vegolosi now extracts Conservazione notes
   });
 });
 

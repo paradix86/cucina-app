@@ -156,6 +156,27 @@ function parseVegolositAdapter(markdown: string, url: string): ImportPreviewReci
 
   if (!ingredients.length || !steps.length) throw new Error('VEGOLOSI_PARSE_INCOMPLETE');
 
+  // Extract ### Conservazione content into notes (already used as stepsEnd boundary)
+  let extractedNotes = '';
+  if (conservStart >= 0) {
+    const conservSection = md.slice(conservStart);
+    const lineEnd = conservSection.indexOf('\n');
+    if (lineEnd >= 0) {
+      const afterHeading = conservSection.slice(lineEnd + 1);
+      const stopOffsets = [
+        afterHeading.search(/^###\s+/m),
+        afterHeading.indexOf('Iscriviti alla newsletter'),
+        afterHeading.indexOf('link di affiliazione'),
+        afterHeading.indexOf('Tag: ['),
+      ].filter((i) => i >= 0);
+      const stopRel = stopOffsets.length > 0 ? Math.min(...stopOffsets) : afterHeading.length;
+      const content = normalizeImportText(
+        stripImportLinksAndImages(afterHeading.slice(0, stopRel))
+      ).trim();
+      if (content) extractedNotes = `Conservazione: ${content}`;
+    }
+  }
+
   const cleanTitle = cleanVegolosititle(titleMatch[ 1 ]);
   const localCategory = extractNearbyCategorySignal(md, cleanTitle);
   const category = normalizeImportCategory(localCategory || inferImportCategoryFromTitleAndText(cleanTitle, stepsRaw));
@@ -169,6 +190,7 @@ function parseVegolositAdapter(markdown: string, url: string): ImportPreviewReci
     ingredients,
     steps,
     servings,
+    ...(extractedNotes ? { notes: extractedNotes } : {}),
     preparationType: 'classic',
     tags: suggestImportTags(domain, 'classic', category, cleanTitle),
   });
