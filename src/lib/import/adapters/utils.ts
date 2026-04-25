@@ -199,7 +199,7 @@ export function extractBimbyTaggedStep(stepText: string): string {
   if (!text) return '';
 
   const tags: string[] = [];
-  const timeMatch = text.match(/(\d+\s*(?:sec(?:ondi?)?\.?|min(?:uti?)?\.?))/i);
+  const timeMatch = text.match(/(\d+\s*(?:sec(?:ondo|ondi)?|min(?:uto|uti)?|sec|min)\.?\b)/i);
   const speedMatch = text.match(/\bvel\.?\s*([0-9]+(?:\.[0-9]+)?)/i);
   const tempMatch = text.match(/(?:\btemp\.?\s*|\b)(\d{2,3})\s*°\s*[cf]?/i);
   const varomaMatch = text.match(/\btemp(?:eratura)?\.?\s*Varoma\b/i);
@@ -209,8 +209,8 @@ export function extractBimbyTaggedStep(stepText: string): string {
   if (speedMatch) tags.push(`Vel. ${speedMatch[ 1 ]}`);
   if (timeMatch) {
     const normalizedTime = timeMatch[ 1 ]
-      .replace(/sec(?:ondi?)?\.?/i, 'sec')
-      .replace(/min(?:uti?)?\.?/i, 'min')
+      .replace(/(?:sec(?:ondo|ondi)?|sec)\.?/i, 'sec')
+      .replace(/(?:min(?:uto|uti)?|min)\.?/i, 'min')
       .replace(/\s+/g, ' ')
       .trim();
     tags.push(normalizedTime);
@@ -223,7 +223,7 @@ export function extractBimbyTaggedStep(stepText: string): string {
   do {
     previousInstruction = instruction;
     instruction = instruction
-      .replace(/(\d+\s*(?:sec(?:ondi?)?\.?|min(?:uti?)?\.?))/i, '')
+      .replace(/(\d+\s*(?:sec(?:ondo|ondi)?|min(?:uto|uti)?|sec|min)\.?\b)/i, '')
       .replace(/\bvel\.?\s*[0-9]+(?:\.[0-9]+)?/i, '')
       .replace(/(?:\btemp\.?\s*|\b)\d{2,3}\s*°\s*[cf]?/i, '')
       .replace(/\btemp(?:eratura)?\.?\s*Varoma\b/i, '')
