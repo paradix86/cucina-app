@@ -3,6 +3,8 @@
    ============================================================ */
 
 :root {
+  color-scheme: light;
+
   --green:        #1D9E75;
   --green-dark:   #0F6E56;
   --green-light:  #E1F5EE;
@@ -48,6 +50,8 @@
 }
 
 :root[data-theme="dark"] {
+  color-scheme: dark;
+
   --bg:           #1a1a18;
   --bg-secondary: #252523;
   --bg-tertiary:  #2e2e2b;
@@ -64,6 +68,8 @@
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme]) {
+    color-scheme: dark;
+
     --bg:           #1a1a18;
     --bg-secondary: #252523;
     --bg-tertiary:  #2e2e2b;
