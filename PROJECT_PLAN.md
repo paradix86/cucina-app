@@ -41,7 +41,7 @@ The app has gone through a full architectural migration:
 - [x] Manual import (form, no URL required)
 
 ### Milestone 3 — Planning
-- [x] Shopping list — with smart grouping, quantity merging, section assignment, merge across recipes
+- [x] Shopping list — with smart grouping, quantity merging, section assignment, merge across recipes; name-first parsing (`maiale macinato 250 g` → quantities aggregate correctly)
 - [x] Weekly planner — **delivered** (Mon–Sun grid, breakfast/lunch/dinner slots, recipe picker, persistent local-first storage)
 
 ### Milestone 4 — Project Hygiene
@@ -74,16 +74,15 @@ The app has gone through a full architectural migration:
 ## Technical debt backlog (do before next feature wave)
 
 ### Wave 0 — Quick wins (≤1 day each, no risk)
-- [ ] Surface `saveRecipeBook` errors to callers — currently swallowed silently; return a result so the UI can warn on localStorage full
+- [x] Surface `saveRecipeBook` errors — `StorageWriteError` is thrown by storage and surfaced by Pinia stores via toast on recipe write/import failures
 - [x] Fix `useTimers.js` interval lifecycle — visibility handling, interval cleanup, and test/HMR cleanup are implemented
 - [ ] Normalize `timerMinutes` → seconds in `normalizeStoredRecipe()` — cooking mode recomputes it, but the right place is normalization
 
 ### Wave 1 — Code quality (2–4 days, feature-neutral)
 - [x] Split `src/lib/import/adapters.ts` (1171 lines) into `adapters/index.ts` + one file per adapter + `jsonld.ts` + `generic.ts`
-- [ ] Code-splitting delle view con route lazy-loading — caricare le route on demand invece di includerle tutte nel main bundle
-- [ ] Bundle audit — verificare se pack, markdown, guide o raccolte ricette finiscono ancora nel main bundle
-- [ ] Lazy-load the Ninja built-in pack (7558-line JSON currently bundled at build time) — dynamic `import()` on first access
-- [ ] Valutare `chunkSizeWarningLimit` solo dopo il bundle audit — alzarlo temporaneamente solo se il warning diventa rumore noto e accettato
+- [x] Route-level lazy loading — non-default routes are dynamic imports; main chunk dropped from ~648 kB to ~34 kB
+- [x] Ninja built-in pack (`vetted_subset`) — emitted as a separate lazy chunk, not part of the initial bundle
+- [ ] Bundle audit — residual heavy chunks: `i18n` (~153 kB gz 46), `storage/Dexie` (~147 kB gz 47); evaluate if further splitting is worthwhile
 - [ ] Extend TypeScript to `useTimers.js` and remaining JS composables (opportunistically, when touching files)
 
 ### Wave 3 — Storage architecture
@@ -101,22 +100,26 @@ The app has gone through a full architectural migration:
 1. ~~Weekly planner~~ — delivered in v0.10.0
 2. ~~Import adapter split~~ — adapter registry and per-site files delivered
 3. ~~Storage Phase 1/2~~ — adapter seam and Dexie-backed persistence delivered; Phase 3 remains
+4. ~~Route-level lazy loading~~ — main chunk 34 kB; all non-default routes code-split
+5. ~~Ingredient checklist in cooking mode~~ — in-memory tap-to-check per step; resets on exit/re-entry
+6. ~~Recipe sharing~~ — backend-free share link (`/shared-recipe?data=…`), save shared recipe, QR code modal, clipboard fallback; Web Share API path exists where available, but iOS/Android verification remains a P1 follow-up
 
 ### Post-v1 stabilization
 - [ ] RicettePerBimby live adapter hardening — verify against current live pages and add/update fixtures where stable
 - [ ] E2E stability monitoring — keep watching route churn, storage bootstrap, import failures, and planner navigation regressions
-- [ ] PWA manifest/installability polish — verify manifest path, icons, display mode, and install prompts across target browsers
-- [x] Lightweight report-problem footer link — mailto-based v1 entry point
+- [x] PWA manifest/installability polish — migrated to `manifest.webmanifest`, icons reorganised under `/icons/`, paths verified
+- [x] Lightweight report-problem footer link — implemented as mailto-based v1 entry point
 - [x] Selected Recipe Book filter chip text visibility fix
 
 ### P0
 - [ ] *(none currently)*
 
 ### P1
-1. Complete post-v1 stabilization items above before broader sharing
-2. Ingredient checklist in cooking mode
-3. Recipe sharing via JSON link/QR
+1. Post-v1 stabilization mostly delivered; RicettePerBimby live adapter hardening remains open before broader sharing
+2. ~~Ingredient checklist in cooking mode~~ — delivered; in-memory, resets on exit
+3. ~~Recipe sharing via JSON link/QR~~ — delivered; see Completed above
 4. Meal prep / batch cooking view
+5. Web Share API cross-browser verification (iOS Safari, Android Chrome) — follow-up to recipe sharing
 
 ### P2
 1. Pantry ingredient tracking
@@ -197,6 +200,7 @@ Current shape (v3), forward-compatible:
   servings: '4',
   source: 'web',
   sourceDomain: 'giallozafferano.it',
+  coverImageUrl: 'https://example.com/cover.jpg', // optional; normalized to http/https only
   ingredients: ['...'],
   steps: ['...'],
   timerMinutes: 10,
