@@ -11,6 +11,8 @@ defineProps({
 
 const { theme, setThemePreference } = useTheme();
 
+const iconSrc = `${import.meta.env.BASE_URL}icons/icon-192.png`;
+
 const languageOptions = [
   { value: 'it', label: '🇮🇹 IT' },
   { value: 'en', label: '🇬🇧 EN' },
@@ -23,7 +25,7 @@ const languageOptions = [
 <template>
   <header class="app-header">
     <button class="app-brand" @click="onHome" aria-label="Cucina App home">
-      <span class="app-logo">🍳</span>
+      <img :src="iconSrc" alt="" aria-hidden="true" class="app-logo" />
       <h1>Cucina App</h1>
     </button>
     <div class="header-right">

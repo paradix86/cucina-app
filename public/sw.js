@@ -1,12 +1,16 @@
-const CACHE_NAME = 'cucina-vue-v5';
+const CACHE_NAME = 'cucina-vue-v7';
 
 // Use relative URLs so paths resolve correctly regardless of subpath deployment
 // (e.g. GitHub Pages under /cucina-app/)
 const STATIC_ASSETS = [
   './',
   './manifest.webmanifest',
-  './icons/icon-192.svg',
-  './icons/icon-512.svg',
+  './icons/favicon-16.png',
+  './icons/favicon-32.png',
+  './icons/apple-touch-icon.png',
+  './icons/icon-192.png',
+  './icons/icon-512.png',
+  './icons/icon-512-maskable.png',
 ];
 
 self.addEventListener('install', event => {

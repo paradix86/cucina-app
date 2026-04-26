@@ -21,7 +21,7 @@
       "purpose": "any"
     },
     {
-      "src": "/cucina-app/icons/maskable-512.png",
+      "src": "/cucina-app/icons/icon-512-maskable.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"

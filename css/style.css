@@ -315,7 +315,7 @@ body {
   outline-offset: 4px;
   border-radius: var(--radius-sm);
 }
-.app-logo { font-size: 22px; }
+.app-logo { width: 28px; height: 28px; flex-shrink: 0; }
 .app-header h1 { font-size: 18px; font-weight: 600; }
 .header-right {
   display: flex;
@@ -4316,7 +4316,8 @@ mark {
     min-width: 0;
   }
   .app-logo {
-    font-size: 18px;
+    width: 22px;
+    height: 22px;
   }
   .app-header h1 {
     font-size: 16px;
