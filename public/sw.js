@@ -1,4 +1,4 @@
-const CACHE_NAME = 'cucina-vue-v4';
+const CACHE_NAME = 'cucina-vue-v5';
 
 // Use relative URLs so paths resolve correctly regardless of subpath deployment
 // (e.g. GitHub Pages under /cucina-app/)
@@ -11,7 +11,6 @@ const STATIC_ASSETS = [
 
 self.addEventListener('install', event => {
   event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(STATIC_ASSETS)));
-  self.skipWaiting();
 });
 
 self.addEventListener('activate', event => {

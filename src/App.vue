@@ -137,7 +137,7 @@ function handleToast(message, type = 'info') {
 }
 
 onMounted(() => {
-  initServiceWorkerUpdates();
+  initServiceWorkerUpdates(showToast);
 });
 
 watch(() => route.fullPath, () => {

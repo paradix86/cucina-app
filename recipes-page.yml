@@ -1,7 +1,7 @@
 - generic [ref=e2]:
   - banner [ref=e36]:
     - button "Cucina App home" [ref=e37] [cursor=pointer]:
-      - generic [ref=e38]: 🍳
+      <img src="/icons/icon-192.png" alt="App icon" class="app-logo" />
       - heading "Cucina App" [level=1] [ref=e39]
     - generic [ref=e41]:
       - combobox "Theme" [ref=e42] [cursor=pointer]:

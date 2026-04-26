@@ -3107,6 +3107,29 @@ input[type="number"] {
   border-color: var(--border-md);
   background: color-mix(in srgb, var(--bg) 90%, var(--bg-secondary));
 }
+.toast {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.toast-message {
+  flex: 1;
+}
+.toast-action {
+  flex-shrink: 0;
+  background: none;
+  border: 1px solid var(--border-md);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 600;
+  padding: 4px 10px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.toast-action:hover {
+  background: var(--bg-secondary);
+}
 
 /* ---- Cooking mode ---- */
 .cooking-mode {

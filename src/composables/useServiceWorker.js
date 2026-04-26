@@ -1,4 +1,5 @@
 import { APP_META } from '../lib/appMeta.js';
+import { t } from '../lib/i18n.js';
 
 const SW_RELOAD_FLAG = `cucina_sw_reloaded_${APP_META.buildId}`;
 
@@ -22,7 +23,7 @@ export async function refreshAppRuntime() {
   window.location.reload();
 }
 
-export function initServiceWorkerUpdates() {
+export function initServiceWorkerUpdates(showToast) {
   if (!('serviceWorker' in navigator)) return;
 
   // In dev/HMR we must avoid cache-first SW interference serving stale modules.
@@ -41,6 +42,7 @@ export function initServiceWorkerUpdates() {
   const swUrl = `${import.meta.env.BASE_URL}sw.js`;
 
   let hasReloadedForUpdate = sessionStorage.getItem(SW_RELOAD_FLAG) === '1';
+  let updateToastShown = false;
 
   navigator.serviceWorker.addEventListener('controllerchange', () => {
     if (hasReloadedForUpdate) return;
@@ -49,20 +51,31 @@ export function initServiceWorkerUpdates() {
     window.location.reload();
   });
 
-  navigator.serviceWorker.register(swUrl).then(reg => {
-    reg.update().catch(() => {});
+  function showUpdateToast(worker) {
+    if (updateToastShown || !showToast) return;
+    updateToastShown = true;
+    showToast(t('pwa_update_available'), 'info', {
+      actionLabel: t('reload'),
+      onAction: () => worker.postMessage({ type: 'SKIP_WAITING' }),
+    });
+  }
 
-    if (reg.waiting) reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+  navigator.serviceWorker.register(swUrl).then(reg => {
+    if (reg.waiting && navigator.serviceWorker.controller) {
+      showUpdateToast(reg.waiting);
+    }
 
     reg.addEventListener('updatefound', () => {
       const installing = reg.installing;
       if (!installing) return;
       installing.addEventListener('statechange', () => {
         if (installing.state === 'installed' && navigator.serviceWorker.controller) {
-          installing.postMessage({ type: 'SKIP_WAITING' });
+          showUpdateToast(reg.waiting ?? installing);
         }
       });
     });
+
+    reg.update().catch(() => {});
   }).catch(error => {
     console.warn('Service Worker registration failed:', error);
   });
