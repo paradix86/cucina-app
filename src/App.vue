@@ -90,7 +90,7 @@ function goHome() {
 }
 
 function handleRecipeTimer(recipe) {
-  timers.startRecipeTimer(recipe.name, recipe.timerMinutes);
+  timers.startRecipeTimer(recipe.name, recipe.timerSeconds ?? (recipe.timerMinutes ?? 0) * 60);
   router.push('/timer');
 }
 
