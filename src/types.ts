@@ -34,6 +34,7 @@ export interface Recipe {
   ingredients: string[];
   steps: string[];
   timerMinutes?: number;
+  timerSeconds?: number;
   favorite?: boolean;
   lastViewedAt?: number;
   notes?: string;

@@ -154,6 +154,10 @@ function normalizeStoredRecipe(recipe: RecipeInput): Recipe {
   const validMealOccasions = [ 'Colazione', 'Pranzo', 'Cena', 'Spuntino' ];
   const mealOccasion = asStringArray(recipe?.mealOccasion).filter(m => validMealOccasions.includes(m));
 
+  const timerMinutes = Math.max(0, Math.floor(asNumber(recipe.timerMinutes, 0)));
+  const rawTimerSec = asNumber(recipe.timerSeconds, -1);
+  const timerSeconds = rawTimerSec >= 0 ? Math.max(0, Math.floor(rawTimerSec)) : timerMinutes * 60;
+
   return {
     ...recipe,
     id,
@@ -166,7 +170,8 @@ function normalizeStoredRecipe(recipe: RecipeInput): Recipe {
     coverImageUrl: coverImageUrl || undefined,
     ingredients: asStringArray(recipe.ingredients ?? recipe.ingredienti),
     steps: asStringArray(recipe.steps),
-    timerMinutes: asNumber(recipe.timerMinutes, 0),
+    timerMinutes,
+    timerSeconds,
     url: asString(recipe.url) || undefined,
     difficolta: asString(recipe.difficolta) || undefined,
     notes: asString(recipe.notes) || undefined,

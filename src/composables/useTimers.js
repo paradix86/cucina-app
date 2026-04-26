@@ -136,13 +136,12 @@ export function useTimers() {
     return true;
   }
 
-  function startRecipeTimer(name, minutes) {
+  function startRecipeTimer(name, seconds) {
     const existing = Object.values(timers.value).find(timer => timer.name === name && timer.remaining > 0);
     if (existing) return false;
-    const total = minutes * 60;
     timers.value = {
       ...timers.value,
-      [`t${Date.now()}`]: { name, total, remaining: total, running: true },
+      [`t${Date.now()}`]: { name, total: seconds, remaining: seconds, running: true },
     };
     syncTimerInterval();
     return true;

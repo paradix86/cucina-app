@@ -892,3 +892,45 @@ describe('dexie bootstrap migration', () => {
     infoSpy.mockRestore();
   });
 });
+
+describe('timer normalization', () => {
+  it('derives timerSeconds from timerMinutes when timerSeconds is absent', () => {
+    addRecipe({ ...BASE_RECIPE, id: 'timer-1', timerMinutes: 10 });
+    const saved = loadRecipeBook().find(r => r.id === 'timer-1');
+    expect(saved?.timerMinutes).toBe(10);
+    expect(saved?.timerSeconds).toBe(600);
+  });
+
+  it('preserves explicit valid timerSeconds and keeps timerMinutes intact', () => {
+    addRecipe({ ...BASE_RECIPE, id: 'timer-2', timerMinutes: 5, timerSeconds: 90 });
+    const saved = loadRecipeBook().find(r => r.id === 'timer-2');
+    expect(saved?.timerSeconds).toBe(90);
+    expect(saved?.timerMinutes).toBe(5);
+  });
+
+  it('floors decimal timerSeconds to integer', () => {
+    addRecipe({ ...BASE_RECIPE, id: 'timer-3', timerSeconds: 61.9 });
+    const saved = loadRecipeBook().find(r => r.id === 'timer-3');
+    expect(saved?.timerSeconds).toBe(61);
+  });
+
+  it('falls back to timerMinutes-derived seconds when timerSeconds is negative', () => {
+    addRecipe({ ...BASE_RECIPE, id: 'timer-4', timerMinutes: 3, timerSeconds: -5 });
+    const saved = loadRecipeBook().find(r => r.id === 'timer-4');
+    expect(saved?.timerSeconds).toBe(180);
+  });
+
+  it('defaults both fields to 0 when neither is present', () => {
+    addRecipe({ ...BASE_RECIPE, id: 'timer-5' });
+    const saved = loadRecipeBook().find(r => r.id === 'timer-5');
+    expect(saved?.timerSeconds).toBe(0);
+    expect(saved?.timerMinutes).toBe(0);
+  });
+
+  it('floors decimal timerMinutes and derives timerSeconds from the floored value', () => {
+    addRecipe({ ...BASE_RECIPE, id: 'timer-6', timerMinutes: 10.7 });
+    const saved = loadRecipeBook().find(r => r.id === 'timer-6');
+    expect(saved?.timerMinutes).toBe(10);
+    expect(saved?.timerSeconds).toBe(600);
+  });
+});
