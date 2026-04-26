@@ -132,7 +132,10 @@ export function normalizeImportedServings(text: string | null | undefined, fallb
     .replace(/\s*persone?\b/gi, '')
     .replace(/\s*persona\b/gi, '')
     .trim();
-  return cleaned || fallback;
+  if (!cleaned) return fallback;
+  // If a non-numeric suffix remains (e.g. "12 Tamales", "6 porzioni"), keep only the leading number.
+  const numMatch = cleaned.match(/^(\d+(?:[.,]\d+)?)/);
+  return numMatch ? numMatch[1] : cleaned;
 }
 
 export function inferImportPreparationType(text: string, domain: string): PreparationType {

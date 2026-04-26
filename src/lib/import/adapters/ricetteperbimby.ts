@@ -20,10 +20,12 @@ import {
 const RPB_INGREDIENT_HEADING_RE = /^#{1,3}\s+Ingredienti\s*$/mi;
 // Accepts "Come fare/preparare/cucinare …", "Procedimento", "Preparazione" as steps headings
 const RPB_STEPS_HEADING_RE = /^#{1,3}\s+(?:Come (?:fare|preparare|cucinare)|Procedimento|Preparazione)\b/mi;
-// Promo/site sections where extraction must stop
-const RPB_STEPS_STOP_RE = /^#{1,4}\s+(?:Ti potrebbe interessare|Accessori|Condividi|Scarica|I nostri social|In evidenza|Più popolari)/mi;
-// Useful extra sections to capture into notes
+// Promo/site sections where extraction must stop (including "Quando mangiare" editorial sections)
+const RPB_STEPS_STOP_RE = /^#{1,4}\s+(?:Ti potrebbe interessare|Accessori|Condividi|Scarica|I nostri social|In evidenza|Più popolari|Quando mangiare)/mi;
+// Useful extra sections — standalone heading: "## Consigli"
 const RPB_NOTES_HEADING_RE = /^#{1,3}\s+(Consigli|Come conservare|Conservazione|Note)\s*$/i;
+// Prefix-style notes heading: "## Recipe Title: consigli e varianti"
+const RPB_NOTES_PREFIX_HEADING_RE = /^#{1,3}\s+[^#\n]+?:\s*(Consigli|Come conservare|Conservazione|Note)\b/i;
 const RPB_ANY_HEADING_RE = /^#{1,4}\s+/;
 
 // ─── Title extraction ─────────────────────────────────────────────────────────
@@ -87,10 +89,11 @@ function extractRpbTips(md: string, stepsStart: number): ImportedRecipeTip[] {
     const t = line.trim();
     if (RPB_STEPS_STOP_RE.test(t)) { flush(); break; }
 
-    const notesMatch = RPB_NOTES_HEADING_RE.exec(t);
+    const notesMatch = RPB_NOTES_HEADING_RE.exec(t) ?? RPB_NOTES_PREFIX_HEADING_RE.exec(t);
     if (notesMatch) {
       flush();
-      label = notesMatch[1];
+      const kw = notesMatch[1];
+      label = kw.charAt(0).toUpperCase() + kw.slice(1);
       continue;
     }
 
@@ -109,11 +112,17 @@ function extractRpbTips(md: string, stepsStart: number): ImportedRecipeTip[] {
 function parseRicettePerBimbyAdapter(markdown: string, url: string): ImportPreviewRecipe {
   const md = normalizeImportText(markdown);
 
-  // Metadata — use ^Preparazione to avoid matching ## Preparazione heading
-  const difficultyMatch = md.match(/Difficoltà\s*\n+\s*([^\n]+)/i);
-  const totalTimeMatch  = md.match(/Tempo totale\s*\n+\s*([^\n]+)/i);
-  const prepTimeMatch   = md.match(/^Preparazione\s*\n+\s*([^\n]+)/m);
-  const servingsMatch   = md.match(/Quantità\s*\n+\s*([^\n]+)/i);
+  // Metadata — handle both "Difficoltà: bassa" (inline colon, current live pages)
+  // and legacy "Difficoltà\n\nFacile" (newline-separated) formats.
+  // ^Preparazione avoids matching the ## Preparazione steps heading.
+  const difficultyMatch = md.match(/Difficoltà[ \t]*:[ \t]*([^\n]+)/i)
+                       ?? md.match(/Difficoltà\s*\n+\s*([^\n]+)/i);
+  const totalTimeMatch  = md.match(/Tempo totale[ \t]*:[ \t]*([^\n]+)/i)
+                       ?? md.match(/Tempo totale\s*\n+\s*([^\n]+)/i);
+  const prepTimeMatch   = md.match(/^Preparazione[ \t]*:[ \t]*([^\n]+)/m)
+                       ?? md.match(/^Preparazione\s*\n+\s*([^\n]+)/m);
+  const servingsMatch   = md.match(/Quantità[ \t]*:[ \t]*([^\n]+)/i)
+                       ?? md.match(/Quantità\s*\n+\s*([^\n]+)/i);
 
   // Section detection — support heading levels 1–3
   const ingHeadingMatch = RPB_INGREDIENT_HEADING_RE.exec(md);
@@ -139,14 +148,15 @@ function parseRicettePerBimbyAdapter(markdown: string, url: string): ImportPrevi
     throw new Error(`RPB_SECTIONS_NOT_FOUND — ${diag}`);
   }
 
-  // Ingredients: only bullet/dash lines, skip prose and sub-headings
+  // Ingredients: only bullet/dash lines, skip prose and sub-headings.
+  // Filter "Per il ripieno" / "Per la pasta" style sub-section labels that appear as bullets.
   const ingredients = md
     .slice(ingredientsStart, stepsStart)
     .split('\n')
     .map((line) => line.trim())
     .filter((line) => line.startsWith('*') || line.startsWith('-'))
     .map((line) => line.replace(/^[*-]\s+/, '').replace(/\*\*/g, '').trim())
-    .filter((text) => text.length > 0 && text.length <= 150);
+    .filter((text) => text.length > 0 && text.length <= 150 && !/^Per\s+/i.test(text));
 
   // Steps: numbered items from stepsStart, stop at promo sections
   const stepsSection = md.slice(stepsStart);

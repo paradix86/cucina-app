@@ -1546,6 +1546,237 @@ describe('RicettePerBimby adapter — ## Conservazione extracted into importedIn
   });
 });
 
+// ─── RicettePerBimby adapter — new live-page hardening fixtures ──────────────
+
+// Inline colon metadata format (current live pages as of 2025)
+const RPB_INLINE_COLON_METADATA = `# Tamales Bimby
+
+Difficoltà: bassa
+Tempo totale: 2 ore 55 minuti
+Tempo di preparazione: 40 minuti
+Tempo di cottura: 2 ore 15 minuti
+Quantità: 12 Tamales
+
+## Ingredienti
+
+* 500 g farina di mais
+* 200 g lardo
+* 1 litro brodo di pollo
+* 12 foglie di mais essiccate
+
+## Come fare i tamales con il Bimby
+
+1. Mettere in ammollo le foglie di mais per 30 minuti in acqua tiepida.
+2. Sciogliere il lardo nel boccale: 3 min. 80°C vel. 2.
+3. Aggiungere farina e brodo, impastare: 2 min. vel. spiga.
+4. Farcire le foglie e cuocere nel Varoma: 45 min. vel. 1, Varoma.`;
+
+// Ingredient sub-section labels as bullet points
+const RPB_INGREDIENT_SUBSECTION_LABELS = `# Ravioli Bimby
+
+Difficoltà
+
+Media
+
+Tempo totale
+
+90 min
+
+Quantità
+
+4 persone
+
+## Ingredienti
+
+* Per la pasta
+
+* 300 g farina 00
+* 3 uova
+* 1 pizzico di sale
+
+* Per il ripieno
+
+* 250 g ricotta
+* 100 g spinaci lessati
+* 50 g parmigiano grattugiato
+
+## Come fare i ravioli con il Bimby
+
+1. Impastare farina, uova e sale nel boccale: 2 min. vel. spiga.
+2. Frullare spinaci e ricotta: 10 sec. vel. 5.
+3. Stendere la sfoglia e farcire con il ripieno.
+4. Chiudere i ravioli e cuocere in acqua bollente.`;
+
+// Quando mangiare editorial section should stop tips extraction
+const RPB_QUANDO_MANGIARE_STOP = `# Zuppa di Cipolle Bimby
+
+Difficoltà
+
+Facile
+
+Tempo totale
+
+40 min
+
+Quantità
+
+4 persone
+
+## Ingredienti
+
+* 500 g cipolle
+* 500 ml brodo vegetale
+* 30 g burro
+* 2 cucchiai farina
+
+## Come fare la zuppa di cipolle con il Bimby
+
+1. Affettare le cipolle nel boccale: 3 sec. vel. 5.
+2. Aggiungere burro e soffriggere: 10 min. 120°C vel. 1.
+3. Unire brodo e farina: 20 min. 100°C vel. 1.
+
+## Quando mangiare la zuppa di cipolle
+
+La zuppa di cipolle è perfetta come primo piatto invernale da gustare ben calda.
+
+## Consigli
+
+Aggiungere crostini di pane tostato prima di servire.`;
+
+// Notes heading with "## Recipe Name: consigli e varianti" prefix pattern
+const RPB_NOTES_PREFIX_HEADING = `# Torta al Cioccolato Bimby
+
+Difficoltà
+
+Facile
+
+Tempo totale
+
+50 min
+
+Quantità
+
+8 persone
+
+## Ingredienti
+
+* 200 g cioccolato fondente
+* 150 g burro
+* 200 g zucchero
+* 4 uova
+* 100 g farina 00
+
+## Come fare la torta al cioccolato con il Bimby
+
+1. Sciogliere cioccolato e burro nel boccale: 5 min. 60°C vel. 2.
+2. Aggiungere zucchero, uova e farina, mescolare: 30 sec. vel. 4.
+3. Versare in uno stampo e cuocere a 180° per 35 minuti.
+
+## Torta al Cioccolato Bimby: consigli e varianti
+
+Per una torta più umida, aggiungere 50 ml di panna. Si può sostituire il cioccolato fondente con quello al latte.
+
+### Ti potrebbe interessare anche
+
+[promo content]`;
+
+describe('RicettePerBimby adapter — inline colon metadata format', () => {
+  const adapter = getImportAdapterForDomain('ricetteperbimby.it')!;
+  const url = 'https://www.ricetteperbimby.it/ricette/tamales-bimby/';
+
+  it('extracts difficulty from inline colon format (Difficoltà: bassa)', () => {
+    const result = adapter.parse(RPB_INLINE_COLON_METADATA, url);
+    expect(result.difficolta).toBe('bassa');
+  });
+
+  it('extracts total time from inline colon format', () => {
+    const result = adapter.parse(RPB_INLINE_COLON_METADATA, url);
+    expect(result.time).toContain('2 ore 55 minuti');
+  });
+
+  it('extracts servings from inline colon format (Quantità: 12 Tamales)', () => {
+    const result = adapter.parse(RPB_INLINE_COLON_METADATA, url);
+    expect(result.servings).toBe('12');
+  });
+
+  it('parses ingredients and steps correctly with inline metadata', () => {
+    const result = adapter.parse(RPB_INLINE_COLON_METADATA, url);
+    expect(result.ingredients.length).toBeGreaterThanOrEqual(3);
+    expect(result.steps.length).toBeGreaterThanOrEqual(4);
+  });
+});
+
+describe('RicettePerBimby adapter — ingredient sub-section labels filtered', () => {
+  const adapter = getImportAdapterForDomain('ricetteperbimby.it')!;
+  const url = 'https://www.ricetteperbimby.it/ricette/ravioli-bimby/';
+
+  it('excludes "Per la pasta" and "Per il ripieno" section labels from ingredients', () => {
+    const result = adapter.parse(RPB_INGREDIENT_SUBSECTION_LABELS, url);
+    expect(result.ingredients.every(i => !/^Per\s+/i.test(i))).toBe(true);
+  });
+
+  it('still extracts all real ingredients from both sub-sections', () => {
+    const result = adapter.parse(RPB_INGREDIENT_SUBSECTION_LABELS, url);
+    expect(result.ingredients.some(i => i.includes('farina'))).toBe(true);
+    expect(result.ingredients.some(i => i.includes('ricotta'))).toBe(true);
+    expect(result.ingredients.length).toBeGreaterThanOrEqual(6);
+  });
+});
+
+describe('RicettePerBimby adapter — Quando mangiare stops tips extraction', () => {
+  const adapter = getImportAdapterForDomain('ricetteperbimby.it')!;
+  const url = 'https://www.ricetteperbimby.it/ricette/zuppa-cipolle-bimby/';
+
+  it('does not include editorial content from ## Quando mangiare in tips', () => {
+    const result = adapter.parse(RPB_QUANDO_MANGIARE_STOP, url);
+    const tips = result.importedInfo?.tips ?? [];
+    expect(tips.every(t => !/invernale|perfetta/i.test(t.text))).toBe(true);
+  });
+
+  it('Consigli section after ## Quando mangiare is not captured', () => {
+    const result = adapter.parse(RPB_QUANDO_MANGIARE_STOP, url);
+    const tips = result.importedInfo?.tips ?? [];
+    expect(tips.find(t => t.title === 'Consigli')).toBeUndefined();
+  });
+
+  it('steps before the stop heading are still parsed correctly', () => {
+    const result = adapter.parse(RPB_QUANDO_MANGIARE_STOP, url);
+    expect(result.steps.length).toBeGreaterThanOrEqual(3);
+    expect(result.steps.some(s => s.includes('cipolle'))).toBe(true);
+  });
+});
+
+describe('RicettePerBimby adapter — notes heading with recipe name prefix', () => {
+  const adapter = getImportAdapterForDomain('ricetteperbimby.it')!;
+  const url = 'https://www.ricetteperbimby.it/ricette/torta-cioccolato-fondente-bimby/';
+
+  it('extracts tips from "## Title: consigli e varianti" style heading', () => {
+    const result = adapter.parse(RPB_NOTES_PREFIX_HEADING, url);
+    const tips = result.importedInfo?.tips ?? [];
+    const consigli = tips.find(t => t.title === 'Consigli');
+    expect(consigli).toBeDefined();
+    expect(consigli?.text).toContain('panna');
+  });
+
+  it('tip title is normalized to "Consigli" (capitalized)', () => {
+    const result = adapter.parse(RPB_NOTES_PREFIX_HEADING, url);
+    const tips = result.importedInfo?.tips ?? [];
+    expect(tips.some(t => t.title === 'Consigli')).toBe(true);
+  });
+
+  it('promo content after the tips is excluded from importedInfo', () => {
+    const result = adapter.parse(RPB_NOTES_PREFIX_HEADING, url);
+    const tips = result.importedInfo?.tips ?? [];
+    expect(tips.every(t => !/promo|Ti potrebbe/i.test(t.text))).toBe(true);
+  });
+
+  it('cooking steps are not affected by the notes heading variant', () => {
+    const result = adapter.parse(RPB_NOTES_PREFIX_HEADING, url);
+    expect(result.steps.length).toBeGreaterThanOrEqual(3);
+    expect(result.steps.some(s => s.includes('cioccolato'))).toBe(true);
+  });
+});
+
 describe('RicettePerBimby adapter — other adapters unaffected by RPB changes', () => {
   it('GialloZafferano adapter still parses steps and extracts editorial tips', () => {
     const adapter = getImportAdapterForDomain('giallozafferano.it')!;
