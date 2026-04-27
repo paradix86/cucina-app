@@ -58,21 +58,34 @@ The app has gone through a full architectural migration:
 - [ ] Meal prep / batch cooking — **backlog**
 - [ ] Pantry suggestions — **backlog**
 
-### Milestone 7 — Nutrition MVP
+### Milestone 7 — Nutrition MVP ✓ delivered
 - [x] Nutrition data model (`NutritionPer100g`, `IngredientNutrition`, `RecipeNutrition`) in `src/types.ts`
 - [x] Normalization and storage round-trip (`normalizeRecipeNutrition`, `normalizeIngredientNutritionArray`) in `src/lib/storage.ts`
 - [x] Italian ingredient parser (`parseIngredientAmount`) in `src/lib/nutrition.ts`
 - [x] Nutrition calculation engine (`calculateRecipeNutrition`, `parseServings`, `scaleNutritionBlock`) in `src/lib/nutrition.ts`
 - [x] Provider abstraction (`NutritionProviderClient`, `NutritionSearchResult`, `manualProvider`, `getProvider`) in `src/lib/nutritionProviders.ts`
-- [x] Enrichment orchestrator (`enrichRecipeNutrition`) in `src/lib/nutritionEnrichment.ts`
-- [x] Nutrition section UI in `RecipeDetailView.vue` (badge, nutrient grid, calculate button, per-serving/per-recipe display)
-- [x] i18n coverage — all 5 languages (IT/EN/DE/FR/ES), 9 new keys
+- [x] Multi-provider enrichment orchestrator with ordered fallback and alias-query confidence boost — `src/lib/nutritionEnrichment.ts`
+- [x] OpenFoodFacts provider (CORS-safe, top-result selection, confidence scoring) registered in `NUTRITION_PROVIDERS`
+- [x] Smart ingredient matching — `normalizeIngredientName`, `getIngredientAliases`, `buildNutritionSearchQueries` — `src/lib/ingredientMatching.ts`; alias table covers olio/farina/riso/pasta/zucchero/uova variants
+- [x] Gram estimation from unit context (cucchiaio, cucchiaino, tazza, spicchio, foglia, pizzico…) — `estimateGrams()` in `src/lib/nutrition.ts`
+- [x] Transparency UI — estimated quantities, excluded ingredients, provider attribution, confidence label — `src/lib/nutritionTransparency.ts` + `RecipeDetailView.vue`
+- [x] Manual quantity override — `parseGramsInput`, `applyGramsOverrides` — `src/lib/nutritionOverride.ts`; inline per-ingredient gram editor with save/cancel in `RecipeDetailView.vue`; persists `status: 'manual'` + updated fingerprint
+- [x] Staleness detection — `ingredientsFingerprint` on `RecipeNutrition`; stale-warning banner in UI
+- [x] Nutrition section UI in `RecipeDetailView.vue` — badge, conic-gradient macro donut, nutrient grid, loading spinner, per-serving/per-recipe display, 44 px touch targets on `<details>`
+- [x] i18n coverage — all 5 languages (IT/EN/DE/FR/ES), 20+ nutrition-specific keys
 - [x] Dark-mode badge colors via CSS custom properties in `css/style.css`
 - [x] `cloneRecipe` deep-clone of `nutrition` and `ingredientNutrition` in `src/stores/recipeBook.ts`
-- [ ] OpenFoodFacts / USDA provider integration — **backlog**
-- [ ] Gram-equivalent conversion for non-weight units (ml→g for liquids) — **backlog**
-- [ ] Nutrition editing / manual override UI — **backlog**
-- [ ] Micronutrient breakdown panel (vitamins, minerals) — **backlog**
+- [x] Unit tests — `nutrition.test.ts`, `nutritionProviders.test.ts`, `nutritionEnrichment.test.ts`, `ingredientMatching.test.ts`, `nutritionOverride.test.ts`, `store-nutrition.test.ts`
+- [x] E2E tests — `tests/e2e/nutrition.spec.ts` (complete/partial/missing/estimated/not-included/manual-override flows)
+
+### Milestone 7 — Nutrition post-MVP backlog
+- [ ] Per-100g manual override — let users enter their own `nutritionPer100g` values when a provider result is wrong or unavailable
+- [ ] Provider selector UI — let users choose between available providers (manual built-in, OpenFoodFacts) per session or per recipe
+- [ ] USDA FoodData Central provider — higher coverage for non-Italian ingredients; requires CORS proxy or edge function
+- [ ] Micronutrient breakdown panel — vitamins (A, C, D, B12…) and minerals (iron, calcium…) where provider data includes them
+- [ ] Alias dictionary expansion — add more Italian ingredient families (latte, burro, carne, verdure variants) and regional synonyms
+- [ ] Nutrition import/export edge cases — round-trip fidelity for recipes with `status: 'manual'`; handle `ingredientsFingerprint` mismatch on shared-link import
+- [ ] Gram-equivalent conversion for volume units — ml→g via ingredient-specific density table (olio ~0.92, latte ~1.03, etc.) to improve estimation accuracy
 
 ### Milestone 6 — Architecture (v1 foundation delivered)
 - [x] Vue 3 + Vite migration
@@ -118,7 +131,8 @@ The app has gone through a full architectural migration:
 3. ~~Storage Phase 1/2~~ — adapter seam and Dexie-backed persistence delivered; Phase 3 remains
 4. ~~Route-level lazy loading~~ — main chunk 34 kB; all non-default routes code-split
 5. ~~Ingredient checklist in cooking mode~~ — in-memory tap-to-check per step; resets on exit/re-entry
-6. ~~Recipe sharing~~ — backend-free share link (`/shared-recipe?data=…`), save shared recipe, QR code modal, clipboard fallback; Web Share API path exists where available, but iOS/Android verification remains a P1 follow-up
+6. ~~Recipe sharing~~ — backend-free share link (`/shared-recipe?data=…`), LZ-string compression + base64url fallback, save shared recipe, QR code modal, clipboard fallback; Web Share API path exists where available, but iOS/Android verification remains a P1 follow-up
+7. ~~Nutrition MVP~~ — multi-provider enrichment (manual built-in + OpenFoodFacts), smart Italian ingredient matching with alias table, gram estimation from unit context, transparency UI, manual quantity override, staleness detection, full unit + E2E coverage
 
 ### Post-v1 stabilization
 - [ ] RicettePerBimby live adapter hardening — verify against current live pages and add/update fixtures where stable
@@ -224,6 +238,25 @@ Current shape (v3), forward-compatible:
   favorite: false,
   tags: [],
   lastViewedAt: 0,
+  // Nutrition — populated on demand via RecipeDetailView "Calculate" button
+  ingredientNutrition: [
+    {
+      ingredientName: 'pasta',
+      grams: 200,
+      gramsEstimated: false,
+      source: { provider: 'openfoodfacts' },
+      nutritionPer100g: { kcal: 350, proteinG: 13, carbsG: 70, fatG: 1.5, fiberG: 2.7 },
+    },
+  ],
+  nutrition: {
+    status: 'complete',   // 'missing' | 'partial' | 'complete' | 'manual'
+    perRecipe:  { kcal: 700, proteinG: 26, carbsG: 140, fatG: 3.0, fiberG: 5.4 },
+    perServing: { kcal: 350, proteinG: 13, carbsG:  70, fatG: 1.5, fiberG: 2.7 },
+    servingsUsed: 2,
+    calculatedAt: '2026-04-27T11:00:00.000Z',
+    ingredientsFingerprint: '200 g pasta',  // staleness guard; recalc clears stale-warning
+    sources: [{ provider: 'openfoodfacts', confidence: 0.92 }],
+  },
 }
 ```
 

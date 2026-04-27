@@ -15,7 +15,7 @@ Tablet-friendly cooking app built with Vue 3 + Vite.
 - **Built-in Recipes**: curated dataset with preparation-type filtering
 - **Shopping List**: add ingredients from recipes, smart grouping (numeric + exact + near-duplicate normalization), clearer per-recipe provenance, plain-text copy/share export, section assignment
 - **Weekly Planner**: plan breakfast, lunch, and dinner across 7 days using recipes from your recipe book
-- **Nutrition**: per-ingredient and per-recipe calorie/macronutrient breakdown, on-demand calculation from saved recipes, extensible provider system
+- **Nutrition**: on-demand calorie/macronutrient breakdown per ingredient and per recipe; multi-provider enrichment (manual built-in + OpenFoodFacts); smart Italian ingredient matching with alias expansion; gram estimation from unit context; transparency panel (estimated quantities, excluded ingredients, provider attribution); manual gram override with recalculation; staleness detection; `status` badge (missing / partial / complete / manual)
 - **Cooking Mode**: step-by-step fullscreen mode with per-step timer
 - **Timers**: multiple parallel timers with toast completion feedback
 - **Theme + i18n**: light/dark/system theme, IT/EN/DE/FR/ES translations
@@ -67,6 +67,8 @@ npm run test:unit -- --ui
 - **import/adapters/** — adapter selection, URL pattern matching, text normalization (`index.ts`, `utils.ts`); site parsers (`giallozafferano.ts`, `ricetteperbimby.ts`, `ricettebimbynet.ts`, `vegolosi.ts`); JSON-LD / Schema.org structured data, WPRM extraction, malformed data handling (`jsonld.ts`); generic markdown fallback (`generic.ts`)
 - **import/core.ts** — domain extraction, source detection from URL
 - **import/duemmePack.ts** — markdown parsing, recipe extraction
+- **nutrition** — calculation engine, provider matching + confidence scoring, multi-provider fallback, alias-query enrichment, gram estimation, transparency derivation, manual override (`parseGramsInput`, `applyGramsOverrides`), store integration
+- **E2E (Playwright)** — complete/partial/missing/estimated/not-included/manual-override nutrition flows via `tests/e2e/nutrition.spec.ts`
 
 See `TESTING.md` for full test inventory and design decisions.
 
@@ -96,6 +98,12 @@ src/
     i18nData.js
     builtinData.js
     appMeta.js
+    nutrition.ts              # parsing, calculation, gram estimation
+    nutritionProviders.ts     # provider abstraction + manual/OpenFoodFacts clients
+    nutritionEnrichment.ts    # multi-provider orchestrator with alias-query fallback
+    ingredientMatching.ts     # normalizeIngredientName, alias table, query builder
+    nutritionTransparency.ts  # derive estimated/excluded/sources/confidence
+    nutritionOverride.ts      # parseGramsInput, applyGramsOverrides
     import/
       core.ts
       web.ts

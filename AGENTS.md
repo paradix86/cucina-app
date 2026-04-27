@@ -10,7 +10,7 @@ Extended reference for AI agents working in this repository. Start with `CLAUDE.
 - **State**: Pinia 3 (setup stores)
 - **Types**: TypeScript gradual migration (`tsconfig.json`, `allowJs: true`)
 - **Vue utilities**: VueUse (targeted adoption only)
-- **Persistence**: `localStorage` only, no backend
+- **Persistence**: Dexie/IndexedDB adapter with transparent `localStorage` fallback; no backend
 - **PWA**: cache-first service worker in `public/sw.js`
 
 ## Key source files
@@ -38,7 +38,13 @@ Extended reference for AI agents working in this repository. Start with `CLAUDE.
 | `src/lib/import/adapters/{site}.ts` | Per-site parsers: giallozafferano, ricetteperbimby, ricettebimbynet, vegolosi |
 | `src/lib/import/adapters/jsonld.ts` | JSON-LD, WPRM, HTML meta extraction |
 | `src/lib/import/adapters/generic.ts` | Generic markdown heading-scanner fallback |
-| `src/types.ts` | Shared domain/import/storage TypeScript types |
+| `src/lib/nutrition.ts` | Ingredient parsing, gram estimation, calculation engine |
+| `src/lib/nutritionProviders.ts` | `NutritionProviderClient` interface, manual + OpenFoodFacts providers |
+| `src/lib/nutritionEnrichment.ts` | Multi-provider orchestrator with alias-query confidence boost |
+| `src/lib/ingredientMatching.ts` | Ingredient name normalization, alias table, search query builder |
+| `src/lib/nutritionTransparency.ts` | Derive estimated/excluded/sources/confidence from enrichment results |
+| `src/lib/nutritionOverride.ts` | `parseGramsInput`, `applyGramsOverrides` for manual quantity editing |
+| `src/types.ts` | Shared domain/import/storage/nutrition TypeScript types |
 | `src/components/CookingModeView.vue` | Step-by-step cooking UI with per-step timer |
 | `public/sw.js` | Cache-first service worker |
 | `public/manifest.webmanifest` | PWA manifest |
@@ -115,23 +121,42 @@ The nutrition feature follows the same lib/store/view separation as the rest of 
 
 | File | Role |
 |---|---|
-| `src/lib/nutrition.ts` | Pure logic: ingredient parsing, unit normalization, calculation engine |
-| `src/lib/nutritionProviders.ts` | Provider abstraction (`NutritionProviderClient`), manual built-in data, `getProvider()` |
-| `src/lib/nutritionEnrichment.ts` | Orchestrator: `enrichRecipeNutrition(recipe, provider, options?)` |
-| `src/types.ts` | `NutritionPer100g`, `IngredientNutrition`, `RecipeNutrition`, `ParsedIngredientAmount` |
+| `src/lib/nutrition.ts` | Pure logic: `parseIngredientAmount`, `estimateGrams`, `calculateRecipeNutrition`, `scaleNutritionBlock` |
+| `src/lib/nutritionProviders.ts` | `NutritionProviderClient` interface, manual built-in provider, OpenFoodFacts provider, `NUTRITION_PROVIDERS` ordered list |
+| `src/lib/nutritionEnrichment.ts` | Multi-provider orchestrator: `enrichRecipeNutritionWithProviders(recipe, providers, options?)` — tries providers in order, alias queries with confidence boost |
+| `src/lib/ingredientMatching.ts` | `normalizeIngredientName`, `getIngredientAliases` (alias table for olio/farina/riso/pasta/zucchero/uova variants), `buildNutritionSearchQueries` |
+| `src/lib/nutritionTransparency.ts` | `deriveEstimatedIngredients`, `deriveExcludedIngredients`, `deriveProviderNames`, `deriveConfidenceLabel` |
+| `src/lib/nutritionOverride.ts` | `parseGramsInput` (comma/dot decimal, rejects zero/negative), `applyGramsOverrides` (immutable update, forces `status: 'manual'`) |
+| `src/types.ts` | `NutritionPer100g`, `IngredientNutrition`, `RecipeNutrition` (incl. `ingredientsFingerprint`), `ParsedIngredientAmount` |
 | `src/lib/storage.ts` | `normalizeRecipeNutrition`, `normalizeIngredientNutritionArray` — called in `normalizeStoredRecipe()` |
 | `src/stores/recipeBook.ts` | `cloneRecipe` deep-clones `nutrition` and `ingredientNutrition` |
-| `src/components/RecipeDetailView.vue` | UI section: badge, nutrient grid, calculate button |
-| `css/style.css` | CSS custom properties for badge theming (`--nutrition-*-bg/text`) |
+| `src/components/RecipeDetailView.vue` | Nutrition UI: badge, macro donut, nutrient grid, loading spinner, transparency panel, staleness warning, manual gram editor |
+| `css/style.css` | CSS custom properties for badge and macro theming (`--nutrition-*`) |
 
-**Rules**:
+**Architecture rules**:
 - All nutrition logic lives in `src/lib/` — no API calls, no Vue imports, fully unit-testable.
-- Providers implement `NutritionProviderClient` from `src/lib/nutritionProviders.ts`. Adding a new provider (e.g., OpenFoodFacts, USDA) means implementing the interface and registering in `NUTRITION_PROVIDERS` — no changes needed in the enrichment orchestrator or UI.
-- `enrichRecipeNutrition` does not mutate its input recipe. Callers must call `recipeBookStore.update(id, result)` to persist.
-- `normalizeRecipeNutrition` and `normalizeIngredientNutritionArray` must be called in `normalizeStoredRecipe()` to ensure stored nutrition survives app upgrades.
+- Adding a new provider means implementing `NutritionProviderClient` and appending to `NUTRITION_PROVIDERS` in `nutritionProviders.ts`. No changes to the enrichment orchestrator or UI are needed.
+- The enrichment orchestrator tries providers in array order. Within each provider it tries queries in the order returned by `buildNutritionSearchQueries`: primary normalized name first, then alias bases. A confidence boost of +0.05 (clamped to 1.0) is applied to alias-query matches because alias mappings are explicit and reliable.
+- `enrichRecipeNutritionWithProviders` never mutates its input recipe. Callers must call `recipeBookStore.update(id, { ingredientNutrition, nutrition })` to persist.
+- `applyGramsOverrides` never mutates its inputs. It always sets `status: 'manual'` on the returned `RecipeNutrition` regardless of what the inputs said.
+- `normalizeRecipeNutrition` and `normalizeIngredientNutritionArray` must be called in `normalizeStoredRecipe()` to ensure stored nutrition survives app upgrades. If adding a new field to `RecipeNutrition`, add its preservation to `normalizeRecipeNutrition` at the same time.
+- `ingredientsFingerprint` is `recipe.ingredients.join('|')` stored on `RecipeNutrition` at calculation time. The UI compares it on render to detect staleness. Always write the fingerprint when calling `recipeBookStore.update` after a nutrition calculation or override.
 - Badge theming uses CSS custom properties defined in all 4 theme contexts (`:root`, `[data-theme="light"]`, `[data-theme="dark"]`, `@media prefers-color-scheme: dark`).
-- All user-facing nutrition strings use `t('key')` — 9 nutrition-specific keys are defined in `i18nData.js` across IT/EN/DE/FR/ES.
-- Unit tests live in `tests/unit/nutrition.test.ts`, `nutritionProviders.test.ts`, `nutritionEnrichment.test.ts`, `store-nutrition.test.ts`.
+- All user-facing nutrition strings use `t('key')` — 20+ nutrition-specific keys are defined in `i18nData.js` across IT/EN/DE/FR/ES.
+
+**When extending the alias table** (`src/lib/ingredientMatching.ts`):
+- Add entries to `ALIAS_RULES` only — no other file needs changing.
+- The rule format is `{ trigger: 'full normalized name', base: 'shorter lookup term' }`.
+- Triggers must be normalized (lowercase, trimmed, single-space). Add a test case in `tests/unit/ingredientMatching.test.ts` for each new rule.
+
+**Test files**:
+- `tests/unit/nutrition.test.ts` — calculation engine and gram estimation
+- `tests/unit/nutritionProviders.test.ts` — provider matching and confidence scoring
+- `tests/unit/nutritionEnrichment.test.ts` — multi-provider fallback and alias-query behavior
+- `tests/unit/ingredientMatching.test.ts` — normalizer, alias table, query builder (40 tests)
+- `tests/unit/nutritionOverride.test.ts` — `parseGramsInput` and `applyGramsOverrides` (20 tests)
+- `tests/unit/store-nutrition.test.ts` — Pinia store integration
+- `tests/e2e/nutrition.spec.ts` — complete/partial/missing/estimated/not-included/manual-override E2E flows
 
 ## Bimby icon policy freeze
 
