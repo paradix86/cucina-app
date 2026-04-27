@@ -18,13 +18,13 @@ const BASE_RECIPE: Recipe = {
   preparationType: 'classic',
   bimby: false,
   source: 'manual',
-  ingredients: ['200g pasta', '400g pomodori', '1 spicchio aglio'],
-  steps: ['Cuoci la pasta', 'Prepara il sugo', 'Unisci e servi'],
+  ingredients: [ '200g pasta', '400g pomodori', '1 spicchio aglio' ],
+  steps: [ 'Cuoci la pasta', 'Prepara il sugo', 'Unisci e servi' ],
   timerMinutes: 10,
   notes: 'Ottima con basilico fresco',
   favorite: true,
   lastViewedAt: 1700000000000,
-  tags: ['veloce', 'vegetariano'],
+  tags: [ 'veloce', 'vegetariano' ],
 };
 
 describe('encodeSharePayload + decodeShareData roundtrip', () => {
@@ -34,8 +34,8 @@ describe('encodeSharePayload + decodeShareData roundtrip', () => {
     expect(decoded).not.toBeNull();
     expect(decoded!.v).toBe(SHARE_SCHEMA_VERSION);
     expect(decoded!.name).toBe('Pasta al Pomodoro');
-    expect(decoded!.ingredients).toEqual(['200g pasta', '400g pomodori', '1 spicchio aglio']);
-    expect(decoded!.steps).toEqual(['Cuoci la pasta', 'Prepara il sugo', 'Unisci e servi']);
+    expect(decoded!.ingredients).toEqual([ '200g pasta', '400g pomodori', '1 spicchio aglio' ]);
+    expect(decoded!.steps).toEqual([ 'Cuoci la pasta', 'Prepara il sugo', 'Unisci e servi' ]);
   });
 
   it('roundtrip preserves optional fields', () => {
@@ -48,17 +48,17 @@ describe('encodeSharePayload + decodeShareData roundtrip', () => {
     expect(decoded!.preparationType).toBe('classic');
     expect(decoded!.timerMinutes).toBe(10);
     expect(decoded!.notes).toBe('Ottima con basilico fresco');
-    expect(decoded!.tags).toEqual(['veloce', 'vegetariano']);
+    expect(decoded!.tags).toEqual([ 'veloce', 'vegetariano' ]);
   });
 
   it('strips internal fields: id, favorite, lastViewedAt, source, bimby', () => {
     const encoded = encodeSharePayload(BASE_RECIPE);
     const decoded = decodeShareData(encoded) as Record<string, unknown>;
-    expect(decoded['id']).toBeUndefined();
-    expect(decoded['favorite']).toBeUndefined();
-    expect(decoded['lastViewedAt']).toBeUndefined();
-    expect(decoded['source']).toBeUndefined();
-    expect(decoded['bimby']).toBeUndefined();
+    expect(decoded[ 'id' ]).toBeUndefined();
+    expect(decoded[ 'favorite' ]).toBeUndefined();
+    expect(decoded[ 'lastViewedAt' ]).toBeUndefined();
+    expect(decoded[ 'source' ]).toBeUndefined();
+    expect(decoded[ 'bimby' ]).toBeUndefined();
   });
 
   it('sanitizes coverImageUrl: keeps valid https URL', () => {
@@ -117,17 +117,17 @@ describe('decodeShareData validation', () => {
   });
 
   it('returns null when name is missing', () => {
-    const payload = { v: 1, name: '', ingredients: ['a'], steps: ['b'] };
+    const payload = { v: 1, name: '', ingredients: [ 'a' ], steps: [ 'b' ] };
     expect(decodeShareData(compressToEncodedURIComponent(JSON.stringify(payload)))).toBeNull();
   });
 
   it('returns null when ingredients is empty', () => {
-    const payload = { v: 1, name: 'Test', ingredients: [], steps: ['b'] };
+    const payload = { v: 1, name: 'Test', ingredients: [], steps: [ 'b' ] };
     expect(decodeShareData(compressToEncodedURIComponent(JSON.stringify(payload)))).toBeNull();
   });
 
   it('returns null when steps is empty', () => {
-    const payload = { v: 1, name: 'Test', ingredients: ['a'], steps: [] };
+    const payload = { v: 1, name: 'Test', ingredients: [ 'a' ], steps: [] };
     expect(decodeShareData(compressToEncodedURIComponent(JSON.stringify(payload)))).toBeNull();
   });
 
@@ -136,7 +136,7 @@ describe('decodeShareData validation', () => {
   });
 
   it('rejects invalid preparationType silently (field omitted)', () => {
-    const payload = { v: 1, name: 'Test', ingredients: ['a'], steps: ['b'], preparationType: 'microwave' };
+    const payload = { v: 1, name: 'Test', ingredients: [ 'a' ], steps: [ 'b' ], preparationType: 'microwave' };
     const result = decodeShareData(compressToEncodedURIComponent(JSON.stringify(payload)));
     expect(result).not.toBeNull();
     expect(result!.preparationType).toBeUndefined();
@@ -157,10 +157,87 @@ describe('sharedPayloadToRecipe', () => {
   });
 
   it('sets bimby=true when preparationType is bimby', () => {
-    const payload = { v: 1, name: 'Bimby Test', ingredients: ['a'], steps: ['b'], preparationType: 'bimby' };
+    const payload = { v: 1, name: 'Bimby Test', ingredients: [ 'a' ], steps: [ 'b' ], preparationType: 'bimby' };
     const decoded = decodeShareData(compressToEncodedURIComponent(JSON.stringify(payload)))!;
     const recipe = sharedPayloadToRecipe(decoded, 'x');
     expect(recipe.bimby).toBe(true);
     expect(recipe.preparationType).toBe('bimby');
+  });
+});
+
+describe('buildShareUrl URL format', () => {
+  // Note: buildShareUrl requires browser context (window + import.meta.env)
+  // These tests verify the URL format logic when available
+
+  it('encodes recipe to URL-safe format', () => {
+    const encoded = encodeSharePayload(BASE_RECIPE);
+    // Should be valid LZ-string compressed data
+    expect(encoded.length).toBeGreaterThan(0);
+    expect(encoded).toMatch(/^[A-Za-z0-9+/=_-]+$/);
+  });
+
+  it('decoded data contains expected fields for URL query', () => {
+    const encoded = encodeSharePayload(BASE_RECIPE);
+    const decoded = decodeShareData(encoded);
+    expect(decoded).not.toBeNull();
+    expect(decoded!.name).toBe('Pasta al Pomodoro');
+    expect(decoded!.ingredients).toHaveLength(3);
+    expect(decoded!.steps).toHaveLength(3);
+  });
+
+  it('handles recipe with minimal data', () => {
+    const minimalRecipe: Recipe = {
+      id: 'x',
+      name: 'Simple',
+      category: '',
+      emoji: '',
+      time: '',
+      servings: '',
+      preparationType: 'classic',
+      bimby: false,
+      source: 'manual',
+      ingredients: [ '1 cup flour' ],
+      steps: [ 'Mix' ],
+      timerMinutes: 0,
+      notes: '',
+      favorite: false,
+      lastViewedAt: 0,
+    };
+    const encoded = encodeSharePayload(minimalRecipe);
+    const decoded = decodeShareData(encoded);
+    expect(decoded).not.toBeNull();
+    expect(decoded!.name).toBe('Simple');
+    expect(decoded!.ingredients).toEqual([ '1 cup flour' ]);
+    expect(decoded!.steps).toEqual([ 'Mix' ]);
+  });
+
+  it('handles recipe with maximum fields', () => {
+    const maxRecipe: Recipe = {
+      id: 'x',
+      name: 'Max Recipe',
+      category: 'Dessert',
+      emoji: '🎂',
+      time: '60 min',
+      servings: '8',
+      preparationType: 'bimby',
+      bimby: true,
+      source: 'manual',
+      ingredients: Array(50).fill('ingredient'),
+      steps: Array(50).fill('step'),
+      timerMinutes: 30,
+      notes: 'Some notes',
+      favorite: true,
+      lastViewedAt: Date.now(),
+      tags: [ 'tag1', 'tag2', 'tag3' ],
+      coverImageUrl: 'https://example.com/image.jpg',
+    };
+    const encoded = encodeSharePayload(maxRecipe);
+    const decoded = decodeShareData(encoded);
+    expect(decoded).not.toBeNull();
+    expect(decoded!.name).toBe('Max Recipe');
+    expect(decoded!.ingredients).toHaveLength(50);
+    expect(decoded!.steps).toHaveLength(50);
+    expect(decoded!.tags).toHaveLength(3);
+    expect(decoded!.coverImageUrl).toBe('https://example.com/image.jpg');
   });
 });

@@ -278,11 +278,17 @@ async function openQr() {
   qrModalUrl.value = url;
   qrDataUrl.value = '';
   showQr.value = true;
+  // Wait for modal to be fully rendered - use double nextTick to ensure
+  // the DOM is fully laid out with dimensions (important for mobile)
   await nextTick();
+  await nextTick();
+  // Additional small delay for mobile browsers to complete layout
+  await new Promise(resolve => setTimeout(resolve, 50));
   try {
     const QRCode = (await import('qrcode')).default;
     qrDataUrl.value = await QRCode.toDataURL(url, { width: 240, margin: 2, color: { dark: '#1a1a18', light: '#ffffff' } });
-  } catch {
+  } catch (e) {
+    console.warn('QR code generation failed:', e);
     // if QR generation fails, the modal still shows with copy-link option
   }
 }

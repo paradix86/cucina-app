@@ -28,9 +28,26 @@ const previewRecipe = computed<Recipe | null>(() => {
 });
 
 onMounted(() => {
-  const data = route.query['data'];
-  const raw = Array.isArray(data) ? data[0] : data;
-  const decoded = decodeShareData(raw ?? null);
+  // Try Vue Router query first (works for hash routing within app)
+  let data = route.query['data'];
+  if (Array.isArray(data)) data = data[0];
+
+  // Fallback: parse from window.location.hash for direct shared links
+  // This handles cases where the URL was opened directly (e.g., mobile share)
+  if (!data || typeof data !== 'string') {
+    try {
+      const hash = window.location.hash;
+      const hashParts = hash.split('?');
+      if (hashParts.length >= 2) {
+        const searchParams = new URLSearchParams(hashParts[1]);
+        data = searchParams.get('data');
+      }
+    } catch {
+      // Ignore parsing errors
+    }
+  }
+
+  const decoded = decodeShareData(data ?? null);
   if (decoded) {
     payload.value = decoded;
   } else {
