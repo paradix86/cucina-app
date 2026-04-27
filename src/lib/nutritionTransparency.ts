@@ -61,10 +61,11 @@ export function deriveConfidenceLabel(
 }
 
 const PROVIDER_NAMES: Record<string, string> = {
-  manual:         'Manual',
-  openfoodfacts:  'OpenFoodFacts',
-  usda:           'USDA',
-  unknown:        'Unknown',
+  manual:           'Manual',
+  base_ingredients: 'Base ingredients',
+  openfoodfacts:    'OpenFoodFacts',
+  usda:             'USDA',
+  unknown:          'Unknown',
 };
 
 export function deriveProviderNames(

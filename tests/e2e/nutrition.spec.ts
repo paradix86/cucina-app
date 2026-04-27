@@ -870,3 +870,101 @@ test('Recalculate preserves ingredients with source.userEdited=true', async ({ p
   expect(olioEntry?.grams).toBe(20);
   expect(olioEntry?.source?.userEdited).toBe(true);
 });
+
+// ─── Base ingredients provider — porridge recipe ──────────────────────────────
+
+const porridgeRecipe = {
+  id:              'nutrition-e2e-porridge',
+  name:            'Porridge con Banana',
+  source:          'manual',
+  preparationType: 'classic',
+  ingredients: [
+    "60g fiocchi d'avena",
+    '250ml latte parzialmente scremato',
+    '100ml acqua',
+    '1 banana media',
+    '1 pizzico sale',
+    '1 cucchiaino cannella',
+    'miele (5g, opzionale)',
+  ],
+  steps:    ['Cuoci i fiocchi con latte e acqua', 'Aggiungi banana, miele e cannella'],
+  servings: '1',
+};
+
+test('base_ingredients: porridge recipe calculates kcal from oats, milk, and cinnamon', async ({ page }) => {
+  await seedState(page, { recipes: [porridgeRecipe] });
+  await gotoRoute(page, 'recipe-book/nutrition-e2e-porridge');
+
+  await expect(page.locator('#saved-detail-view')).toBeVisible();
+
+  // Before calculation the badge is missing
+  const badge = page.locator('.nutrition-badge');
+  await expect(badge).toHaveClass(/nutrition-badge--missing/);
+
+  // Click Calculate
+  const calcBtn = page.locator('.nutrition-footer .btn-secondary');
+  await expect(calcBtn).toBeVisible();
+  await calcBtn.click();
+
+  // kcal should appear (oats 60g + milk 250ml contribute ~350 kcal)
+  const kcalVal = page.locator('.nutrition-kcal-val');
+  await expect(kcalVal).not.toHaveText('—', { timeout: 8000 });
+  const kcalText = await kcalVal.textContent();
+  const kcal = parseInt(kcalText ?? '0', 10);
+  expect(kcal).toBeGreaterThan(100);
+
+  // Badge should no longer be missing
+  await expect(badge).not.toHaveClass(/nutrition-badge--missing/);
+
+  // Sources line must include "Base ingredients"
+  const sourcesLine = page.locator('.nutrition-sources');
+  await expect(sourcesLine).toBeVisible();
+  await expect(sourcesLine).toContainText('Base ingredients');
+
+  // Verify via localStorage that oats and milk were NOT excluded (no_match)
+  const stored = await page.evaluate((key: string) => {
+    const raw = localStorage.getItem(key);
+    if (!raw) return null;
+    return JSON.parse(raw).find((r: { id: string }) => r.id === 'nutrition-e2e-porridge') ?? null;
+  }, STORAGE_KEY);
+
+  expect(stored).not.toBeNull();
+  expect(stored.nutrition?.status).toMatch(/^(partial|complete)$/);
+
+  const ingNutrition: { ingredientName: string; source?: { provider: string }; grams?: number }[] =
+    stored.ingredientNutrition ?? [];
+
+  // Oats must be matched by base_ingredients with grams=60
+  const avena = ingNutrition.find(n => n.ingredientName.includes('avena'));
+  expect(avena).toBeDefined();
+  expect(avena?.source?.provider).toBe('base_ingredients');
+  expect(avena?.grams).toBe(60);
+
+  // Milk must be matched with density-derived grams ≈ 257–258g
+  const latte = ingNutrition.find(n => n.ingredientName.includes('latte'));
+  expect(latte).toBeDefined();
+  expect(latte?.grams).toBeGreaterThan(250);
+
+  // Cannella must be matched (1 tsp → 5g via unit conversion)
+  const cinn = ingNutrition.find(n => n.ingredientName.includes('cannella'));
+  expect(cinn).toBeDefined();
+  expect(cinn?.source?.provider).toBe('base_ingredients');
+});
+
+test('base_ingredients: porridge kcal and nutrition persist after reload', async ({ page }) => {
+  await seedState(page, { recipes: [porridgeRecipe] });
+  await gotoRoute(page, 'recipe-book/nutrition-e2e-porridge');
+
+  await expect(page.locator('#saved-detail-view')).toBeVisible();
+
+  // Calculate
+  await page.locator('.nutrition-footer .btn-secondary').click();
+  await expect(page.locator('.nutrition-kcal-val')).not.toHaveText('—', { timeout: 8000 });
+
+  // Reload
+  await gotoRoute(page, 'recipe-book/nutrition-e2e-porridge');
+
+  // Should still show kcal without recalculating
+  await expect(page.locator('.nutrition-kcal-val')).not.toHaveText('—');
+  await expect(page.locator('.nutrition-badge')).not.toHaveClass(/nutrition-badge--missing/);
+});

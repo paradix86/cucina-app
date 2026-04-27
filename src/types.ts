@@ -39,7 +39,7 @@ export type NutritionPer100g = {
   vitaminB12Mcg?: number;
 };
 
-export type NutritionProvider = 'openfoodfacts' | 'usda' | 'manual' | 'unknown';
+export type NutritionProvider = 'openfoodfacts' | 'usda' | 'manual' | 'base_ingredients' | 'unknown';
 
 export type NutritionSource = {
   provider: NutritionProvider;

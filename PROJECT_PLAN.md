@@ -77,15 +77,20 @@ The app has gone through a full architectural migration:
 - [x] `cloneRecipe` deep-clone of `nutrition` and `ingredientNutrition` in `src/stores/recipeBook.ts`
 - [x] Unit tests — `nutrition.test.ts`, `nutritionProviders.test.ts`, `nutritionEnrichment.test.ts`, `ingredientMatching.test.ts`, `nutritionOverride.test.ts`, `store-nutrition.test.ts`
 - [x] E2E tests — `tests/e2e/nutrition.spec.ts` (complete/partial/missing/estimated/not-included/manual-override flows)
+- [x] Base ingredients provider (`base_ingredients`) — curated dataset of ~55 common Italian cooking ingredients in `src/lib/baseIngredientsData.ts`; safe alias matching with "di X" compound guard in `src/lib/baseIngredientsProvider.ts`; registered as second provider in enrichment chain (manual → base_ingredients → openfoodfacts); covers cereals, dairy, protein, legumes, fruit, vegetables, fats, condiments, nuts/seeds
+- [x] Density-based ml→g conversion for known liquids (acqua 1.0, latte* 1.03) via `LIQUID_DENSITIES` in `src/lib/nutrition.ts`; extends `estimateGrams()` without breaking existing unit tests
+- [x] Provider display name `'Base ingredients'` added to transparency map in `src/lib/nutritionTransparency.ts`
+- [x] Unit tests — `baseIngredientsProvider.test.ts` (exact/starts-with/contains/safety/maxResults/ordering), `baseIngredientsEnrichment.test.ts` (coverage/priority/density/transparency), `estimateGrams.test.ts` ml/l density tests
+- [x] E2E tests — porridge recipe (oats + milk + banana + cinnamon + honey); verifies kcal > 0, sources include "Base ingredients", oats matched with base_ingredients provider, density-derived grams, reload persistence
 
 ### Milestone 7 — Nutrition post-MVP backlog
 - [ ] Per-100g manual override — let users enter their own `nutritionPer100g` values when a provider result is wrong or unavailable
 - [ ] Provider selector UI — let users choose between available providers (manual built-in, OpenFoodFacts) per session or per recipe
 - [ ] USDA FoodData Central provider — higher coverage for non-Italian ingredients; requires CORS proxy or edge function
 - [ ] Micronutrient breakdown panel — vitamins (A, C, D, B12…) and minerals (iron, calcium…) where provider data includes them
-- [ ] Alias dictionary expansion — add more Italian ingredient families (latte, burro, carne, verdure variants) and regional synonyms
+- [ ] Base ingredients dataset expansion — add regional synonyms, more fruit/veg variants, prepared foods (sugo, brodo, etc.); each new entry requires aliases + unit tests per AGENTS.md rules
+- [ ] Source provenance field on base_ingredients entries — record which food table (CREA, USDA) each value came from
 - [ ] Nutrition import/export edge cases — round-trip fidelity for recipes with `status: 'manual'`; handle `ingredientsFingerprint` mismatch on shared-link import
-- [ ] Gram-equivalent conversion for volume units — ml→g via ingredient-specific density table (olio ~0.92, latte ~1.03, etc.) to improve estimation accuracy
 
 ### Milestone 6 — Architecture (v1 foundation delivered)
 - [x] Vue 3 + Vite migration

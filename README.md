@@ -15,7 +15,7 @@ Tablet-friendly cooking app built with Vue 3 + Vite.
 - **Built-in Recipes**: curated dataset with preparation-type filtering
 - **Shopping List**: add ingredients from recipes, smart grouping (numeric + exact + near-duplicate normalization), clearer per-recipe provenance, plain-text copy/share export, section assignment
 - **Weekly Planner**: plan breakfast, lunch, and dinner across 7 days using recipes from your recipe book
-- **Nutrition**: on-demand calorie/macronutrient breakdown per ingredient and per recipe; multi-provider enrichment (manual built-in + OpenFoodFacts); smart Italian ingredient matching with alias expansion; gram estimation from unit context; transparency panel (estimated quantities, excluded ingredients, provider attribution); manual gram override with recalculation; staleness detection; `status` badge (missing / partial / complete / manual)
+- **Nutrition**: on-demand calorie/macronutrient breakdown per ingredient and per recipe; three-tier provider enrichment (manual built-in → base ingredient database → OpenFoodFacts); ~55 common Italian ingredients covered offline; density-based ml→g conversion for milk and water; smart alias matching with "di X" compound safety guard; gram estimation from unit context; transparency panel (estimated quantities, excluded ingredients, provider attribution); manual gram override with recalculation; staleness detection; `status` badge (missing / partial / complete / manual)
 - **Cooking Mode**: step-by-step fullscreen mode with per-step timer
 - **Timers**: multiple parallel timers with toast completion feedback
 - **Theme + i18n**: light/dark/system theme, IT/EN/DE/FR/ES translations
@@ -98,8 +98,10 @@ src/
     i18nData.js
     builtinData.js
     appMeta.js
-    nutrition.ts              # parsing, calculation, gram estimation
-    nutritionProviders.ts     # provider abstraction + manual/OpenFoodFacts clients
+    nutrition.ts              # parsing, calculation, gram estimation, LIQUID_DENSITIES
+    nutritionProviders.ts     # provider registry: manual → base_ingredients → openfoodfacts
+    baseIngredientsData.ts    # curated dataset (~55 common Italian ingredients)
+    baseIngredientsProvider.ts # base_ingredients provider with safe alias matching
     nutritionEnrichment.ts    # multi-provider orchestrator with alias-query fallback
     ingredientMatching.ts     # normalizeIngredientName, alias table, query builder
     nutritionTransparency.ts  # derive estimated/excluded/sources/confidence

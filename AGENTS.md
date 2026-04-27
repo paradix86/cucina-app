@@ -39,7 +39,9 @@ Extended reference for AI agents working in this repository. Start with `CLAUDE.
 | `src/lib/import/adapters/jsonld.ts` | JSON-LD, WPRM, HTML meta extraction |
 | `src/lib/import/adapters/generic.ts` | Generic markdown heading-scanner fallback |
 | `src/lib/nutrition.ts` | Ingredient parsing, gram estimation, calculation engine |
-| `src/lib/nutritionProviders.ts` | `NutritionProviderClient` interface, manual + OpenFoodFacts providers |
+| `src/lib/nutritionProviders.ts` | `NutritionProviderClient` interface, provider registry (manual → base_ingredients → openfoodfacts) |
+| `src/lib/baseIngredientsData.ts` | Curated dataset of ~55 common Italian cooking ingredients |
+| `src/lib/baseIngredientsProvider.ts` | `base_ingredients` provider implementation with safe alias matching |
 | `src/lib/nutritionEnrichment.ts` | Multi-provider orchestrator with alias-query confidence boost |
 | `src/lib/ingredientMatching.ts` | Ingredient name normalization, alias table, search query builder |
 | `src/lib/nutritionTransparency.ts` | Derive estimated/excluded/sources/confidence from enrichment results |
@@ -122,7 +124,9 @@ The nutrition feature follows the same lib/store/view separation as the rest of 
 | File | Role |
 |---|---|
 | `src/lib/nutrition.ts` | Pure logic: `parseIngredientAmount`, `estimateGrams`, `calculateRecipeNutrition`, `scaleNutritionBlock` |
-| `src/lib/nutritionProviders.ts` | `NutritionProviderClient` interface, manual built-in provider, OpenFoodFacts provider, `NUTRITION_PROVIDERS` ordered list |
+| `src/lib/nutritionProviders.ts` | `NutritionProviderClient` interface, provider registry `NUTRITION_PROVIDERS` (manual → base_ingredients → openfoodfacts) |
+| `src/lib/baseIngredientsData.ts` | Curated dataset of ~55 common Italian cooking ingredients (`BaseIngredientNutritionEntry[]`) — values from CREA/USDA food composition tables |
+| `src/lib/baseIngredientsProvider.ts` | `base_ingredients` provider: exact-alias, starts-with, and safe-contains matching with "di X" compound safety guard |
 | `src/lib/nutritionEnrichment.ts` | Multi-provider orchestrator: `enrichRecipeNutritionWithProviders(recipe, providers, options?)` — tries providers in order, alias queries with confidence boost |
 | `src/lib/ingredientMatching.ts` | `normalizeIngredientName`, `getIngredientAliases` (alias table for olio/farina/riso/pasta/zucchero/uova variants), `buildNutritionSearchQueries` |
 | `src/lib/nutritionTransparency.ts` | `deriveEstimatedIngredients`, `deriveExcludedIngredients`, `deriveProviderNames`, `deriveConfidenceLabel` |
@@ -144,6 +148,13 @@ The nutrition feature follows the same lib/store/view separation as the rest of 
 - Badge theming uses CSS custom properties defined in all 4 theme contexts (`:root`, `[data-theme="light"]`, `[data-theme="dark"]`, `@media prefers-color-scheme: dark`).
 - All user-facing nutrition strings use `t('key')` — 20+ nutrition-specific keys are defined in `i18nData.js` across IT/EN/DE/FR/ES.
 
+**Base ingredients dataset rules** (`src/lib/baseIngredientsData.ts`):
+- **Never add broad unsafe fallbacks.** "farina di mandorle" must NOT match the wheat flour entry; "latte di soia" must NOT match cow milk. The "di X" compound guard in `baseIngredientsProvider.ts` enforces this at runtime, but aliases must also be precise.
+- **Every new entry requires: unique `id`, `canonicalName`, non-empty `aliases` array, and at least one matching unit test in `tests/unit/baseIngredientsProvider.test.ts`.**
+- **Prefer missing data over wrong data.** Do not invent values. If you don't have a reliable reference (CREA/USDA), leave the ingredient out.
+- **Values are generic estimates, not medical or dietetic advice.** The data file header comment must always say so.
+- When adding a liquid ingredient, consider whether it also needs a density entry in `LIQUID_DENSITIES` in `src/lib/nutrition.ts` and an `estimateGrams` test in `tests/unit/estimateGrams.test.ts`.
+
 **When extending the alias table** (`src/lib/ingredientMatching.ts`):
 - Add entries to `ALIAS_RULES` only — no other file needs changing.
 - The rule format is `{ trigger: 'full normalized name', base: 'shorter lookup term' }`.
@@ -151,12 +162,15 @@ The nutrition feature follows the same lib/store/view separation as the rest of 
 
 **Test files**:
 - `tests/unit/nutrition.test.ts` — calculation engine and gram estimation
+- `tests/unit/estimateGrams.test.ts` — `estimateGrams` unit conversions including ml/l density
 - `tests/unit/nutritionProviders.test.ts` — provider matching and confidence scoring
+- `tests/unit/baseIngredientsProvider.test.ts` — exact/starts-with/contains/safety/ordering for base_ingredients
+- `tests/unit/baseIngredientsEnrichment.test.ts` — enrichment integration with base_ingredients + density + priority
 - `tests/unit/nutritionEnrichment.test.ts` — multi-provider fallback and alias-query behavior
 - `tests/unit/ingredientMatching.test.ts` — normalizer, alias table, query builder (40 tests)
 - `tests/unit/nutritionOverride.test.ts` — `parseGramsInput` and `applyGramsOverrides` (20 tests)
 - `tests/unit/store-nutrition.test.ts` — Pinia store integration
-- `tests/e2e/nutrition.spec.ts` — complete/partial/missing/estimated/not-included/manual-override E2E flows
+- `tests/e2e/nutrition.spec.ts` — complete/partial/missing/estimated/not-included/manual-override/porridge E2E flows
 
 ## Bimby icon policy freeze
 

@@ -4,6 +4,7 @@ import type {
   NutritionProvider,
   ParsedIngredientAmount,
 } from '../types';
+import { baseIngredientsProvider } from './baseIngredientsProvider';
 
 // ─── Public types ─────────────────────────────────────────────────────────────
 
@@ -327,10 +328,15 @@ export const openFoodFactsProvider: NutritionProviderClient = {
 
 // ─── Provider registry ────────────────────────────────────────────────────────
 
+// Enrichment order: manual (small hardcoded DB) → base_ingredients (large curated DB) → openfoodfacts (external API).
+// User-edited entries are preserved before this chain is consulted (see enrichRecipeNutritionWithProviders).
 export const NUTRITION_PROVIDERS: readonly NutritionProviderClient[] = [
   manualProvider,
+  baseIngredientsProvider,
   openFoodFactsProvider,
 ];
+
+export { baseIngredientsProvider };
 
 export function getProvider(id: NutritionProvider): NutritionProviderClient | undefined {
   return NUTRITION_PROVIDERS.find(p => p.provider === id);

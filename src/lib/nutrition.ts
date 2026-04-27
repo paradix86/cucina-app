@@ -14,7 +14,7 @@ const NUTRITION_FIELDS: readonly (keyof NutritionPer100g)[] = [
   'magnesiumMg', 'zincMg', 'vitaminCMg', 'vitaminDMcg', 'vitaminB12Mcg',
 ];
 
-const VALID_PROVIDERS: readonly NutritionProvider[] = ['openfoodfacts', 'usda', 'manual', 'unknown'];
+const VALID_PROVIDERS: readonly NutritionProvider[] = ['openfoodfacts', 'usda', 'manual', 'base_ingredients', 'unknown'];
 const VALID_STATUSES: readonly NutritionStatus[] = ['missing', 'partial', 'complete', 'manual'];
 
 function safeNonNegNum(value: unknown): number | undefined {
@@ -234,6 +234,17 @@ type UnitConversionEntry = {
   overrides?: Record<string, number>;
 };
 
+// Density (g/ml) for water-like liquids where volumetric measurement is common.
+// Only ingredients with a well-known, stable density are included.
+// Do NOT add oils, syrups, or anything with density varying by brand/temperature.
+export const LIQUID_DENSITIES: Readonly<Record<string, number>> = {
+  acqua:                         1.00,
+  latte:                         1.03,
+  'latte intero':                1.03,
+  'latte parzialmente scremato': 1.03,
+  'latte scremato':              1.03,
+};
+
 const UNIT_GRAM_CONVERSIONS: Record<string, UnitConversionEntry> = {
   tbsp:  { default: 10,  overrides: { olio: 10, zucchero: 12, farina: 8 } },
   tsp:   { default: 5,   overrides: { zucchero: 4, sale: 5 } },
@@ -253,6 +264,19 @@ export function estimateGrams(parsed: ParsedIngredientAmount): number | undefine
     if (parsed.confidence < 0.3) return undefined;
     const unit = parsed.unit;
     if (!unit) return undefined;
+
+    // Density-based volume → mass for known liquid ingredients.
+    // Only used when the ingredient has an entry in LIQUID_DENSITIES.
+    if (unit === 'ml' || unit === 'l') {
+      const qty = parsed.quantity;
+      if (qty == null || qty <= 0) return undefined;
+      const ml = unit === 'l' ? qty * 1000 : qty;
+      const key = (parsed.normalizedName ?? parsed.name).toLowerCase().trim();
+      const density = LIQUID_DENSITIES[key];
+      if (density !== undefined) return ml * density;
+      return undefined;
+    }
+
     const entry = UNIT_GRAM_CONVERSIONS[unit];
     if (!entry) return undefined;
     const qty = parsed.quantity;

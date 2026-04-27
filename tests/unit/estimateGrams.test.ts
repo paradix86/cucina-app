@@ -173,3 +173,55 @@ describe('estimateGrams — edge cases', () => {
     expect(estimateGrams(make({ quantity: 0.5, unit: 'tbsp', normalizedName: 'farina' }))).toBe(4);
   });
 });
+
+// ─── ml / l density conversion ────────────────────────────────────────────────
+
+describe('estimateGrams — ml/l density conversion', () => {
+  it('100 ml acqua → 100g (density 1.0)', () => {
+    expect(estimateGrams(make({ quantity: 100, unit: 'ml', grams: undefined, normalizedName: 'acqua', confidence: 0.9 }))).toBe(100);
+  });
+
+  it('250 ml latte → 257.5g (density 1.03)', () => {
+    expect(estimateGrams(make({ quantity: 250, unit: 'ml', grams: undefined, normalizedName: 'latte', confidence: 0.9 }))).toBeCloseTo(257.5);
+  });
+
+  it('250 ml latte parzialmente scremato → 257.5g', () => {
+    expect(estimateGrams(make({ quantity: 250, unit: 'ml', grams: undefined, normalizedName: 'latte parzialmente scremato', confidence: 0.9 }))).toBeCloseTo(257.5);
+  });
+
+  it('250 ml latte intero → 257.5g', () => {
+    expect(estimateGrams(make({ quantity: 250, unit: 'ml', grams: undefined, normalizedName: 'latte intero', confidence: 0.9 }))).toBeCloseTo(257.5);
+  });
+
+  it('250 ml latte scremato → 257.5g', () => {
+    expect(estimateGrams(make({ quantity: 250, unit: 'ml', grams: undefined, normalizedName: 'latte scremato', confidence: 0.9 }))).toBeCloseTo(257.5);
+  });
+
+  it('1 l acqua → 1000g', () => {
+    expect(estimateGrams(make({ quantity: 1, unit: 'l', grams: undefined, normalizedName: 'acqua', confidence: 0.9 }))).toBe(1000);
+  });
+
+  it('0.5 l latte → 515g', () => {
+    expect(estimateGrams(make({ quantity: 0.5, unit: 'l', grams: undefined, normalizedName: 'latte', confidence: 0.9 }))).toBeCloseTo(515);
+  });
+
+  it('ml of an unknown ingredient → undefined', () => {
+    expect(estimateGrams(make({ quantity: 100, unit: 'ml', grams: undefined, normalizedName: 'vino', confidence: 0.9 }))).toBeUndefined();
+  });
+
+  it('l of an unknown ingredient → undefined', () => {
+    expect(estimateGrams(make({ quantity: 1, unit: 'l', grams: undefined, normalizedName: 'birra', confidence: 0.9 }))).toBeUndefined();
+  });
+
+  it('ml with zero quantity → undefined', () => {
+    expect(estimateGrams(make({ quantity: 0, unit: 'ml', grams: undefined, normalizedName: 'acqua', confidence: 0.9 }))).toBeUndefined();
+  });
+
+  it('ml with undefined quantity → undefined', () => {
+    expect(estimateGrams(make({ quantity: undefined, unit: 'ml', grams: undefined, normalizedName: 'acqua', confidence: 0.9 }))).toBeUndefined();
+  });
+
+  it('existing grams are returned as-is even for ml unit', () => {
+    expect(estimateGrams(make({ quantity: 250, unit: 'ml', grams: 300, normalizedName: 'latte', confidence: 0.9 }))).toBe(300);
+  });
+});
