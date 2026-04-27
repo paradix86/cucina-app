@@ -17,6 +17,69 @@ export interface ImportedRecipeInfo {
   tags?: string[];
 }
 
+// ─── Nutrition model ──────────────────────────────────────────────────────────
+
+export type NutritionPer100g = {
+  kcal?: number;
+  proteinG?: number;
+  carbsG?: number;
+  sugarsG?: number;
+  fatG?: number;
+  saturatedFatG?: number;
+  fiberG?: number;
+  saltG?: number;
+  sodiumMg?: number;
+  calciumMg?: number;
+  ironMg?: number;
+  potassiumMg?: number;
+  magnesiumMg?: number;
+  zincMg?: number;
+  vitaminCMg?: number;
+  vitaminDMcg?: number;
+  vitaminB12Mcg?: number;
+};
+
+export type NutritionProvider = 'openfoodfacts' | 'usda' | 'manual' | 'unknown';
+
+export type NutritionSource = {
+  provider: NutritionProvider;
+  externalId?: string;
+  externalUrl?: string;
+  confidence?: number;  // 0–1
+  fetchedAt?: string;   // ISO date string
+};
+
+export type IngredientNutrition = {
+  ingredientName: string;
+  normalizedName?: string;
+  quantity?: number;
+  unit?: string;
+  grams?: number;
+  nutritionPer100g?: NutritionPer100g;
+  source?: NutritionSource;
+};
+
+export type NutritionStatus = 'missing' | 'partial' | 'complete' | 'manual';
+
+export type ParsedIngredientAmount = {
+  original: string;
+  name: string;
+  normalizedName?: string;
+  quantity?: number;
+  unit?: string;
+  grams?: number;
+  confidence: number;  // 0–1: ≥0.9 metric weight/volume, ~0.5 tbsp/tsp, ~0.4 piece/pinch, ≤0.1 q.b./unknown
+};
+
+export type RecipeNutrition = {
+  status: NutritionStatus;
+  perRecipe?: NutritionPer100g;
+  perServing?: NutritionPer100g;
+  servingsUsed?: number;
+  calculatedAt?: string;  // ISO date string
+  sources?: NutritionSource[];
+};
+
 export interface Recipe {
   id: string;
   name: string;
@@ -41,6 +104,8 @@ export interface Recipe {
   tags?: string[];
   mealOccasion?: string[];
   importedInfo?: ImportedRecipeInfo;
+  nutrition?: RecipeNutrition;
+  ingredientNutrition?: IngredientNutrition[];
 }
 
 export interface ShoppingItem {

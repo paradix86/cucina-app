@@ -33,6 +33,10 @@ import {
   scaleShoppingIngredientText,
 } from './ingredientUtils';
 import { createEmptyWeeklyPlanner, normalizeWeeklyPlanner } from './planner';
+import {
+  normalizeIngredientNutritionArray,
+  normalizeRecipeNutrition,
+} from './nutrition';
 
 export const STORAGE_KEY = 'cucina_recipebook_v3';
 export const STORAGE_KEY_V2 = 'cucina_ricettario_v2';
@@ -182,6 +186,8 @@ function normalizeStoredRecipe(recipe: RecipeInput): Recipe {
     tags: asStringArray(recipe?.tags),
     mealOccasion: mealOccasion.length > 0 ? mealOccasion : undefined,
     importedInfo: recipe.importedInfo ?? undefined,
+    nutrition: normalizeRecipeNutrition(recipe.nutrition),
+    ingredientNutrition: normalizeIngredientNutritionArray(recipe.ingredientNutrition),
   };
 }
 
