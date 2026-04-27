@@ -8,6 +8,7 @@ import { useRecipeBookStore } from '../stores/recipeBook';
 import { buildShareUrl } from '../lib/recipeShare';
 import { enrichRecipeNutritionWithProviders } from '../lib/nutritionEnrichment';
 import { NUTRITION_PROVIDERS } from '../lib/nutritionProviders';
+import { deriveEstimatedIngredients, deriveExcludedIngredients, deriveProviderNames } from '../lib/nutritionTransparency';
 
 const props = defineProps({
   recipe: { type: Object, required: true },
@@ -52,15 +53,26 @@ const nutritionContext = computed(() => {
 const macroDonut = computed(() => {
   const d = nutritionContext.value?.data;
   if (!d) return null;
-  const pKcal = (d.proteinG ?? 0) * 4;
-  const cKcal = (d.carbsG ?? 0) * 4;
-  const fKcal = (d.fatG ?? 0) * 9;
-  const total = pKcal + cKcal + fKcal;
+  const p  = d.proteinG ?? 0;
+  const c  = d.carbsG   ?? 0;
+  const f  = d.fatG     ?? 0;
+  const fi = d.fiberG   ?? 0;
+  const total = p + c + f + fi;
   if (total === 0) return null;
-  const s1 = ((pKcal / total) * 100).toFixed(2);
-  const s2 = (((pKcal + cKcal) / total) * 100).toFixed(2);
-  const gradient = `conic-gradient(var(--nutrition-protein) 0% ${s1}%, var(--nutrition-carbs) ${s1}% ${s2}%, var(--nutrition-fat) ${s2}% 100%)`;
+  const s1 = ((p              / total) * 100).toFixed(2);
+  const s2 = (((p + c)        / total) * 100).toFixed(2);
+  const s3 = (((p + c + f)    / total) * 100).toFixed(2);
+  const gradient = `conic-gradient(var(--nutrition-protein) 0% ${s1}%, var(--nutrition-carbs) ${s1}% ${s2}%, var(--nutrition-fat) ${s2}% ${s3}%, var(--nutrition-fiber) ${s3}% 100%)`;
   return { gradient };
+});
+
+const nutritionTransparency = computed(() => {
+  const ingNutrition = props.recipe.ingredientNutrition ?? [];
+  const estimated = deriveEstimatedIngredients(ingNutrition);
+  const excluded  = deriveExcludedIngredients(props.recipe.ingredients ?? [], ingNutrition);
+  const sources   = deriveProviderNames(props.recipe.nutrition?.sources);
+  if (estimated.length === 0 && excluded.length === 0 && sources.length === 0) return null;
+  return { estimated, excluded, sources };
 });
 
 async function calculateNutrition() {
@@ -483,6 +495,8 @@ function closeQr() {
             <div
               v-if="macroDonut"
               class="nutrition-donut"
+              role="img"
+              :aria-label="t('nutrition_distribution')"
               :style="{ background: macroDonut.gradient }"
             >
               <div class="nutrition-donut-hole">
@@ -512,16 +526,39 @@ function closeQr() {
               <span class="nutrition-macro-name">{{ t('nutrition_fat') }}</span>
               <span class="nutrition-macro-val">{{ nutritionContext.data.fatG.toFixed(1) }}g</span>
             </div>
+            <div v-if="nutritionContext.data.fiberG != null" class="nutrition-macro-row nutrition-macro-row--fiber">
+              <span class="nutrition-macro-dot"></span>
+              <span class="nutrition-macro-name">{{ t('nutrition_fiber') }}</span>
+              <span class="nutrition-macro-val">{{ nutritionContext.data.fiberG.toFixed(1) }}g</span>
+            </div>
           </div>
-        </div>
-
-        <div v-if="nutritionContext?.data.fiberG != null" class="nutrition-secondary">
-          <span>{{ t('nutrition_fiber') }}: <strong>{{ nutritionContext.data.fiberG.toFixed(1) }}g</strong></span>
         </div>
 
         <p v-if="recipe.nutrition?.status === 'partial'" class="nutrition-partial-note">
           {{ t('nutrition_partial_note') }}
         </p>
+
+        <div v-if="nutritionTransparency" class="nutrition-transparency">
+          <p v-if="nutritionTransparency.sources.length" class="nutrition-sources">
+            {{ t('nutrition_sources') }}: {{ nutritionTransparency.sources.join(', ') }}
+          </p>
+          <details v-if="nutritionTransparency.estimated.length" class="nutrition-details-group">
+            <summary>{{ t('nutrition_estimated_quantities') }} ({{ nutritionTransparency.estimated.length }})</summary>
+            <ul>
+              <li v-for="est in nutritionTransparency.estimated" :key="est.name">
+                {{ est.name }} {{ t('nutrition_estimated_as', { g: est.grams }) }}
+              </li>
+            </ul>
+          </details>
+          <details v-if="nutritionTransparency.excluded.length" class="nutrition-details-group">
+            <summary>{{ t('nutrition_not_included') }} ({{ nutritionTransparency.excluded.length }})</summary>
+            <ul>
+              <li v-for="exc in nutritionTransparency.excluded" :key="exc.name">
+                {{ exc.name }} — {{ t(`nutrition_reason_${exc.reason}`) }}
+              </li>
+            </ul>
+          </details>
+        </div>
 
         <div class="nutrition-footer">
           <button
@@ -976,6 +1013,7 @@ function closeQr() {
 .nutrition-macro-row--protein .nutrition-macro-dot { background: var(--nutrition-protein); }
 .nutrition-macro-row--carbs   .nutrition-macro-dot { background: var(--nutrition-carbs); }
 .nutrition-macro-row--fat     .nutrition-macro-dot { background: var(--nutrition-fat); }
+.nutrition-macro-row--fiber   .nutrition-macro-dot { background: var(--nutrition-fiber); }
 
 .nutrition-macro-name {
   flex: 1;
@@ -987,21 +1025,6 @@ function closeQr() {
   font-size: 0.95rem;
   font-weight: 700;
   color: var(--text);
-}
-
-.nutrition-secondary {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  font-size: 0.82rem;
-  color: var(--text-muted);
-  padding-top: 4px;
-  border-top: 1px solid var(--border);
-}
-
-.nutrition-secondary strong {
-  color: var(--text);
-  font-weight: 600;
 }
 
 .nutrition-partial-note {
@@ -1017,5 +1040,53 @@ function closeQr() {
 
 .nutrition-footer button {
   flex: 1;
+}
+
+.nutrition-transparency {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 4px;
+  border-top: 1px solid var(--border);
+}
+
+.nutrition-sources {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+.nutrition-details-group {
+  font-size: 0.78rem;
+}
+
+.nutrition-details-group summary {
+  cursor: pointer;
+  color: var(--text-muted);
+  list-style: none;
+  user-select: none;
+}
+
+.nutrition-details-group summary::before {
+  content: '▸ ';
+}
+
+.nutrition-details-group[open] summary::before {
+  content: '▾ ';
+}
+
+.nutrition-details-group ul {
+  margin: 4px 0 0 12px;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.nutrition-details-group li {
+  color: var(--text-muted);
+  font-size: 0.76rem;
+  line-height: 1.4;
 }
 </style>

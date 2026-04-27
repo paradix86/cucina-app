@@ -55,6 +55,7 @@ export type IngredientNutrition = {
   quantity?: number;
   unit?: string;
   grams?: number;
+  gramsEstimated?: boolean;  // true when grams were derived from UNIT_GRAM_CONVERSIONS
   nutritionPer100g?: NutritionPer100g;
   source?: NutritionSource;
 };

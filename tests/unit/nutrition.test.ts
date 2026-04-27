@@ -208,6 +208,26 @@ describe('normalizeIngredientNutrition', () => {
     expect(result?.source?.provider).toBe('unknown');
     expect(result?.source?.confidence).toBe(0.95);
   });
+
+  it('preserves gramsEstimated: true', () => {
+    const result = normalizeIngredientNutrition({ ingredientName: 'olio', grams: 10, gramsEstimated: true });
+    expect(result?.gramsEstimated).toBe(true);
+  });
+
+  it('preserves gramsEstimated: false', () => {
+    const result = normalizeIngredientNutrition({ ingredientName: 'pasta', grams: 200, gramsEstimated: false });
+    expect(result?.gramsEstimated).toBe(false);
+  });
+
+  it('gramsEstimated is undefined when absent in stored data (backward compat)', () => {
+    const result = normalizeIngredientNutrition({ ingredientName: 'pasta', grams: 200 });
+    expect(result?.gramsEstimated).toBeUndefined();
+  });
+
+  it('drops non-boolean gramsEstimated values', () => {
+    const result = normalizeIngredientNutrition({ ingredientName: 'pasta', gramsEstimated: 'yes' });
+    expect(result?.gramsEstimated).toBeUndefined();
+  });
 });
 
 // ─── normalizeIngredientNutritionArray ────────────────────────────────────────

@@ -335,6 +335,7 @@ describe('enrichRecipeNutrition — volume/count units with estimated grams', ()
     expect(ingredientNutrition).toHaveLength(1);
     expect(ingredientNutrition[0].unit).toBe('tbsp');
     expect(ingredientNutrition[0].grams).toBe(10); // 1 × 10g olio override
+    expect(ingredientNutrition[0].gramsEstimated).toBe(true);
     expect(ingredientNutrition[0].nutritionPer100g?.kcal).toBeGreaterThan(0);
   });
 
@@ -345,6 +346,24 @@ describe('enrichRecipeNutrition — volume/count units with estimated grams', ()
     expect(ingredientNutrition).toHaveLength(1);
     expect(ingredientNutrition[0].unit).toBe('tsp');
     expect(ingredientNutrition[0].grams).toBe(8); // 2 × 4g zucchero override
+    expect(ingredientNutrition[0].gramsEstimated).toBe(true);
+  });
+
+  it('weight ingredient (g/kg) does NOT set gramsEstimated', async () => {
+    const recipe = makeRecipe({ ingredients: ['200 g pasta'] });
+    const { ingredientNutrition } = await enrichRecipeNutrition(recipe, manualProvider);
+
+    expect(ingredientNutrition).toHaveLength(1);
+    expect(ingredientNutrition[0].grams).toBe(200);
+    expect(ingredientNutrition[0].gramsEstimated).toBeUndefined();
+  });
+
+  it('2 uova sets gramsEstimated', async () => {
+    const recipe = makeRecipe({ ingredients: ['2 uova'] });
+    const { ingredientNutrition } = await enrichRecipeNutrition(recipe, manualProvider);
+
+    expect(ingredientNutrition[0].grams).toBe(120);
+    expect(ingredientNutrition[0].gramsEstimated).toBe(true);
   });
 
   it('tbsp ingredient contributes to perRecipe kcal via estimated grams', async () => {

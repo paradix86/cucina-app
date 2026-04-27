@@ -52,7 +52,7 @@ export async function enrichRecipeNutritionWithProviders(
       if (match.grams === undefined) {
         const estimated = estimateGrams(parsed);
         if (estimated !== undefined) {
-          ingredientNutrition.push({ ...match, grams: estimated });
+          ingredientNutrition.push({ ...match, grams: estimated, gramsEstimated: true });
           break;
         }
       }

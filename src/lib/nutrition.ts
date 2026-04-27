@@ -74,6 +74,7 @@ export function normalizeIngredientNutrition(value: unknown): IngredientNutritio
     quantity:        safeNonNegNum(v['quantity']),
     unit:            typeof v['unit'] === 'string' ? v['unit'] : undefined,
     grams:           safeNonNegNum(v['grams']),
+    gramsEstimated:  typeof v['gramsEstimated'] === 'boolean' ? v['gramsEstimated'] : undefined,
     nutritionPer100g: normalizeNutritionPer100g(v['nutritionPer100g']),
     source:          normalizeNutritionSource(v['source']),
   };
