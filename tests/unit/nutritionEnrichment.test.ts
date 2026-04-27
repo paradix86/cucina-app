@@ -575,6 +575,109 @@ describe('enrichRecipeNutritionWithProviders — provider ordering', () => {
     expect(relaxedResult.ingredientNutrition).toHaveLength(1); // 0.6 >= 0.5
   });
 
+  it('retries with alias query when primary query returns nothing above threshold', async () => {
+    // A provider that only knows 'olio' (the base name), not the compound form.
+    // The primary query 'olio extravergine di oliva' returns nothing; the alias
+    // query 'olio' returns a result above threshold.
+    const olioResult: NutritionSearchResult = {
+      id: 'olio-1', name: 'Olio', provider: 'manual',
+      nutritionPer100g: { kcal: 884, fatG: 100 }, confidence: 0.95,
+    };
+    const baseOnlyProvider = stubProvider('base-only', 'manual', { olio: olioResult });
+
+    const recipe = makeRecipe({ ingredients: ['15 g olio extravergine di oliva'] });
+    const { ingredientNutrition } = await enrichRecipeNutritionWithProviders(
+      recipe, [baseOnlyProvider],
+    );
+
+    expect(ingredientNutrition).toHaveLength(1);
+    expect(ingredientNutrition[0].nutritionPer100g?.kcal).toBe(884);
+    // Confidence is boosted by ALIAS_CONFIDENCE_BOOST (0.05) since alias query was used
+    expect(ingredientNutrition[0].source?.confidence).toBeGreaterThan(0.95);
+    expect(ingredientNutrition[0].source?.confidence).toBeLessThanOrEqual(1.0);
+  });
+
+  it('farina 00 matches provider that only knows farina', async () => {
+    const farinaResult: NutritionSearchResult = {
+      id: 'farina-1', name: 'Farina', provider: 'manual',
+      nutritionPer100g: { kcal: 364, carbsG: 76 }, confidence: 0.95,
+    };
+    const baseOnlyProvider = stubProvider('base-only', 'manual', { farina: farinaResult });
+
+    const recipe = makeRecipe({ ingredients: ['100 g farina 00'] });
+    const { ingredientNutrition } = await enrichRecipeNutritionWithProviders(
+      recipe, [baseOnlyProvider],
+    );
+
+    expect(ingredientNutrition).toHaveLength(1);
+    expect(ingredientNutrition[0].nutritionPer100g?.kcal).toBe(364);
+  });
+
+  it('pasta integrale matches provider that only knows pasta', async () => {
+    const pastaBase: NutritionSearchResult = {
+      id: 'pasta-base', name: 'Pasta', provider: 'manual',
+      nutritionPer100g: { kcal: 350, proteinG: 12 }, confidence: 0.95,
+    };
+    const baseOnlyProvider = stubProvider('base-only', 'manual', { pasta: pastaBase });
+
+    const recipe = makeRecipe({ ingredients: ['200 g pasta integrale'] });
+    const { ingredientNutrition } = await enrichRecipeNutritionWithProviders(
+      recipe, [baseOnlyProvider],
+    );
+
+    expect(ingredientNutrition).toHaveLength(1);
+    expect(ingredientNutrition[0].nutritionPer100g?.kcal).toBe(350);
+  });
+
+  it('unknown ingredient is still missing after all alias queries exhaust', async () => {
+    const baseOnlyProvider = stubProvider('base-only', 'manual', { olio: {
+      id: 'olio-1', name: 'Olio', provider: 'manual',
+      nutritionPer100g: { kcal: 884 }, confidence: 0.95,
+    }});
+
+    const recipe = makeRecipe({ ingredients: ['100 g zabaione speciale sconosciuto'] });
+    const { ingredientNutrition, nutrition } = await enrichRecipeNutritionWithProviders(
+      recipe, [baseOnlyProvider],
+    );
+
+    expect(ingredientNutrition).toHaveLength(0);
+    expect(nutrition.status).toBe('missing');
+  });
+
+  it('provider error on first query falls through to next provider (not next query)', async () => {
+    // First provider throws; second provider knows the alias base.
+    const olioResult: NutritionSearchResult = {
+      id: 'olio-1', name: 'Olio', provider: 'openfoodfacts',
+      nutritionPer100g: { kcal: 884 }, confidence: 0.95,
+    };
+    const throwingFirst = stubProvider('broken', 'manual', {}, { throws: true });
+    const workingSecond = stubProvider('working', 'openfoodfacts', { 'olio extravergine di oliva': olioResult });
+
+    const recipe = makeRecipe({ ingredients: ['10 g olio extravergine di oliva'] });
+    const { ingredientNutrition } = await enrichRecipeNutritionWithProviders(
+      recipe, [throwingFirst, workingSecond],
+    );
+
+    expect(ingredientNutrition).toHaveLength(1);
+    expect(ingredientNutrition[0].source?.provider).toBe('openfoodfacts');
+  });
+
+  it('alias-query boost is clamped to 1.0', async () => {
+    const highConfResult: NutritionSearchResult = {
+      id: 'olio-1', name: 'Olio', provider: 'manual',
+      nutritionPer100g: { kcal: 884 }, confidence: 0.98,
+    };
+    const provider = stubProvider('p', 'manual', { olio: highConfResult });
+
+    const recipe = makeRecipe({ ingredients: ['10 g olio evo'] });
+    const { ingredientNutrition } = await enrichRecipeNutritionWithProviders(
+      recipe, [provider],
+    );
+
+    expect(ingredientNutrition).toHaveLength(1);
+    expect(ingredientNutrition[0].source?.confidence).toBeLessThanOrEqual(1.0);
+  });
+
   it('with a single provider behaves identically to enrichRecipeNutrition', async () => {
     const recipe = makeRecipe({
       ingredients: ['200 g pasta', '50 g parmigiano'],
