@@ -32,6 +32,13 @@
   --radius-pill: 999px;
 
   --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+
+  --nutrition-partial-bg:   rgba(217, 119,   6, 0.12);
+  --nutrition-partial-text: #b45309;
+  --nutrition-complete-bg:  rgba( 22, 163,  74, 0.12);
+  --nutrition-complete-text:#15803d;
+  --nutrition-manual-bg:    rgba( 59, 130, 246, 0.12);
+  --nutrition-manual-text:  #1d4ed8;
 }
 
 :root[data-theme="light"] {
@@ -47,6 +54,12 @@
   --green-text:   #085041;
   --orange-light: #FFF5EF;
   --red-light:    #FCEBEB;
+  --nutrition-partial-bg:   rgba(217, 119,   6, 0.12);
+  --nutrition-partial-text: #b45309;
+  --nutrition-complete-bg:  rgba( 22, 163,  74, 0.12);
+  --nutrition-complete-text:#15803d;
+  --nutrition-manual-bg:    rgba( 59, 130, 246, 0.12);
+  --nutrition-manual-text:  #1d4ed8;
 }
 
 :root[data-theme="dark"] {
@@ -64,6 +77,12 @@
   --green-text:   #9FE1CB;
   --orange-light: #2a1800;
   --red-light:    #2a0a0a;
+  --nutrition-partial-bg:   rgba(251, 191,  36, 0.15);
+  --nutrition-partial-text: #fbbf24;
+  --nutrition-complete-bg:  rgba( 52, 211, 153, 0.15);
+  --nutrition-complete-text:#34d399;
+  --nutrition-manual-bg:    rgba( 96, 165, 250, 0.15);
+  --nutrition-manual-text:  #60a5fa;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -82,6 +101,12 @@
     --green-text:   #9FE1CB;
     --orange-light: #2a1800;
     --red-light:    #2a0a0a;
+    --nutrition-partial-bg:   rgba(251, 191,  36, 0.15);
+    --nutrition-partial-text: #fbbf24;
+    --nutrition-complete-bg:  rgba( 52, 211, 153, 0.15);
+    --nutrition-complete-text:#34d399;
+    --nutrition-manual-bg:    rgba( 96, 165, 250, 0.15);
+    --nutrition-manual-text:  #60a5fa;
   }
 }
 

@@ -4,7 +4,10 @@ import { storeToRefs } from 'pinia';
 import { buildStepsHtml, formatTimerLabel, getPreparationInfo, getSourceDomainLabel, joinMetaParts, scaleIngredients, suggestMealOccasions } from '../lib/recipes.js';
 import { t } from '../lib/i18n.js';
 import { useShoppingListStore } from '../stores/shoppingList';
+import { useRecipeBookStore } from '../stores/recipeBook';
 import { buildShareUrl } from '../lib/recipeShare';
+import { enrichRecipeNutrition } from '../lib/nutritionEnrichment';
+import { getProvider } from '../lib/nutritionProviders';
 
 const props = defineProps({
   recipe: { type: Object, required: true },
@@ -28,6 +31,39 @@ const emit = defineEmits([
 
 const shoppingStore = useShoppingListStore();
 const { items: shoppingItems } = storeToRefs(shoppingStore);
+const recipeBookStore = useRecipeBookStore();
+
+const isCalculatingNutrition = ref(false);
+
+const nutritionContext = computed(() => {
+  const n = props.recipe.nutrition;
+  if (!n) return null;
+  const perServing = n.perServing;
+  const perRecipe = n.perRecipe;
+  if (perServing && Object.values(perServing).some(v => v != null)) {
+    return { data: perServing, isPerServing: true, servingsUsed: n.servingsUsed };
+  }
+  if (perRecipe && Object.values(perRecipe).some(v => v != null)) {
+    return { data: perRecipe, isPerServing: false, servingsUsed: undefined };
+  }
+  return null;
+});
+
+async function calculateNutrition() {
+  if (isCalculatingNutrition.value || !props.recipe.id) return;
+  const provider = getProvider('manual');
+  if (!provider) return;
+  isCalculatingNutrition.value = true;
+  try {
+    const result = await enrichRecipeNutrition(props.recipe, provider);
+    recipeBookStore.update(props.recipe.id, {
+      ingredientNutrition: result.ingredientNutrition,
+      nutrition: result.nutrition,
+    });
+  } finally {
+    isCalculatingNutrition.value = false;
+  }
+}
 
 const servings = ref(parseInt(props.recipe.servings, 10) || 4);
 const noteDraft = ref(props.recipe.notes || '');
@@ -422,6 +458,51 @@ function closeQr() {
         </div>
       </div>
 
+      <div v-if="savedMode" class="nutrition-wrap card">
+        <div class="nutrition-header">
+          <p class="sec-label">{{ t('nutrition') }}</p>
+          <span class="nutrition-badge" :class="`nutrition-badge--${recipe.nutrition?.status ?? 'missing'}`">
+            {{ t(`nutrition_status_${recipe.nutrition?.status ?? 'missing'}`) }}
+          </span>
+        </div>
+
+        <div v-if="nutritionContext" class="nutrition-grid">
+          <div v-if="nutritionContext.data.kcal != null" class="nutrition-item">
+            <span class="nutrition-val">{{ Math.round(nutritionContext.data.kcal) }}</span>
+            <span class="nutrition-lbl">kcal</span>
+          </div>
+          <div v-if="nutritionContext.data.proteinG != null" class="nutrition-item">
+            <span class="nutrition-val">{{ nutritionContext.data.proteinG.toFixed(1) }}g</span>
+            <span class="nutrition-lbl">{{ t('section_proteins') }}</span>
+          </div>
+          <div v-if="nutritionContext.data.carbsG != null" class="nutrition-item">
+            <span class="nutrition-val">{{ nutritionContext.data.carbsG.toFixed(1) }}g</span>
+            <span class="nutrition-lbl">{{ t('section_carbs') }}</span>
+          </div>
+          <div v-if="nutritionContext.data.fatG != null" class="nutrition-item">
+            <span class="nutrition-val">{{ nutritionContext.data.fatG.toFixed(1) }}g</span>
+            <span class="nutrition-lbl">{{ t('nutrition_fat') }}</span>
+          </div>
+          <div v-if="nutritionContext.data.fiberG != null" class="nutrition-item">
+            <span class="nutrition-val">{{ nutritionContext.data.fiberG.toFixed(1) }}g</span>
+            <span class="nutrition-lbl">{{ t('nutrition_fiber') }}</span>
+          </div>
+        </div>
+
+        <p v-if="recipe.nutrition?.status === 'partial'" class="nutrition-partial-note">
+          {{ t('nutrition_partial_note') }}
+        </p>
+
+        <div class="nutrition-footer">
+          <button
+            class="btn-secondary"
+            :disabled="isCalculatingNutrition"
+            type="button"
+            @click="calculateNutrition"
+          >{{ isCalculatingNutrition ? '…' : t('calculate_nutrition') }}</button>
+        </div>
+      </div>
+
       <div class="detail-actions-shell">
         <div class="detail-action-primary">
           <button class="btn-start-cooking" @click="emit('start-cooking', recipe)">{{ t('cooking_start') }}</button>
@@ -738,5 +819,101 @@ function closeQr() {
   font-size: 0.9rem;
   color: var(--text);
   line-height: 1.5;
+}
+
+/* ── Nutrition section ── */
+.nutrition-wrap {
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.nutrition-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.nutrition-header .sec-label {
+  margin: 0;
+}
+
+.nutrition-badge {
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 2px 9px;
+  border-radius: 20px;
+  letter-spacing: 0.03em;
+  flex-shrink: 0;
+}
+
+.nutrition-badge--missing {
+  background: var(--hover-bg, rgba(0,0,0,0.06));
+  color: var(--text-muted);
+}
+
+.nutrition-badge--partial {
+  background: var(--nutrition-partial-bg);
+  color: var(--nutrition-partial-text);
+}
+
+.nutrition-badge--complete {
+  background: var(--nutrition-complete-bg);
+  color: var(--nutrition-complete-text);
+}
+
+.nutrition-badge--manual {
+  background: var(--nutrition-manual-bg);
+  color: var(--nutrition-manual-text);
+}
+
+.nutrition-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.nutrition-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: var(--hover-bg, rgba(0,0,0,0.04));
+  border-radius: 8px;
+  padding: 8px 10px;
+  flex: 1;
+  min-width: 56px;
+}
+
+.nutrition-val {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.2;
+}
+
+.nutrition-lbl {
+  font-size: 0.67rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-top: 3px;
+  text-align: center;
+}
+
+.nutrition-partial-note {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin: 0;
+  line-height: 1.4;
+}
+
+.nutrition-footer {
+  display: flex;
+}
+
+.nutrition-footer button {
+  flex: 1;
 }
 </style>
