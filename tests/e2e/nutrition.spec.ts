@@ -191,6 +191,11 @@ test('estimated quantities: shows transparency section for tbsp ingredient', asy
   const badge = page.locator('.nutrition-badge');
   await expect(badge).not.toHaveClass(/nutrition-badge--missing/, { timeout: 5000 });
 
+  // Open details section (collapsed by default)
+  const detailsToggle = page.locator('.nutrition-details-toggle');
+  await expect(detailsToggle).toBeVisible();
+  await detailsToggle.click();
+
   // Transparency section should appear
   const transparency = page.locator('.nutrition-transparency');
   await expect(transparency).toBeVisible();
@@ -242,6 +247,11 @@ test('manual override: edit quantities updates kcal, sets manual badge, persists
   // Badge should show complete initially
   const badge = page.locator('.nutrition-badge');
   await expect(badge).toHaveClass(/nutrition-badge--complete/);
+
+  // Open details section (collapsed by default) to reveal the edit button
+  const detailsToggle = page.locator('.nutrition-details-toggle');
+  await expect(detailsToggle).toBeVisible();
+  await detailsToggle.click();
 
   // "Edit quantities" button should be visible
   const editBtn = page.locator('.nutrition-details-edit button').filter({ hasText: /edit|quantit/i }).first();
@@ -303,6 +313,11 @@ test('not-included: shows excluded ingredient after partial calculation', async 
 
   await expect(page.locator('.nutrition-badge')).not.toHaveClass(/nutrition-badge--missing/, { timeout: 5000 });
 
+  // Open details section (collapsed by default)
+  const detailsToggle = page.locator('.nutrition-details-toggle');
+  await expect(detailsToggle).toBeVisible();
+  await detailsToggle.click();
+
   // Not-included section should be visible in the transparency block
   const transparency = page.locator('.nutrition-transparency');
   await expect(transparency).toBeVisible();
@@ -347,6 +362,9 @@ test('per-100g edit: protein change updates macro display and persists', async (
   await gotoRoute(page, 'recipe-book/nutrition-e2e-per100g');
 
   await expect(page.locator('#saved-detail-view')).toBeVisible();
+
+  // Open details section (collapsed by default)
+  await page.locator('.nutrition-details-toggle').click();
 
   // Open the editor
   const editBtn = page.locator('.nutrition-details-edit button').filter({ hasText: /edit|quantit/i }).first();
@@ -410,6 +428,9 @@ test('per-100g edit: comma decimal accepted (10,5 → 10.5)', async ({ page }) =
 
   await expect(page.locator('#saved-detail-view')).toBeVisible();
 
+  // Open details section (collapsed by default)
+  await page.locator('.nutrition-details-toggle').click();
+
   const editBtn = page.locator('.nutrition-details-edit button').filter({ hasText: /edit|quantit/i }).first();
   await editBtn.click();
 
@@ -438,6 +459,9 @@ test('per-100g edit: expand panel toggle works — expand then collapse', async 
   await gotoRoute(page, 'recipe-book/nutrition-e2e-per100g');
 
   await expect(page.locator('#saved-detail-view')).toBeVisible();
+
+  // Open details section (collapsed by default)
+  await page.locator('.nutrition-details-toggle').click();
 
   const editBtn = page.locator('.nutrition-details-edit button').filter({ hasText: /edit|quantit/i }).first();
   await editBtn.click();
@@ -502,6 +526,9 @@ test('QA: missing grams → setting grams removes ingredient from not-included l
 
   // Badge is partial (salt excluded)
   await expect(page.locator('.nutrition-badge')).toHaveClass(/nutrition-badge--partial/);
+
+  // Open details section (collapsed by default)
+  await page.locator('.nutrition-details-toggle').click();
 
   // Transparency section and "not included" details must be visible
   await expect(page.locator('.nutrition-transparency')).toBeVisible();
@@ -579,6 +606,9 @@ test('QA: missing nutrition → per-100g edit removes ingredient from not-includ
   await gotoRoute(page, 'recipe-book/nutrition-qa-missing-nutrition');
 
   await expect(page.locator('#saved-detail-view')).toBeVisible();
+
+  // Open details section (collapsed by default)
+  await page.locator('.nutrition-details-toggle').click();
 
   // Confirm not-included section visible
   await expect(page.locator('.nutrition-transparency')).toBeVisible();
@@ -672,6 +702,9 @@ test('QA: estimated grams → manual grams removes ingredient from estimated sec
 
   await expect(page.locator('#saved-detail-view')).toBeVisible();
 
+  // Open details section (collapsed by default)
+  await page.locator('.nutrition-details-toggle').click();
+
   // Estimated quantities section must be visible
   await expect(page.locator('.nutrition-transparency')).toBeVisible();
   const estimatedDetails = page.locator('.nutrition-details-group').filter({ hasText: /stimate|estimated/i });
@@ -757,6 +790,9 @@ test('olio grams: doubling grams from 10 to 20 visibly increases kcal', async ({
   const kcalLocator = page.locator('.nutrition-kcal-val');
   const kcalBefore = parseInt((await kcalLocator.textContent()) ?? '0', 10);
   expect(kcalBefore).toBeGreaterThan(300);
+
+  // Open details section (collapsed by default)
+  await page.locator('.nutrition-details-toggle').click();
 
   // Open editor
   const editBtn = page.locator('.nutrition-details-edit button').filter({ hasText: /edit|quantit|modific/i }).first();
@@ -922,6 +958,11 @@ test('base_ingredients: porridge recipe calculates kcal from oats, milk, and cin
   // Badge should no longer be missing
   await expect(badge).not.toHaveClass(/nutrition-badge--missing/);
 
+  // Open details section (collapsed by default) to see sources
+  const detailsToggle = page.locator('.nutrition-details-toggle');
+  await expect(detailsToggle).toBeVisible();
+  await detailsToggle.click();
+
   // Sources line must include "Base ingredients"
   const sourcesLine = page.locator('.nutrition-sources');
   await expect(sourcesLine).toBeVisible();
@@ -1013,6 +1054,9 @@ test('no_match: excluded ingredient appears in editor and can be completed manua
 
   await expect(page.locator('#saved-detail-view')).toBeVisible();
   await expect(page.locator('.nutrition-badge')).toHaveClass(/nutrition-badge--partial/);
+
+  // Open details section (collapsed by default)
+  await page.locator('.nutrition-details-toggle').click();
 
   // Open the editor — button must be visible (recipe.nutrition exists and ingredients.length > 0)
   const editBtn = page.locator('.nutrition-details-edit button').filter({ hasText: /edit|quantit|modific/i }).first();
