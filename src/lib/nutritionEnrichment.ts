@@ -9,9 +9,16 @@ export type NutritionEnrichmentOptions = {
 
 const DEFAULT_MIN_CONFIDENCE = 0.7;
 
-export async function enrichRecipeNutrition(
+// Try providers in order for each ingredient.  The first provider that returns
+// a result above minConfidence wins for that ingredient; subsequent providers
+// are not consulted for it.  If every provider fails or returns nothing above
+// threshold, the ingredient is silently skipped.
+//
+// source.provider on each returned IngredientNutrition reflects which provider
+// actually supplied the data, so callers can tell manual from openfoodfacts etc.
+export async function enrichRecipeNutritionWithProviders(
   recipe: Recipe,
-  provider: NutritionProviderClient,
+  providers: NutritionProviderClient[],
   options?: NutritionEnrichmentOptions,
 ): Promise<{
   ingredientNutrition: IngredientNutrition[];
@@ -25,22 +32,25 @@ export async function enrichRecipeNutrition(
     const queryText = parsed.normalizedName ?? parsed.name;
     if (!queryText) continue;
 
-    let results;
-    try {
-      results = await provider.search({
-        query:           queryText,
-        normalizedQuery: parsed.normalizedName,
-        maxResults:      5,
-      });
-    } catch {
-      continue;
+    for (const provider of providers) {
+      let results;
+      try {
+        results = await provider.search({
+          query:           queryText,
+          normalizedQuery: parsed.normalizedName,
+          maxResults:      5,
+        });
+      } catch {
+        continue;  // this provider failed; try the next one
+      }
+
+      // Results are sorted descending by confidence; take first above threshold.
+      const best = results.find(r => r.confidence >= minConfidence);
+      if (!best) continue;  // nothing useful from this provider; try the next one
+
+      ingredientNutrition.push(buildIngredientNutritionMatch(parsed, best));
+      break;  // matched — do not consult further providers for this ingredient
     }
-
-    // Results are sorted descending by confidence; take first above threshold.
-    const best = results.find(r => r.confidence >= minConfidence);
-    if (!best) continue;
-
-    ingredientNutrition.push(buildIngredientNutritionMatch(parsed, best));
   }
 
   const nutrition = calculateRecipeNutrition({
@@ -50,4 +60,16 @@ export async function enrichRecipeNutrition(
   });
 
   return { ingredientNutrition, nutrition };
+}
+
+// Single-provider convenience wrapper kept for backward compatibility.
+export async function enrichRecipeNutrition(
+  recipe: Recipe,
+  provider: NutritionProviderClient,
+  options?: NutritionEnrichmentOptions,
+): Promise<{
+  ingredientNutrition: IngredientNutrition[];
+  nutrition: RecipeNutrition;
+}> {
+  return enrichRecipeNutritionWithProviders(recipe, [provider], options);
 }

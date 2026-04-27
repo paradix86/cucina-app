@@ -6,8 +6,8 @@ import { t } from '../lib/i18n.js';
 import { useShoppingListStore } from '../stores/shoppingList';
 import { useRecipeBookStore } from '../stores/recipeBook';
 import { buildShareUrl } from '../lib/recipeShare';
-import { enrichRecipeNutrition } from '../lib/nutritionEnrichment';
-import { getProvider } from '../lib/nutritionProviders';
+import { enrichRecipeNutritionWithProviders } from '../lib/nutritionEnrichment';
+import { NUTRITION_PROVIDERS } from '../lib/nutritionProviders';
 
 const props = defineProps({
   recipe: { type: Object, required: true },
@@ -51,11 +51,9 @@ const nutritionContext = computed(() => {
 
 async function calculateNutrition() {
   if (isCalculatingNutrition.value || !props.recipe.id) return;
-  const provider = getProvider('manual');
-  if (!provider) return;
   isCalculatingNutrition.value = true;
   try {
-    const result = await enrichRecipeNutrition(props.recipe, provider);
+    const result = await enrichRecipeNutritionWithProviders(props.recipe, NUTRITION_PROVIDERS);
     recipeBookStore.update(props.recipe.id, {
       ingredientNutrition: result.ingredientNutrition,
       nutrition: result.nutrition,

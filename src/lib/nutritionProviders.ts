@@ -205,9 +205,132 @@ export const manualProvider: NutritionProviderClient = {
   },
 };
 
+// ─── OpenFoodFacts provider ───────────────────────────────────────────────────
+
+const OFF_SEARCH_URL = 'https://world.openfoodfacts.org/cgi/search.pl';
+
+// Safely parse a numeric field that may arrive as number, numeric string, or
+// comma-decimal string. Returns undefined for anything non-finite or negative.
+function offNum(value: unknown): number | undefined {
+  if (typeof value === 'number') {
+    return Number.isFinite(value) && value >= 0 ? value : undefined;
+  }
+  if (typeof value === 'string') {
+    const n = parseFloat(value.replace(',', '.'));
+    return Number.isFinite(n) && n >= 0 ? n : undefined;
+  }
+  return undefined;
+}
+
+// Prefer the language-specific product name, fall back to the generic field.
+function offProductName(p: Record<string, unknown>, lang: string): string | undefined {
+  const localized = String(p[`product_name_${lang}`] ?? '').trim();
+  if (localized) return localized;
+  const generic = String(p['product_name'] ?? '').trim();
+  return generic || undefined;
+}
+
+// Map OpenFoodFacts nutriments object to NutritionPer100g.
+// Sodium in OFF is in grams per 100 g — multiply by 1 000 to get mg.
+function offMapNutriments(n: Record<string, unknown>): NutritionPer100g {
+  const sodiumG = offNum(n['sodium_100g']);
+  return {
+    kcal:          offNum(n['energy-kcal_100g']),
+    proteinG:      offNum(n['proteins_100g']),
+    carbsG:        offNum(n['carbohydrates_100g']),
+    sugarsG:       offNum(n['sugars_100g']),
+    fatG:          offNum(n['fat_100g']),
+    saturatedFatG: offNum(n['saturated-fat_100g']),
+    fiberG:        offNum(n['fiber_100g']),
+    saltG:         offNum(n['salt_100g']),
+    sodiumMg:      sodiumG !== undefined ? Math.round(sodiumG * 1000) : undefined,
+  };
+}
+
+function offHasNutrition(n: NutritionPer100g): boolean {
+  return Object.values(n).some(v => v !== undefined);
+}
+
+// Score a product name against the search query (both already lowercased).
+function offConfidence(productName: string, q: string): number {
+  const name = productName.toLowerCase();
+  const query = q.toLowerCase().trim();
+  if (name === query) return 0.9;
+  if (name.startsWith(query)) return 0.8;
+  if (name.includes(query)) return 0.7;
+  if (query.split(/\s+/).filter(Boolean).every(w => name.includes(w))) return 0.6;
+  return 0.45;
+}
+
+export const openFoodFactsProvider: NutritionProviderClient = {
+  provider: 'openfoodfacts',
+  displayName: 'OpenFoodFacts',
+
+  async search(query: NutritionSearchQuery): Promise<NutritionSearchResult[]> {
+    const q = (query.normalizedQuery ?? query.query).trim();
+    if (!q) return [];
+
+    const lang       = query.language ?? 'it';
+    const maxResults = query.maxResults ?? 5;
+
+    const url = new URL(OFF_SEARCH_URL);
+    url.searchParams.set('search_terms', q);
+    url.searchParams.set('json',         '1');
+    url.searchParams.set('action',       'process');
+    url.searchParams.set('page_size',    String(maxResults));
+    url.searchParams.set('lc',           lang);
+
+    let data: unknown;
+    try {
+      const response = await fetch(url.toString());
+      if (!response.ok) return [];
+      data = await response.json();
+    } catch {
+      return [];
+    }
+
+    if (!data || typeof data !== 'object') return [];
+    const payload = data as Record<string, unknown>;
+    if (!Array.isArray(payload['products'])) return [];
+
+    const results: NutritionSearchResult[] = [];
+
+    for (const item of payload['products'] as unknown[]) {
+      if (!item || typeof item !== 'object') continue;
+      const p = item as Record<string, unknown>;
+
+      const name = offProductName(p, lang);
+      if (!name) continue;
+
+      if (!p['nutriments'] || typeof p['nutriments'] !== 'object') continue;
+      const nutritionPer100g = offMapNutriments(p['nutriments'] as Record<string, unknown>);
+      if (!offHasNutrition(nutritionPer100g)) continue;
+
+      const code = String(p['code'] ?? p['id'] ?? '').trim();
+      const id   = code || `off-${name}`;
+      const externalUrl = typeof p['url'] === 'string' ? p['url'] : undefined;
+
+      results.push({
+        id,
+        name,
+        provider:        'openfoodfacts',
+        nutritionPer100g,
+        confidence:      offConfidence(name, q),
+        externalUrl,
+      });
+    }
+
+    results.sort((a, b) => b.confidence - a.confidence);
+    return results.slice(0, maxResults);
+  },
+};
+
 // ─── Provider registry ────────────────────────────────────────────────────────
 
-export const NUTRITION_PROVIDERS: readonly NutritionProviderClient[] = [manualProvider];
+export const NUTRITION_PROVIDERS: readonly NutritionProviderClient[] = [
+  manualProvider,
+  openFoodFactsProvider,
+];
 
 export function getProvider(id: NutritionProvider): NutritionProviderClient | undefined {
   return NUTRITION_PROVIDERS.find(p => p.provider === id);

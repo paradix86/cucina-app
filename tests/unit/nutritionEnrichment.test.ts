@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { enrichRecipeNutrition } from '../../src/lib/nutritionEnrichment';
+import { enrichRecipeNutrition, enrichRecipeNutritionWithProviders } from '../../src/lib/nutritionEnrichment';
 import { manualProvider } from '../../src/lib/nutritionProviders';
+import type { NutritionProviderClient, NutritionSearchResult } from '../../src/lib/nutritionProviders';
 import type { Recipe } from '../../src/types';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -404,5 +405,199 @@ describe('enrichRecipeNutrition — provider error resilience', () => {
 
     expect(ingredientNutrition).toHaveLength(0);
     expect(nutrition.status).toBe('missing');
+  });
+});
+
+// ─── enrichRecipeNutritionWithProviders ───────────────────────────────────────
+
+// Stub helpers — no real network calls.
+function stubProvider(
+  id: string,
+  providerTag: 'manual' | 'openfoodfacts',
+  knownIngredients: Record<string, NutritionSearchResult>,
+  opts: { throws?: boolean; confidence?: number } = {},
+): NutritionProviderClient {
+  return {
+    provider:    providerTag,
+    displayName: id,
+    async search(q) {
+      if (opts.throws) throw new Error(`${id} unavailable`);
+      const hit = knownIngredients[q.normalizedQuery ?? q.query ?? ''];
+      if (!hit) return [];
+      const conf = opts.confidence ?? hit.confidence;
+      return [{ ...hit, confidence: conf }];
+    },
+  };
+}
+
+const pastaResult: NutritionSearchResult = {
+  id: 'pasta-1', name: 'Pasta', provider: 'manual',
+  nutritionPer100g: { kcal: 350, proteinG: 12 }, confidence: 0.95,
+};
+const risottoResult: NutritionSearchResult = {
+  id: 'riso-off', name: 'Riso', provider: 'openfoodfacts',
+  nutritionPer100g: { kcal: 360, proteinG: 7 }, confidence: 0.85,
+};
+
+describe('enrichRecipeNutritionWithProviders — provider ordering', () => {
+  it('uses the first provider when it succeeds', async () => {
+    const first  = stubProvider('first',  'manual',        { pasta: pastaResult });
+    const second = stubProvider('second', 'openfoodfacts', {});
+
+    let secondCalled = false;
+    const trackingSecond: NutritionProviderClient = {
+      ...second,
+      async search(q) {
+        secondCalled = true;
+        return second.search(q);
+      },
+    };
+
+    const recipe = makeRecipe({ ingredients: ['200 g pasta'] });
+    const { ingredientNutrition } = await enrichRecipeNutritionWithProviders(
+      recipe, [first, trackingSecond],
+    );
+
+    expect(ingredientNutrition).toHaveLength(1);
+    expect(secondCalled).toBe(false);
+  });
+
+  it('falls back to the second provider when the first returns nothing above threshold', async () => {
+    const emptyFirst  = stubProvider('empty',  'manual',        {});
+    const second      = stubProvider('second', 'openfoodfacts', { pasta: { ...pastaResult, provider: 'openfoodfacts' } });
+
+    const recipe = makeRecipe({ ingredients: ['200 g pasta'] });
+    const { ingredientNutrition } = await enrichRecipeNutritionWithProviders(
+      recipe, [emptyFirst, second],
+    );
+
+    expect(ingredientNutrition).toHaveLength(1);
+    expect(ingredientNutrition[0].source?.provider).toBe('openfoodfacts');
+  });
+
+  it('falls back to the second provider when the first throws', async () => {
+    const throwingFirst = stubProvider('broken', 'manual',        {}, { throws: true });
+    const second        = stubProvider('good',   'openfoodfacts', { pasta: { ...pastaResult, provider: 'openfoodfacts' } });
+
+    const recipe = makeRecipe({ ingredients: ['200 g pasta'] });
+    const { ingredientNutrition } = await enrichRecipeNutritionWithProviders(
+      recipe, [throwingFirst, second],
+    );
+
+    expect(ingredientNutrition).toHaveLength(1);
+    expect(ingredientNutrition[0].source?.provider).toBe('openfoodfacts');
+  });
+
+  it('records source.provider per ingredient reflecting actual provider used', async () => {
+    // First provider knows pasta, not riso. Second provider knows riso, not pasta.
+    const first  = stubProvider('first',  'manual',        { pasta: pastaResult });
+    const second = stubProvider('second', 'openfoodfacts', { riso: risottoResult });
+
+    const recipe = makeRecipe({ ingredients: ['200 g pasta', '100 g riso'] });
+    const { ingredientNutrition } = await enrichRecipeNutritionWithProviders(
+      recipe, [first, second],
+    );
+
+    expect(ingredientNutrition).toHaveLength(2);
+    const pastaEntry = ingredientNutrition.find(e => e.normalizedName === 'pasta');
+    const risoEntry  = ingredientNutrition.find(e => e.normalizedName === 'riso');
+
+    expect(pastaEntry?.source?.provider).toBe('manual');
+    expect(risoEntry?.source?.provider).toBe('openfoodfacts');
+  });
+
+  it('skips ingredient when all providers fail', async () => {
+    const broken1 = stubProvider('b1', 'manual',        {}, { throws: true });
+    const broken2 = stubProvider('b2', 'openfoodfacts', {}, { throws: true });
+
+    const recipe = makeRecipe({ ingredients: ['200 g pasta', '100 g riso'] });
+    const { ingredientNutrition, nutrition } = await enrichRecipeNutritionWithProviders(
+      recipe, [broken1, broken2],
+    );
+
+    expect(ingredientNutrition).toHaveLength(0);
+    expect(nutrition.status).toBe('missing');
+  });
+
+  it('skips ingredient when all providers return nothing above threshold', async () => {
+    const low1 = stubProvider('low1', 'manual',        { pasta: pastaResult }, { confidence: 0.3 });
+    const low2 = stubProvider('low2', 'openfoodfacts', { pasta: pastaResult }, { confidence: 0.4 });
+
+    const recipe = makeRecipe({ ingredients: ['200 g pasta'] });
+    const { ingredientNutrition } = await enrichRecipeNutritionWithProviders(
+      recipe, [low1, low2],
+    );
+
+    expect(ingredientNutrition).toHaveLength(0);
+  });
+
+  it('handles empty providers list — all ingredients skipped', async () => {
+    const recipe = makeRecipe({ ingredients: ['200 g pasta', '100 g riso'] });
+    const { ingredientNutrition, nutrition } = await enrichRecipeNutritionWithProviders(
+      recipe, [],
+    );
+
+    expect(ingredientNutrition).toHaveLength(0);
+    expect(nutrition.status).toBe('missing');
+  });
+
+  it('minConfidence option is respected across all providers', async () => {
+    // confidence 0.6 is above default 0.7? No — 0.6 < 0.7 → rejected by default
+    const provider = stubProvider('p', 'manual', { pasta: pastaResult }, { confidence: 0.6 });
+
+    const recipe = makeRecipe({ ingredients: ['200 g pasta'] });
+
+    const defaultResult = await enrichRecipeNutritionWithProviders(recipe, [provider]);
+    expect(defaultResult.ingredientNutrition).toHaveLength(0); // 0.6 < 0.7
+
+    const relaxedResult = await enrichRecipeNutritionWithProviders(
+      recipe, [provider], { minConfidence: 0.5 },
+    );
+    expect(relaxedResult.ingredientNutrition).toHaveLength(1); // 0.6 >= 0.5
+  });
+
+  it('with a single provider behaves identically to enrichRecipeNutrition', async () => {
+    const recipe = makeRecipe({
+      ingredients: ['200 g pasta', '50 g parmigiano'],
+      servings:    '2',
+    });
+
+    const single = await enrichRecipeNutrition(recipe, manualProvider);
+    const multi  = await enrichRecipeNutritionWithProviders(recipe, [manualProvider]);
+
+    expect(multi.ingredientNutrition).toHaveLength(single.ingredientNutrition.length);
+    expect(multi.nutrition.status).toBe(single.nutrition.status);
+    expect(multi.nutrition.perServing?.kcal).toBeCloseTo(single.nutrition.perServing?.kcal ?? 0, 1);
+  });
+
+  it('does not mutate the recipe', async () => {
+    const first  = stubProvider('first',  'manual',        { pasta: pastaResult });
+    const recipe = makeRecipe({ ingredients: ['200 g pasta'] });
+    const originalIngredients = [...recipe.ingredients];
+
+    await enrichRecipeNutritionWithProviders(recipe, [first]);
+
+    expect(recipe.ingredients).toEqual(originalIngredients);
+    expect(recipe.nutrition).toBeUndefined();
+  });
+
+  it('mixed: first provider covers some, second covers the rest', async () => {
+    const manualKnows = stubProvider('manual', 'manual', {
+      pasta: pastaResult,
+    });
+    const offKnows = stubProvider('off', 'openfoodfacts', {
+      riso: risottoResult,
+    });
+
+    const recipe = makeRecipe({
+      ingredients: ['200 g pasta', '100 g riso', '50 g invisibile'],
+    });
+    const { ingredientNutrition, nutrition } = await enrichRecipeNutritionWithProviders(
+      recipe, [manualKnows, offKnows],
+    );
+
+    expect(ingredientNutrition).toHaveLength(2);
+    expect(nutrition.status).toBe('partial');   // invisibile not matched
+    expect(nutrition.perRecipe?.kcal).toBeGreaterThan(0);
   });
 });

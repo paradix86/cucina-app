@@ -271,8 +271,13 @@ describe('getProvider', () => {
     expect(p?.provider).toBe('manual');
   });
 
+  it('returns openfoodfacts provider now that it is registered', () => {
+    const p = getProvider('openfoodfacts');
+    expect(p).toBeDefined();
+    expect(p?.provider).toBe('openfoodfacts');
+  });
+
   it('returns undefined for providers not yet registered', () => {
-    expect(getProvider('openfoodfacts')).toBeUndefined();
     expect(getProvider('usda')).toBeUndefined();
   });
 
