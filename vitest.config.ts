@@ -8,6 +8,7 @@ export default defineConfig({
     include: ['tests/unit/**/*.test.ts'],
     globals: true,
     environment: 'node',
+    pool: 'vmThreads',
     coverage: {
       include: [ 'src/lib/**/*.ts' ],
       exclude: [ '**/*.test.ts' ],
