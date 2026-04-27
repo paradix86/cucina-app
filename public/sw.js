@@ -1,4 +1,4 @@
-const CACHE_NAME = 'cucina-vue-v9';
+const CACHE_NAME = 'cucina-vue-v10';
 
 // Use relative URLs so paths resolve correctly regardless of subpath deployment
 // (e.g. GitHub Pages under /cucina-app/)
