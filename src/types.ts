@@ -91,6 +91,7 @@ export interface Recipe {
   time?: string;
   servings?: string;
   difficolta?: string;
+  difficulty?: 'easy' | 'medium' | 'hard';
   source?: string;
   sourceDomain?: string;
   url?: string;

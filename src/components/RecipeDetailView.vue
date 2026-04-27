@@ -111,6 +111,17 @@ watch(() => props.recipe, recipe => {
 }, { immediate: true });
 
 const prepInfo = computed(() => getPreparationInfo(props.recipe));
+
+const difficultyConfig = computed(() => {
+  const d = props.recipe.difficulty;
+  if (!d) return null;
+  return {
+    key:   d,
+    bars:  d === 'easy' ? 1 : d === 'medium' ? 2 : 3,
+    cls:   `difficulty-chip--${d}`,
+    label: t(`difficulty_${d}`),
+  };
+});
 const scaledIngredients = computed(() => scaleIngredients(props.recipe.ingredients || [], parseInt(props.recipe.servings, 10) || 4, servings.value));
 const steps = computed(() => buildStepsHtml(props.recipe.steps || [], prepInfo.value.type));
 const resolvedCoverImageUrl = computed(() => normalizeCoverImageUrl(props.recipe.coverImageUrl));
@@ -530,19 +541,33 @@ function closeQr() {
         <div class="detail-col-meta">
           <div class="detail-head">
             <h2 class="detail-title">{{ recipe.emoji || '🍴' }} {{ recipe.name }}</h2>
-            <p class="detail-meta">{{ joinMetaParts([recipe.category, recipe.time, recipe.difficolta]) }}</p>
+            <div class="detail-meta-line">
+              <span v-if="joinMetaParts([recipe.category, recipe.time])" class="detail-meta-text">
+                {{ joinMetaParts([recipe.category, recipe.time]) }}
+              </span>
+              <span v-if="joinMetaParts([recipe.category, recipe.time]) && difficultyConfig" class="detail-meta-sep" aria-hidden="true"> · </span>
+              <span v-if="difficultyConfig" class="difficulty-chip" :class="difficultyConfig.cls" :aria-label="`${t('difficulty_label')}: ${difficultyConfig.label}`">
+                <span class="difficulty-bars" aria-hidden="true">
+                  <span class="difficulty-bar" :class="{ filled: difficultyConfig.bars >= 1 }"></span>
+                  <span class="difficulty-bar" :class="{ filled: difficultyConfig.bars >= 2 }"></span>
+                  <span class="difficulty-bar" :class="{ filled: difficultyConfig.bars >= 3 }"></span>
+                </span>
+                <span class="difficulty-label">{{ difficultyConfig.label }}</span>
+              </span>
+            </div>
 
             <!-- Nutrition micro-summary -->
             <p
               v-if="savedMode && nutritionContext && nutritionContext.data"
               class="nutrition-micro-summary"
             >
-              {{ nutritionContext.data.kcal != null ? Math.round(nutritionContext.data.kcal) : '—' }} kcal
-              <span v-if="nutritionContext.data.proteinG != null"> · {{ nutritionContext.data.proteinG.toFixed(1) }}g {{ t('section_proteins') }}</span>
-              <span v-if="nutritionContext.data.carbsG != null"> · {{ nutritionContext.data.carbsG.toFixed(1) }}g {{ t('section_carbs') }}</span>
+              <span v-if="nutritionContext.data.kcal != null">{{ Math.round(nutritionContext.data.kcal) }} kcal</span>
+              <span v-if="nutritionContext.data.proteinG != null"> · P {{ nutritionContext.data.proteinG.toFixed(1) }}g</span>
+              <span v-if="nutritionContext.data.carbsG != null"> · C {{ nutritionContext.data.carbsG.toFixed(1) }}g</span>
+              <span v-if="nutritionContext.data.fatG != null"> · F {{ nutritionContext.data.fatG.toFixed(1) }}g</span>
+              <span v-if="nutritionContext.data.fiberG != null"> · Fb {{ nutritionContext.data.fiberG.toFixed(1) }}g</span>
             </p>
 
-            <button class="btn-start-cooking detail-top-start" @click="emit('start-cooking', recipe)">{{ t('cooking_start') }}</button>
             <p class="detail-print-servings print-only">{{ t('detail_servings') }}: {{ servings }}</p>
           </div>
 
@@ -555,6 +580,7 @@ function closeQr() {
               @calculate="calculateNutrition"
             />
           </div>
+          <button class="btn-start-cooking detail-top-start" @click="emit('start-cooking', recipe)">{{ t('cooking_start') }}</button>
         </div>
       </div>
 
@@ -616,7 +642,11 @@ function closeQr() {
       </div>
 
       <!-- ── Nutrition Details section ── -->
-      <div v-if="savedMode && (nutritionTransparency || (recipe.ingredientNutrition && recipe.ingredientNutrition.length > 0))" class="nutrition-details-card card">
+      <div
+        v-if="savedMode && (nutritionTransparency || (recipe.ingredientNutrition && recipe.ingredientNutrition.length > 0))"
+        class="nutrition-details-card card"
+        :class="recipe.nutrition?.status ? `nutrition-details-status-${recipe.nutrition.status}` : 'nutrition-details-status-missing'"
+      >
         <button
           class="nutrition-details-toggle"
           type="button"
@@ -1083,11 +1113,32 @@ function closeQr() {
   .detail-col-image {
     width: 45%;
     flex-shrink: 0;
+    align-self: stretch;
   }
 
   .detail-col-meta {
     flex: 1;
     min-width: 0;
+  }
+
+  .detail-cover-wrap {
+    height: 100%;
+    max-height: none;
+    aspect-ratio: unset;
+  }
+
+  .detail-cover-img {
+    height: 100%;
+    width: 100%;
+    object-fit: cover;
+  }
+
+  .detail-cover-placeholder {
+    height: 100%;
+    min-height: 200px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 }
 
@@ -1097,6 +1148,22 @@ function closeQr() {
   color: var(--text-muted);
   margin: 4px 0 8px;
   line-height: 1.4;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+  display: none;
+}
+
+@media (min-width: 768px) {
+  .nutrition-micro-summary {
+    display: block;
+  }
+}
+
+/* CTA below nutrition card */
+.detail-top-start {
+  margin-top: 12px;
 }
 
 /* ── Nutrition summary card wrapper ── */

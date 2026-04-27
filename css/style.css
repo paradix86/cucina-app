@@ -2011,6 +2011,88 @@ input[type="number"] {
 .detail-origin { font-size: 13px; color: var(--text-muted); margin: 0; }
 .sec-label-inline { font-weight: 600; color: var(--text-muted); }
 .card-origin { font-size: 11px; color: var(--text-hint); margin-top: 4px; } /* legacy alias — prefer card-row--source */
+
+/* ---- Detail meta line (category · time + difficulty chip) ---- */
+.detail-meta-line {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+  min-height: 1.4em;
+  margin-bottom: 0;
+}
+
+.detail-meta-text {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+/* Difficulty chip */
+.difficulty-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  padding: 2px 8px 2px 6px;
+  border-radius: 20px;
+  vertical-align: middle;
+  line-height: 1;
+}
+
+.difficulty-bars {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 12px;
+}
+
+.difficulty-bar {
+  width: 3px;
+  border-radius: 2px;
+  background: currentColor;
+  opacity: 0.25;
+}
+
+.difficulty-bar:nth-child(1) { height: 5px; }
+.difficulty-bar:nth-child(2) { height: 8px; }
+.difficulty-bar:nth-child(3) { height: 11px; }
+
+.difficulty-bar.filled { opacity: 1; }
+
+.difficulty-chip--easy {
+  background: var(--nutrition-complete-bg, #dcfce7);
+  color: var(--nutrition-complete-text, #166534);
+}
+
+.difficulty-chip--medium {
+  background: var(--nutrition-partial-bg, #fef3c7);
+  color: var(--nutrition-partial-text, #92400e);
+}
+
+.difficulty-chip--hard {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+[data-theme="dark"] .difficulty-chip--hard {
+  background: rgba(239, 68, 68, 0.15);
+  color: #fca5a5;
+}
+
+@media (prefers-color-scheme: dark) {
+  .difficulty-chip--hard {
+    background: rgba(239, 68, 68, 0.15);
+    color: #fca5a5;
+  }
+}
+
+/* Nutrition details visual thread */
+.nutrition-details-status-partial  { border-left: 3px solid var(--nutrition-partial-bg);  }
+.nutrition-details-status-complete { border-left: 3px solid var(--nutrition-complete-bg); }
+.nutrition-details-status-manual   { border-left: 3px solid var(--nutrition-manual-bg);   }
+.nutrition-details-status-missing  { border-left: 3px solid var(--hover-bg, rgba(0,0,0,0.06)); }
 .detail-tag-list {
   row-gap: 6px;
 }

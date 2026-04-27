@@ -162,6 +162,19 @@ function normalizeStoredRecipe(recipe: RecipeInput): Recipe {
   const rawTimerSec = asNumber(recipe.timerSeconds, -1);
   const timerSeconds = rawTimerSec >= 0 ? Math.max(0, Math.floor(rawTimerSec)) : timerMinutes * 60;
 
+  // Map free-text difficolta → typed difficulty if not already set
+  let difficulty = (recipe as Record<string, unknown>).difficulty as 'easy' | 'medium' | 'hard' | undefined;
+  if (!difficulty && recipe.difficolta) {
+    const d = (recipe.difficolta as string).toLowerCase().trim();
+    if (d.includes('facil') || d.includes('easy') || d.includes('leicht') || d.includes('fácil') || d.includes('facile')) {
+      difficulty = 'easy';
+    } else if (d.includes('med') || d.includes('mittel') || d.includes('moyen') || d.includes('medio')) {
+      difficulty = 'medium';
+    } else if (d.includes('diffic') || d.includes('hard') || d.includes('schwer') || d.includes('difficile') || d.includes('dific')) {
+      difficulty = 'hard';
+    }
+  }
+
   return {
     ...recipe,
     id,
@@ -178,6 +191,7 @@ function normalizeStoredRecipe(recipe: RecipeInput): Recipe {
     timerSeconds,
     url: asString(recipe.url) || undefined,
     difficolta: asString(recipe.difficolta) || undefined,
+    difficulty: difficulty || undefined,
     notes: asString(recipe.notes) || undefined,
     preparationType,
     bimby: recipe?.bimby != null ? recipe.bimby : preparationType === 'bimby',

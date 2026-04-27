@@ -484,6 +484,10 @@ export const TRANSLATIONS = {
     share_qr_close: 'Chiudi',
     hours_short: 'h',
     minutes_short: 'min',
+    difficulty_label:   'Difficoltà',
+    difficulty_easy:    'Facile',
+    difficulty_medium:  'Media',
+    difficulty_hard:    'Difficile',
   },
 
   en: {
@@ -957,6 +961,10 @@ export const TRANSLATIONS = {
     share_qr_close: 'Close',
     hours_short: 'h',
     minutes_short: 'min',
+    difficulty_label:   'Difficulty',
+    difficulty_easy:    'Easy',
+    difficulty_medium:  'Medium',
+    difficulty_hard:    'Hard',
   },
 
   de: {
@@ -1430,6 +1438,10 @@ export const TRANSLATIONS = {
     share_qr_close: 'Schließen',
     hours_short: 'Std',
     minutes_short: 'Min',
+    difficulty_label:   'Schwierigkeit',
+    difficulty_easy:    'Leicht',
+    difficulty_medium:  'Mittel',
+    difficulty_hard:    'Schwer',
   },
 
   fr: {
@@ -1903,6 +1915,10 @@ export const TRANSLATIONS = {
     share_qr_close: 'Fermer',
     hours_short: 'h',
     minutes_short: 'min',
+    difficulty_label:   'Difficulté',
+    difficulty_easy:    'Facile',
+    difficulty_medium:  'Moyen',
+    difficulty_hard:    'Difficile',
   },
 
   es: {
@@ -2376,6 +2392,10 @@ export const TRANSLATIONS = {
     share_qr_close: 'Cerrar',
     hours_short: 'h',
     minutes_short: 'min',
+    difficulty_label:   'Dificultad',
+    difficulty_easy:    'Fácil',
+    difficulty_medium:  'Media',
+    difficulty_hard:    'Difícil',
   },
 };
 
