@@ -845,8 +845,8 @@ test('Recalculate preserves ingredients with source.userEdited=true', async ({ p
   const kcalBefore = parseInt((await kcalLocator.textContent()) ?? '0', 10);
   expect(kcalBefore).toBeGreaterThan(400);  // reflects 20g olio
 
-  // Click Recalculate
-  const calcBtn = page.locator('.nutrition-footer button').filter({ hasText: /ricalcol|recalcul/i }).first();
+  // Click Calculate (always the btn-secondary in the nutrition footer)
+  const calcBtn = page.locator('.nutrition-footer .btn-secondary');
   await calcBtn.click();
 
   // Wait for calculation to finish (badge changes from missing/manual to something)

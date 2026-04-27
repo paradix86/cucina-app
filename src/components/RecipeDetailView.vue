@@ -1,5 +1,5 @@
 <script setup>
-import { computed, nextTick, ref, watch } from 'vue';
+import { computed, nextTick, onUnmounted, ref, watch } from 'vue';
 import { storeToRefs } from 'pinia';
 import { buildStepsHtml, formatTimerLabel, getPreparationInfo, getSourceDomainLabel, joinMetaParts, scaleIngredients, suggestMealOccasions } from '../lib/recipes.js';
 import { t } from '../lib/i18n.js';
@@ -76,8 +76,55 @@ const macroDonut = computed(() => {
   const s1 = ((p              / total) * 100).toFixed(2);
   const s2 = (((p + c)        / total) * 100).toFixed(2);
   const s3 = (((p + c + f)    / total) * 100).toFixed(2);
-  const gradient = `conic-gradient(var(--nutrition-protein) 0% ${s1}%, var(--nutrition-carbs) ${s1}% ${s2}%, var(--nutrition-fat) ${s2}% ${s3}%, var(--nutrition-fiber) ${s3}% 100%)`;
-  return { gradient };
+  return { s1, s2, s3 };
+});
+
+const donutProgress = ref(1);
+let donutRafId = null;
+
+function animateDonut() {
+  if (donutRafId != null) cancelAnimationFrame(donutRafId);
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    donutProgress.value = 1;
+    return;
+  }
+  const DURATION = 700;
+  const start = performance.now();
+  function step(now) {
+    const t = Math.min((now - start) / DURATION, 1);
+    // cubic ease-out
+    donutProgress.value = 1 - Math.pow(1 - t, 3);
+    if (t < 1) {
+      donutRafId = requestAnimationFrame(step);
+    } else {
+      donutRafId = null;
+    }
+  }
+  donutRafId = requestAnimationFrame(step);
+}
+
+watch(
+  () => props.recipe.nutrition?.calculatedAt,
+  (val, old) => {
+    if (val && val !== old) {
+      donutProgress.value = 0;
+      nextTick(animateDonut);
+    }
+  },
+);
+
+onUnmounted(() => {
+  if (donutRafId != null) cancelAnimationFrame(donutRafId);
+});
+
+const animatedDonutGradient = computed(() => {
+  if (!macroDonut.value) return null;
+  const p = donutProgress.value;
+  const s1 = (parseFloat(macroDonut.value.s1) * p).toFixed(2);
+  const s2 = (parseFloat(macroDonut.value.s2) * p).toFixed(2);
+  const s3 = (parseFloat(macroDonut.value.s3) * p).toFixed(2);
+  const s4 = (100 * p).toFixed(2);
+  return `conic-gradient(var(--nutrition-protein) 0% ${s1}%, var(--nutrition-carbs) ${s1}% ${s2}%, var(--nutrition-fat) ${s2}% ${s3}%, var(--nutrition-fiber) ${s3}% ${s4}%, var(--color-border, #e0e0e0) ${s4}% 100%)`;
 });
 
 const nutritionTransparency = computed(() => {
@@ -629,11 +676,11 @@ function closeQr() {
               </div>
             </div>
             <div
-              v-else-if="macroDonut"
+              v-else-if="animatedDonutGradient"
               class="nutrition-donut"
               role="img"
               :aria-label="t('nutrition_distribution')"
-              :style="{ background: macroDonut.gradient }"
+              :style="{ background: animatedDonutGradient }"
             >
               <div class="nutrition-donut-hole">
                 <span class="nutrition-kcal-val">{{ nutritionContext.data.kcal != null ? Math.round(nutritionContext.data.kcal) : '—' }}</span>

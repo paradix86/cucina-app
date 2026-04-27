@@ -61,6 +61,7 @@ export function normalizeNutritionSource(value: unknown): NutritionSource | unde
     externalUrl: typeof v['externalUrl'] === 'string' ? v['externalUrl'] : undefined,
     confidence,
     fetchedAt:   typeof v['fetchedAt']   === 'string' ? v['fetchedAt']   : undefined,
+    userEdited:  v['userEdited'] === true ? true : undefined,
   };
 }
 
