@@ -1,7 +1,11 @@
 import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest';
 
-const toastSpy = vi.fn();
-const alertSpy = vi.fn();
+// vi.hoisted() runs before any static imports, so these spy instances exist
+// when the vi.mock() factories below are evaluated.
+const { toastSpy, alertSpy } = vi.hoisted(() => ({
+  toastSpy: vi.fn(),
+  alertSpy: vi.fn(),
+}));
 
 vi.mock('../../src/composables/useToasts.js', () => ({
   useToasts: () => ({
@@ -14,6 +18,15 @@ vi.mock('../../src/composables/useTimerAlerts.js', () => ({
     triggerTimerAlert: alertSpy,
   }),
 }));
+
+// Static import is safe because vi.hoisted() already initialised the spies
+// that the mock factories above reference.  No vi.resetModules() is needed:
+// cleanupTimersRuntime({ resetState: true }) resets all module-level state
+// (timers, timerInterval, visibilityHandler, activeConsumers, hiddenAt,
+// showToastRef, triggerTimerAlertRef), and document/window are re-stubbed in
+// beforeEach, so each test gets a clean slate without blowing away the entire
+// module cache.
+import { useTimers, cleanupTimersRuntime } from '../../src/composables/useTimers.js';
 
 function createFakeDocument() {
   const target = new EventTarget();
@@ -57,23 +70,24 @@ function createFakeDocument() {
 
 describe('useTimers lifecycle', () => {
   beforeEach(() => {
+    // Reset module state before each test (safety guard — afterEach also calls
+    // this, but a beforeEach guard covers the first test and any future test
+    // that runs without a prior afterEach).
+    cleanupTimersRuntime({ resetState: true });
     vi.useFakeTimers();
     toastSpy.mockReset();
     alertSpy.mockReset();
-    vi.resetModules();
     vi.stubGlobal('window', globalThis);
     vi.stubGlobal('document', createFakeDocument());
   });
 
-  afterEach(async () => {
-    const timersModule = await import('../../src/composables/useTimers.js');
-    timersModule.cleanupTimersRuntime({ resetState: true });
+  afterEach(() => {
+    cleanupTimersRuntime({ resetState: true });
     vi.useRealTimers();
     vi.unstubAllGlobals();
   });
 
-  it('stops the global interval when all timers are paused or removed', async () => {
-    const { useTimers, cleanupTimersRuntime } = await import('../../src/composables/useTimers.js');
+  it('stops the global interval when all timers are paused or removed', () => {
     const api = useTimers();
 
     expect(vi.getTimerCount()).toBe(0);
@@ -94,8 +108,7 @@ describe('useTimers lifecycle', () => {
     expect(vi.getTimerCount()).toBe(0);
   }, 10_000);
 
-  it('clears ticking while hidden and catches timers up when visible again', async () => {
-    const { useTimers } = await import('../../src/composables/useTimers.js');
+  it('clears ticking while hidden and catches timers up when visible again', () => {
     const api = useTimers();
     const doc = document as unknown as ReturnType<typeof createFakeDocument>;
 

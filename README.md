@@ -15,6 +15,7 @@ Tablet-friendly cooking app built with Vue 3 + Vite.
 - **Built-in Recipes**: curated dataset with preparation-type filtering
 - **Shopping List**: add ingredients from recipes, smart grouping (numeric + exact + near-duplicate normalization), clearer per-recipe provenance, plain-text copy/share export, section assignment
 - **Weekly Planner**: plan breakfast, lunch, and dinner across 7 days using recipes from your recipe book
+- **Nutrition**: per-ingredient and per-recipe calorie/macronutrient breakdown, on-demand calculation from saved recipes, extensible provider system
 - **Cooking Mode**: step-by-step fullscreen mode with per-step timer
 - **Timers**: multiple parallel timers with toast completion feedback
 - **Theme + i18n**: light/dark/system theme, IT/EN/DE/FR/ES translations

@@ -25,6 +25,21 @@ export const useRecipeBookStore = defineStore('recipeBook', () => {
       steps: [ ...(recipe.steps || []) ],
       tags: recipe.tags ? [ ...recipe.tags ] : undefined,
       mealOccasion: recipe.mealOccasion ? [ ...recipe.mealOccasion ] : undefined,
+      nutrition: recipe.nutrition
+        ? {
+            ...recipe.nutrition,
+            perRecipe:  recipe.nutrition.perRecipe  ? { ...recipe.nutrition.perRecipe  } : undefined,
+            perServing: recipe.nutrition.perServing ? { ...recipe.nutrition.perServing } : undefined,
+            sources: recipe.nutrition.sources ? recipe.nutrition.sources.map(s => ({ ...s })) : undefined,
+          }
+        : undefined,
+      ingredientNutrition: recipe.ingredientNutrition
+        ? recipe.ingredientNutrition.map(ing => ({
+            ...ing,
+            nutritionPer100g: ing.nutritionPer100g ? { ...ing.nutritionPer100g } : undefined,
+            source: ing.source ? { ...ing.source } : undefined,
+          }))
+        : undefined,
     };
   }
 

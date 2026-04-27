@@ -58,6 +58,22 @@ The app has gone through a full architectural migration:
 - [ ] Meal prep / batch cooking — **backlog**
 - [ ] Pantry suggestions — **backlog**
 
+### Milestone 7 — Nutrition MVP
+- [x] Nutrition data model (`NutritionPer100g`, `IngredientNutrition`, `RecipeNutrition`) in `src/types.ts`
+- [x] Normalization and storage round-trip (`normalizeRecipeNutrition`, `normalizeIngredientNutritionArray`) in `src/lib/storage.ts`
+- [x] Italian ingredient parser (`parseIngredientAmount`) in `src/lib/nutrition.ts`
+- [x] Nutrition calculation engine (`calculateRecipeNutrition`, `parseServings`, `scaleNutritionBlock`) in `src/lib/nutrition.ts`
+- [x] Provider abstraction (`NutritionProviderClient`, `NutritionSearchResult`, `manualProvider`, `getProvider`) in `src/lib/nutritionProviders.ts`
+- [x] Enrichment orchestrator (`enrichRecipeNutrition`) in `src/lib/nutritionEnrichment.ts`
+- [x] Nutrition section UI in `RecipeDetailView.vue` (badge, nutrient grid, calculate button, per-serving/per-recipe display)
+- [x] i18n coverage — all 5 languages (IT/EN/DE/FR/ES), 9 new keys
+- [x] Dark-mode badge colors via CSS custom properties in `css/style.css`
+- [x] `cloneRecipe` deep-clone of `nutrition` and `ingredientNutrition` in `src/stores/recipeBook.ts`
+- [ ] OpenFoodFacts / USDA provider integration — **backlog**
+- [ ] Gram-equivalent conversion for non-weight units (ml→g for liquids) — **backlog**
+- [ ] Nutrition editing / manual override UI — **backlog**
+- [ ] Micronutrient breakdown panel (vitamins, minerals) — **backlog**
+
 ### Milestone 6 — Architecture (v1 foundation delivered)
 - [x] Vue 3 + Vite migration
 - [x] Vue Router (hash history, app routes)

@@ -107,6 +107,32 @@ Extended reference for AI agents working in this repository. Start with `CLAUDE.
 - Do not break existing working adapters when adding new ones
 - Run `import-quality-auditor` before merging
 
+## When working on nutrition
+
+The nutrition feature follows the same lib/store/view separation as the rest of the app.
+
+**Key files**:
+
+| File | Role |
+|---|---|
+| `src/lib/nutrition.ts` | Pure logic: ingredient parsing, unit normalization, calculation engine |
+| `src/lib/nutritionProviders.ts` | Provider abstraction (`NutritionProviderClient`), manual built-in data, `getProvider()` |
+| `src/lib/nutritionEnrichment.ts` | Orchestrator: `enrichRecipeNutrition(recipe, provider, options?)` |
+| `src/types.ts` | `NutritionPer100g`, `IngredientNutrition`, `RecipeNutrition`, `ParsedIngredientAmount` |
+| `src/lib/storage.ts` | `normalizeRecipeNutrition`, `normalizeIngredientNutritionArray` — called in `normalizeStoredRecipe()` |
+| `src/stores/recipeBook.ts` | `cloneRecipe` deep-clones `nutrition` and `ingredientNutrition` |
+| `src/components/RecipeDetailView.vue` | UI section: badge, nutrient grid, calculate button |
+| `css/style.css` | CSS custom properties for badge theming (`--nutrition-*-bg/text`) |
+
+**Rules**:
+- All nutrition logic lives in `src/lib/` — no API calls, no Vue imports, fully unit-testable.
+- Providers implement `NutritionProviderClient` from `src/lib/nutritionProviders.ts`. Adding a new provider (e.g., OpenFoodFacts, USDA) means implementing the interface and registering in `NUTRITION_PROVIDERS` — no changes needed in the enrichment orchestrator or UI.
+- `enrichRecipeNutrition` does not mutate its input recipe. Callers must call `recipeBookStore.update(id, result)` to persist.
+- `normalizeRecipeNutrition` and `normalizeIngredientNutritionArray` must be called in `normalizeStoredRecipe()` to ensure stored nutrition survives app upgrades.
+- Badge theming uses CSS custom properties defined in all 4 theme contexts (`:root`, `[data-theme="light"]`, `[data-theme="dark"]`, `@media prefers-color-scheme: dark`).
+- All user-facing nutrition strings use `t('key')` — 9 nutrition-specific keys are defined in `i18nData.js` across IT/EN/DE/FR/ES.
+- Unit tests live in `tests/unit/nutrition.test.ts`, `nutritionProviders.test.ts`, `nutritionEnrichment.test.ts`, `store-nutrition.test.ts`.
+
 ## Bimby icon policy freeze
 
 The Bimby step-icon action set is intentionally closed to:
