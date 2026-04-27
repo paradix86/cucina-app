@@ -225,6 +225,45 @@ export function parseIngredientAmount(input: string): ParsedIngredientAmount {
   return makeResult(original, trimmed, { confidence: 0.1 });
 }
 
+// ─── Unit → gram conversion ───────────────────────────────────────────────────
+
+type UnitConversionEntry = {
+  default?: number;
+  overrides?: Record<string, number>;
+};
+
+const UNIT_GRAM_CONVERSIONS: Record<string, UnitConversionEntry> = {
+  tbsp:  { default: 10,  overrides: { olio: 10, zucchero: 12, farina: 8 } },
+  tsp:   { default: 5,   overrides: { zucchero: 4, sale: 5 } },
+  piece: {               overrides: { uovo: 60, uova: 60, cipolla: 100 } },
+  pinch: { default: 1 },
+};
+
+/**
+ * Estimate ingredient weight in grams from a parsed ingredient.
+ * Returns existing grams unchanged; derives from the unit conversion table when
+ * grams are absent.  Returns undefined when no conversion is possible.
+ * Never throws.
+ */
+export function estimateGrams(parsed: ParsedIngredientAmount): number | undefined {
+  try {
+    if (parsed.grams !== undefined) return parsed.grams;
+    if (parsed.confidence < 0.3) return undefined;
+    const unit = parsed.unit;
+    if (!unit) return undefined;
+    const entry = UNIT_GRAM_CONVERSIONS[unit];
+    if (!entry) return undefined;
+    const qty = parsed.quantity;
+    if (qty == null || qty <= 0) return undefined;
+    const key = (parsed.normalizedName ?? parsed.name).toLowerCase().trim();
+    const perUnit = entry.overrides?.[key] !== undefined ? entry.overrides![key] : entry.default;
+    if (perUnit === undefined) return undefined;
+    return qty * perUnit;
+  } catch {
+    return undefined;
+  }
+}
+
 // ─── Nutrition calculation engine ────────────────────────────────────────────
 
 export function parseServings(value: string | number | undefined): number | undefined {

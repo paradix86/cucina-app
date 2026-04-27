@@ -180,14 +180,14 @@ describe('enrichRecipeNutrition — dirty ingredient strings', () => {
     expect(ingredientNutrition[0].grams).toBe(1500);
   });
 
-  it('handles countable "2 uova" — no grams', async () => {
+  it('handles countable "2 uova" — grams estimated from piece override', async () => {
     const recipe = makeRecipe({ ingredients: ['2 uova'] });
     const { ingredientNutrition } = await enrichRecipeNutrition(recipe, manualProvider);
 
     expect(ingredientNutrition).toHaveLength(1);
     expect(ingredientNutrition[0].quantity).toBe(2);
     expect(ingredientNutrition[0].unit).toBe('piece');
-    expect(ingredientNutrition[0].grams).toBeUndefined();
+    expect(ingredientNutrition[0].grams).toBe(120); // 2 × 60g from UNIT_GRAM_CONVERSIONS
   });
 
   it('handles extra whitespace', async () => {
@@ -325,48 +325,48 @@ describe('enrichRecipeNutrition — minConfidence option', () => {
   });
 });
 
-// ─── tbsp / tsp / piece — matched but no grams ───────────────────────────────
+// ─── tbsp / tsp / piece — grams now estimated ────────────────────────────────
 
-describe('enrichRecipeNutrition — volume/count units without grams', () => {
-  it('tbsp ingredient is matched and included but has no grams', async () => {
+describe('enrichRecipeNutrition — volume/count units with estimated grams', () => {
+  it('tbsp ingredient is matched and grams estimated from conversion table', async () => {
     const recipe = makeRecipe({ ingredients: ['1 cucchiaio olio'] });
     const { ingredientNutrition } = await enrichRecipeNutrition(recipe, manualProvider);
 
     expect(ingredientNutrition).toHaveLength(1);
     expect(ingredientNutrition[0].unit).toBe('tbsp');
-    expect(ingredientNutrition[0].grams).toBeUndefined();
+    expect(ingredientNutrition[0].grams).toBe(10); // 1 × 10g olio override
     expect(ingredientNutrition[0].nutritionPer100g?.kcal).toBeGreaterThan(0);
   });
 
-  it('tsp ingredient is matched but has no grams', async () => {
+  it('tsp ingredient is matched and grams estimated from conversion table', async () => {
     const recipe = makeRecipe({ ingredients: ['2 cucchiaini zucchero'] });
     const { ingredientNutrition } = await enrichRecipeNutrition(recipe, manualProvider);
 
     expect(ingredientNutrition).toHaveLength(1);
     expect(ingredientNutrition[0].unit).toBe('tsp');
-    expect(ingredientNutrition[0].grams).toBeUndefined();
+    expect(ingredientNutrition[0].grams).toBe(8); // 2 × 4g zucchero override
   });
 
-  it('tbsp ingredient without grams does not contribute to perRecipe kcal', async () => {
+  it('tbsp ingredient contributes to perRecipe kcal via estimated grams', async () => {
     const recipe = makeRecipe({
       ingredients: ['200 g pasta', '1 cucchiaio olio'],
     });
     const { nutrition } = await enrichRecipeNutrition(recipe, manualProvider);
 
-    // Only pasta (200g) contributes; olio has no grams
-    const pastaKcal = 700; // 350 kcal/100g × (200g / 100)
-    expect(nutrition.perRecipe?.kcal).toBeCloseTo(pastaKcal, 0);
+    // pasta: 350 kcal/100g × 200g = 700 kcal
+    // olio: ~884 kcal/100g × 10g = 88.4 kcal
+    const pastaKcal = 700;
+    expect(nutrition.perRecipe?.kcal).toBeGreaterThan(pastaKcal);
   });
 
-  it('recipe with only tbsp/tsp ingredients results in status=partial', async () => {
+  it('recipe with only tbsp/tsp ingredients is complete when all have estimated grams', async () => {
     const recipe = makeRecipe({
       ingredients: ['1 cucchiaio olio', '1 cucchiaino sale'],
     });
     const { nutrition } = await enrichRecipeNutrition(recipe, manualProvider);
 
-    // Both matched but neither has grams → no usable entries → missing
-    // (partial requires at least one usable entry contributing to sum)
-    expect(['missing', 'partial']).toContain(nutrition.status);
+    // Both matched and both have estimated grams → all usable → complete
+    expect(nutrition.status).toBe('complete');
   });
 });
 

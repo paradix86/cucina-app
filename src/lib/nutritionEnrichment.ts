@@ -1,5 +1,5 @@
 import type { IngredientNutrition, Recipe, RecipeNutrition } from '../types';
-import { parseIngredientAmount, calculateRecipeNutrition } from './nutrition';
+import { parseIngredientAmount, calculateRecipeNutrition, estimateGrams } from './nutrition';
 import { buildIngredientNutritionMatch } from './nutritionProviders';
 import type { NutritionProviderClient } from './nutritionProviders';
 
@@ -48,7 +48,15 @@ export async function enrichRecipeNutritionWithProviders(
       const best = results.find(r => r.confidence >= minConfidence);
       if (!best) continue;  // nothing useful from this provider; try the next one
 
-      ingredientNutrition.push(buildIngredientNutritionMatch(parsed, best));
+      const match = buildIngredientNutritionMatch(parsed, best);
+      if (match.grams === undefined) {
+        const estimated = estimateGrams(parsed);
+        if (estimated !== undefined) {
+          ingredientNutrition.push({ ...match, grams: estimated });
+          break;
+        }
+      }
+      ingredientNutrition.push(match);
       break;  // matched — do not consult further providers for this ingredient
     }
   }
