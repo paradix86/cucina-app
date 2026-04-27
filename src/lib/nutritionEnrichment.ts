@@ -41,8 +41,32 @@ export async function enrichRecipeNutritionWithProviders(
   const minConfidence = options?.minConfidence ?? DEFAULT_MIN_CONFIDENCE;
   const ingredientNutrition: IngredientNutrition[] = [];
 
+  // Build a lookup of user-edited entries keyed by ingredientName.
+  // ingredientName equals the raw ingredient string in production data
+  // (set by buildIngredientNutritionMatch via parsed.original). A short-name
+  // fallback via parsed.name handles older seed data.
+  const userEditedMap = new Map<string, IngredientNutrition>();
+  for (const ing of recipe.ingredientNutrition ?? []) {
+    if (ing.source?.userEdited === true) {
+      userEditedMap.set(ing.ingredientName, ing);
+    }
+  }
+
   for (const raw of recipe.ingredients) {
     const parsed = parseIngredientAmount(raw);
+
+    // Preserve user-edited entries: skip provider lookup and reuse the stored entry.
+    // Primary key is the raw ingredient string; fall back to parsed.name for
+    // entries created before the full-string convention was established.
+    const userEntry = userEditedMap.get(raw) ?? (parsed.name ? userEditedMap.get(parsed.name) : undefined);
+    if (userEntry) {
+      ingredientNutrition.push({
+        ...userEntry,
+        nutritionPer100g: userEntry.nutritionPer100g ? { ...userEntry.nutritionPer100g } : undefined,
+      });
+      continue;
+    }
+
     const queries = buildNutritionSearchQueries(parsed.normalizedName, parsed.name);
     if (queries.length === 0) continue;
 

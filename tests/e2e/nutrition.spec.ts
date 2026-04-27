@@ -310,3 +310,563 @@ test('not-included: shows excluded ingredient after partial calculation', async 
   const detailsCount = await page.locator('.nutrition-details-group').count();
   expect(detailsCount).toBeGreaterThan(0);
 });
+
+// ─── per-100g override tests ──────────────────────────────────────────────────
+
+// Recipe pre-seeded with pasta at 350kcal/100g (200g → 700kcal, 26g protein per recipe)
+const per100gBaseRecipe = {
+  id:              'nutrition-e2e-per100g',
+  name:            'Per100g Test',
+  source:          'manual',
+  preparationType: 'classic',
+  ingredients:     ['200 g pasta'],
+  steps:           ['Cuoci'],
+  servings:        '2',
+  ingredientNutrition: [
+    {
+      ingredientName: 'pasta',
+      grams: 200,
+      gramsEstimated: false,
+      source: { provider: 'openfoodfacts' },
+      nutritionPer100g: { kcal: 350, proteinG: 13, carbsG: 70, fatG: 1.5, fiberG: 2.7 },
+    },
+  ],
+  nutrition: {
+    status: 'complete',
+    perServing: { kcal: 350, proteinG: 13, carbsG: 70, fatG: 1.5, fiberG: 2.7 },
+    perRecipe:  { kcal: 700, proteinG: 26, carbsG: 140, fatG: 3.0, fiberG: 5.4 },
+    servingsUsed: 2,
+    calculatedAt: new Date().toISOString(),
+    ingredientsFingerprint: '200 g pasta',
+  },
+};
+
+test('per-100g edit: protein change updates macro display and persists', async ({ page }) => {
+  await seedState(page, { recipes: [per100gBaseRecipe] });
+  await gotoRoute(page, 'recipe-book/nutrition-e2e-per100g');
+
+  await expect(page.locator('#saved-detail-view')).toBeVisible();
+
+  // Open the editor
+  const editBtn = page.locator('.nutrition-footer button').filter({ hasText: /edit|quantit/i }).first();
+  await expect(editBtn).toBeVisible();
+  await editBtn.click();
+
+  // Expand per-100g panel for pasta
+  const expandBtn = page.locator('.nutrition-editor-expand-btn').first();
+  await expect(expandBtn).toBeVisible();
+  await expandBtn.click();
+
+  // Per-100g fields should now be visible
+  const per100gSection = page.locator('.nutrition-editor-per100g').first();
+  await expect(per100gSection).toBeVisible();
+
+  // Find the protein input (second field row: kcal, proteinG, carbsG, fatG, fiberG)
+  // The per100g fields contain 5 inputs total; protein is the 2nd
+  const per100gInputs = page.locator('.nutrition-editor-per100g .nutrition-editor-input');
+  await expect(per100gInputs).toHaveCount(5);
+
+  // Change proteinG from 13 to 26 (double)
+  await per100gInputs.nth(1).fill('26');
+
+  // Save
+  await page.locator('.nutrition-editor-actions button').first().click();
+
+  // Editor closed
+  await expect(page.locator('.nutrition-editor')).not.toBeVisible();
+
+  // Badge is manual
+  await expect(page.locator('.nutrition-badge')).toHaveClass(/nutrition-badge--manual/);
+
+  // Protein macro row should now reflect the doubled value
+  const proteinRow = page.locator('.nutrition-macro-row--protein .nutrition-macro-val');
+  await expect(proteinRow).toBeVisible();
+  const proteinText = await proteinRow.textContent();
+  const proteinVal = parseFloat(proteinText?.replace('g', '') ?? '0');
+  // At 200g with 26g protein/100g → 52g protein per recipe, per serving = 26g
+  expect(proteinVal).toBeGreaterThan(20);
+
+  // Reload and verify persistence
+  await gotoRoute(page, 'recipe-book/nutrition-e2e-per100g');
+  await expect(page.locator('.nutrition-badge')).toHaveClass(/nutrition-badge--manual/);
+
+  const stored = await page.evaluate((key: string) => {
+    const raw = localStorage.getItem(key);
+    if (!raw) return null;
+    const recipes = JSON.parse(raw);
+    return recipes.find((r: { id: string }) => r.id === 'nutrition-e2e-per100g') ?? null;
+  }, STORAGE_KEY);
+
+  expect(stored?.nutrition?.status).toBe('manual');
+  expect(stored?.ingredientNutrition?.[0]?.nutritionPer100g?.proteinG).toBe(26);
+  expect(stored?.ingredientNutrition?.[0]?.source?.provider).toBe('manual');
+});
+
+test('per-100g edit: comma decimal accepted (10,5 → 10.5)', async ({ page }) => {
+  await seedState(page, { recipes: [per100gBaseRecipe] });
+  await gotoRoute(page, 'recipe-book/nutrition-e2e-per100g');
+
+  await expect(page.locator('#saved-detail-view')).toBeVisible();
+
+  const editBtn = page.locator('.nutrition-footer button').filter({ hasText: /edit|quantit/i }).first();
+  await editBtn.click();
+
+  const expandBtn = page.locator('.nutrition-editor-expand-btn').first();
+  await expandBtn.click();
+
+  // Change fatG (4th field, index 3) to "1,5" (comma decimal)
+  const per100gInputs = page.locator('.nutrition-editor-per100g .nutrition-editor-input');
+  await per100gInputs.nth(3).fill('1,5');
+
+  await page.locator('.nutrition-editor-actions button').first().click();
+
+  // Verify stored value is 1.5 (not NaN or 0)
+  const stored = await page.evaluate((key: string) => {
+    const raw = localStorage.getItem(key);
+    if (!raw) return null;
+    const recipes = JSON.parse(raw);
+    return recipes.find((r: { id: string }) => r.id === 'nutrition-e2e-per100g') ?? null;
+  }, STORAGE_KEY);
+
+  expect(stored?.ingredientNutrition?.[0]?.nutritionPer100g?.fatG).toBeCloseTo(1.5, 5);
+});
+
+test('per-100g edit: expand panel toggle works — expand then collapse', async ({ page }) => {
+  await seedState(page, { recipes: [per100gBaseRecipe] });
+  await gotoRoute(page, 'recipe-book/nutrition-e2e-per100g');
+
+  await expect(page.locator('#saved-detail-view')).toBeVisible();
+
+  const editBtn = page.locator('.nutrition-footer button').filter({ hasText: /edit|quantit/i }).first();
+  await editBtn.click();
+
+  const expandBtn = page.locator('.nutrition-editor-expand-btn').first();
+
+  // Initially collapsed
+  await expect(page.locator('.nutrition-editor-per100g')).not.toBeVisible();
+
+  // Expand
+  await expandBtn.click();
+  await expect(page.locator('.nutrition-editor-per100g').first()).toBeVisible();
+
+  // Collapse again
+  await expandBtn.click();
+  await expect(page.locator('.nutrition-editor-per100g')).not.toBeVisible();
+});
+
+// ─── transparency integration QA tests ───────────────────────────────────────
+
+test('QA: missing grams → setting grams removes ingredient from not-included list', async ({ page }) => {
+  // ingredientName must equal the raw ingredient string (parsed.original) for deriveExcludedIngredients to match
+  const recipe = {
+    id:              'nutrition-qa-missing-grams',
+    name:            'QA Missing Grams',
+    source:          'manual',
+    preparationType: 'classic',
+    ingredients:     ['sale q.b.', '200 g pasta'],
+    steps:           ['Mescola'],
+    servings:        '2',
+    ingredientNutrition: [
+      {
+        ingredientName: 'sale q.b.',  // exact raw string match
+        grams: undefined,
+        gramsEstimated: undefined,
+        source: { provider: 'manual' },
+        nutritionPer100g: { kcal: 0, proteinG: 0, carbsG: 0, fatG: 0, fiberG: 0 },
+      },
+      {
+        ingredientName: '200 g pasta',
+        grams: 200,
+        gramsEstimated: false,
+        source: { provider: 'openfoodfacts', confidence: 0.9 },
+        nutritionPer100g: { kcal: 350, proteinG: 13, carbsG: 70, fatG: 1.5, fiberG: 2.7 },
+      },
+    ],
+    nutrition: {
+      status: 'partial',
+      perServing: { kcal: 350, proteinG: 13, carbsG: 70, fatG: 1.5, fiberG: 2.7 },
+      perRecipe:  { kcal: 700, proteinG: 26, carbsG: 140, fatG: 3.0, fiberG: 5.4 },
+      servingsUsed: 2,
+      calculatedAt: new Date().toISOString(),
+      ingredientsFingerprint: 'sale q.b.|200 g pasta',
+      sources: [{ provider: 'openfoodfacts', confidence: 0.9 }],
+    },
+  };
+
+  await seedState(page, { recipes: [recipe] });
+  await gotoRoute(page, 'recipe-book/nutrition-qa-missing-grams');
+
+  await expect(page.locator('#saved-detail-view')).toBeVisible();
+
+  // Badge is partial (salt excluded)
+  await expect(page.locator('.nutrition-badge')).toHaveClass(/nutrition-badge--partial/);
+
+  // Transparency section and "not included" details must be visible
+  await expect(page.locator('.nutrition-transparency')).toBeVisible();
+  const notIncludedDetails = page.locator('.nutrition-details-group').filter({ hasText: /non inclus|not includ/i });
+  await expect(notIncludedDetails).toBeVisible();
+
+  // Open editor
+  const editBtn = page.locator('.nutrition-footer button').filter({ hasText: /edit|quantit|modific/i }).first();
+  await editBtn.click();
+
+  // Find the "sale q.b." row — it's the first (index 0 based on ingredient order)
+  const gramsInputs = page.locator('.nutrition-editor-row .nutrition-editor-input');
+  // sale q.b. row is index 0, pasta is index 1
+  await gramsInputs.first().fill('5');
+
+  // Save
+  await page.locator('.nutrition-editor-actions button').first().click();
+  await expect(page.locator('.nutrition-editor')).not.toBeVisible();
+
+  // Badge flips to manual
+  await expect(page.locator('.nutrition-badge')).toHaveClass(/nutrition-badge--manual/);
+
+  // "Not included" section should be gone (sale is now counted — grams=5 + per100g defined)
+  await expect(notIncludedDetails).not.toBeVisible();
+
+  // Persisted correctly
+  const stored = await page.evaluate((key: string) => {
+    const raw = localStorage.getItem(key);
+    if (!raw) return null;
+    return JSON.parse(raw).find((r: { id: string }) => r.id === 'nutrition-qa-missing-grams') ?? null;
+  }, STORAGE_KEY);
+
+  expect(stored?.ingredientNutrition?.[0]?.grams).toBe(5);
+  expect(stored?.ingredientNutrition?.[0]?.gramsEstimated).toBe(false);
+  expect(stored?.nutrition?.status).toBe('manual');
+});
+
+test('QA: missing nutrition → per-100g edit removes ingredient from not-included list', async ({ page }) => {
+  const recipe = {
+    id:              'nutrition-qa-missing-nutrition',
+    name:            'QA Missing Nutrition',
+    source:          'manual',
+    preparationType: 'classic',
+    ingredients:     ['ingrediente speciale 100g', '200 g pasta'],
+    steps:           ['Mescola'],
+    servings:        '2',
+    ingredientNutrition: [
+      {
+        ingredientName: 'ingrediente speciale 100g',
+        grams: 100,
+        gramsEstimated: false,
+        source: { provider: 'openfoodfacts', confidence: 0.5 },
+        nutritionPer100g: undefined,  // matched but no nutrition data → missing_nutrition
+      },
+      {
+        ingredientName: '200 g pasta',
+        grams: 200,
+        gramsEstimated: false,
+        source: { provider: 'openfoodfacts', confidence: 0.9 },
+        nutritionPer100g: { kcal: 350, proteinG: 13, carbsG: 70, fatG: 1.5, fiberG: 2.7 },
+      },
+    ],
+    nutrition: {
+      status: 'partial',
+      perServing: { kcal: 350, proteinG: 13, carbsG: 70, fatG: 1.5, fiberG: 2.7 },
+      perRecipe:  { kcal: 700, proteinG: 26, carbsG: 140, fatG: 3.0, fiberG: 5.4 },
+      servingsUsed: 2,
+      calculatedAt: new Date().toISOString(),
+      ingredientsFingerprint: 'ingrediente speciale 100g|200 g pasta',
+      sources: [{ provider: 'openfoodfacts', confidence: 0.9 }],
+    },
+  };
+
+  await seedState(page, { recipes: [recipe] });
+  await gotoRoute(page, 'recipe-book/nutrition-qa-missing-nutrition');
+
+  await expect(page.locator('#saved-detail-view')).toBeVisible();
+
+  // Confirm not-included section visible
+  await expect(page.locator('.nutrition-transparency')).toBeVisible();
+  const notIncludedDetails = page.locator('.nutrition-details-group').filter({ hasText: /non inclus|not includ/i });
+  await expect(notIncludedDetails).toBeVisible();
+
+  // Open editor
+  const editBtn = page.locator('.nutrition-footer button').filter({ hasText: /edit|quantit|modific/i }).first();
+  await editBtn.click();
+
+  // Expand per-100g for the first ingredient ("ingrediente speciale 100g")
+  const expandBtns = page.locator('.nutrition-editor-expand-btn');
+  await expandBtns.first().click();
+  await expect(page.locator('.nutrition-editor-per100g').first()).toBeVisible();
+
+  // Fill in kcal=100, proteinG=5, carbsG=10, fatG=2, fiberG=1
+  const per100gInputs = page.locator('.nutrition-editor-per100g').first().locator('.nutrition-editor-input');
+  await per100gInputs.nth(0).fill('100');  // kcal
+  await per100gInputs.nth(1).fill('5');    // proteinG
+  await per100gInputs.nth(2).fill('10');   // carbsG
+  await per100gInputs.nth(3).fill('2');    // fatG
+  await per100gInputs.nth(4).fill('1');    // fiberG
+
+  // Save
+  await page.locator('.nutrition-editor-actions button').first().click();
+  await expect(page.locator('.nutrition-editor')).not.toBeVisible();
+
+  // Badge is now manual
+  await expect(page.locator('.nutrition-badge')).toHaveClass(/nutrition-badge--manual/);
+
+  // Not-included section should be gone (ingredient now has nutritionPer100g)
+  await expect(notIncludedDetails).not.toBeVisible();
+
+  // Kcal increased (ingrediente added 100 kcal/100g × 100g = 100 more kcal to recipe)
+  const kcalText = await page.locator('.nutrition-kcal-val').textContent();
+  const kcal = parseInt(kcalText ?? '0', 10);
+  expect(kcal).toBeGreaterThan(350); // was 350 per serving (pasta only), now includes speciale
+
+  // Persisted
+  const stored = await page.evaluate((key: string) => {
+    const raw = localStorage.getItem(key);
+    if (!raw) return null;
+    return JSON.parse(raw).find((r: { id: string }) => r.id === 'nutrition-qa-missing-nutrition') ?? null;
+  }, STORAGE_KEY);
+
+  expect(stored?.ingredientNutrition?.[0]?.nutritionPer100g?.kcal).toBe(100);
+  expect(stored?.ingredientNutrition?.[0]?.nutritionPer100g?.proteinG).toBe(5);
+  expect(stored?.ingredientNutrition?.[0]?.source?.provider).toBe('manual');
+  expect(stored?.nutrition?.status).toBe('manual');
+});
+
+test('QA: estimated grams → manual grams removes ingredient from estimated section', async ({ page }) => {
+  const recipe = {
+    id:              'nutrition-qa-estimated',
+    name:            'QA Estimated Grams',
+    source:          'manual',
+    preparationType: 'classic',
+    ingredients:     ['1 cucchiaio olio', '200 g pasta'],
+    steps:           ['Cuoci', 'Condisci'],
+    servings:        '2',
+    ingredientNutrition: [
+      {
+        ingredientName: '1 cucchiaio olio',
+        grams: 10,
+        gramsEstimated: true,  // estimated from unit conversion
+        source: { provider: 'openfoodfacts', confidence: 0.85 },
+        nutritionPer100g: { kcal: 880, proteinG: 0, carbsG: 0, fatG: 100, fiberG: 0 },
+      },
+      {
+        ingredientName: '200 g pasta',
+        grams: 200,
+        gramsEstimated: false,
+        source: { provider: 'openfoodfacts', confidence: 0.9 },
+        nutritionPer100g: { kcal: 350, proteinG: 13, carbsG: 70, fatG: 1.5, fiberG: 2.7 },
+      },
+    ],
+    nutrition: {
+      status: 'complete',
+      perServing: { kcal: 394, proteinG: 13, carbsG: 70, fatG: 6.5, fiberG: 2.7 },
+      perRecipe:  { kcal: 788, proteinG: 26, carbsG: 140, fatG: 13.0, fiberG: 5.4 },
+      servingsUsed: 2,
+      calculatedAt: new Date().toISOString(),
+      ingredientsFingerprint: '1 cucchiaio olio|200 g pasta',
+      sources: [{ provider: 'openfoodfacts', confidence: 0.9 }],
+    },
+  };
+
+  await seedState(page, { recipes: [recipe] });
+  await gotoRoute(page, 'recipe-book/nutrition-qa-estimated');
+
+  await expect(page.locator('#saved-detail-view')).toBeVisible();
+
+  // Estimated quantities section must be visible
+  await expect(page.locator('.nutrition-transparency')).toBeVisible();
+  const estimatedDetails = page.locator('.nutrition-details-group').filter({ hasText: /stimate|estimated/i });
+  await expect(estimatedDetails).toBeVisible();
+
+  // Open editor
+  const editBtn = page.locator('.nutrition-footer button').filter({ hasText: /edit|quantit|modific/i }).first();
+  await editBtn.click();
+
+  // Edit grams for "1 cucchiaio olio" (first row) from 10 to 12
+  const gramsInputs = page.locator('.nutrition-editor-row .nutrition-editor-input');
+  await gramsInputs.first().fill('12');
+
+  // Save
+  await page.locator('.nutrition-editor-actions button').first().click();
+  await expect(page.locator('.nutrition-editor')).not.toBeVisible();
+
+  // Badge is manual
+  await expect(page.locator('.nutrition-badge')).toHaveClass(/nutrition-badge--manual/);
+
+  // Estimated section should be gone (gramsEstimated is now false for olio)
+  await expect(estimatedDetails).not.toBeVisible();
+
+  // Persisted: gramsEstimated=false
+  const stored = await page.evaluate((key: string) => {
+    const raw = localStorage.getItem(key);
+    if (!raw) return null;
+    return JSON.parse(raw).find((r: { id: string }) => r.id === 'nutrition-qa-estimated') ?? null;
+  }, STORAGE_KEY);
+
+  expect(stored?.ingredientNutrition?.[0]?.grams).toBe(12);
+  expect(stored?.ingredientNutrition?.[0]?.gramsEstimated).toBe(false);
+  expect(stored?.nutrition?.status).toBe('manual');
+});
+
+// ─── Olio grams regression test (visible kcal change) ────────────────────────
+
+test('olio grams: doubling grams from 10 to 20 visibly increases kcal', async ({ page }) => {
+  // olio: 880 kcal/100g. At 10g → 88 kcal; at 20g → 176 kcal.
+  // With 200g pasta (350 kcal/100g = 700 kcal) and 2 servings:
+  //   before: perRecipe=788, perServing=394
+  //   after:  perRecipe=876, perServing=438
+  const recipe = {
+    id:              'nutrition-e2e-olio-grams',
+    name:            'Olio Grams Test',
+    source:          'manual',
+    preparationType: 'classic',
+    ingredients:     ['1 cucchiaio olio', '200 g pasta'],
+    steps:           ['Cuoci', 'Condisci'],
+    servings:        '2',
+    ingredientNutrition: [
+      {
+        ingredientName: '1 cucchiaio olio',
+        grams: 10,
+        gramsEstimated: true,
+        source: { provider: 'openfoodfacts', confidence: 0.85 },
+        nutritionPer100g: { kcal: 880, proteinG: 0, carbsG: 0, fatG: 100, fiberG: 0 },
+      },
+      {
+        ingredientName: '200 g pasta',
+        grams: 200,
+        gramsEstimated: false,
+        source: { provider: 'openfoodfacts', confidence: 0.95 },
+        nutritionPer100g: { kcal: 350, proteinG: 13, carbsG: 70, fatG: 1.5, fiberG: 2.7 },
+      },
+    ],
+    nutrition: {
+      status: 'complete',
+      perServing: { kcal: 394, proteinG: 13, carbsG: 70, fatG: 11.5, fiberG: 2.7 },
+      perRecipe:  { kcal: 788, proteinG: 26, carbsG: 140, fatG: 23.0, fiberG: 5.4 },
+      servingsUsed: 2,
+      calculatedAt: new Date().toISOString(),
+      ingredientsFingerprint: '1 cucchiaio olio|200 g pasta',
+      sources: [{ provider: 'openfoodfacts', confidence: 0.9 }],
+    },
+  };
+
+  await seedState(page, { recipes: [recipe] });
+  await gotoRoute(page, 'recipe-book/nutrition-e2e-olio-grams');
+  await expect(page.locator('#saved-detail-view')).toBeVisible();
+
+  // Record initial kcal (perServing ≈ 394)
+  const kcalLocator = page.locator('.nutrition-kcal-val');
+  const kcalBefore = parseInt((await kcalLocator.textContent()) ?? '0', 10);
+  expect(kcalBefore).toBeGreaterThan(300);
+
+  // Open editor
+  const editBtn = page.locator('.nutrition-footer button').filter({ hasText: /edit|quantit|modific/i }).first();
+  await editBtn.click();
+  await expect(page.locator('.nutrition-editor')).toBeVisible();
+
+  // olio is the first row — change from 10 to 20
+  const gramsInputs = page.locator('.nutrition-editor-row .nutrition-editor-input');
+  await gramsInputs.first().fill('20');
+
+  // Save
+  await page.locator('.nutrition-editor-actions button').first().click();
+  await expect(page.locator('.nutrition-editor')).not.toBeVisible();
+
+  // Badge is manual
+  await expect(page.locator('.nutrition-badge')).toHaveClass(/nutrition-badge--manual/);
+
+  // Kcal must have increased (≈438 per serving now vs ≈394 before)
+  const kcalAfter = parseInt((await kcalLocator.textContent()) ?? '0', 10);
+  expect(kcalAfter).toBeGreaterThan(kcalBefore);
+  expect(kcalAfter).toBeGreaterThan(400);
+
+  // Persisted correctly
+  const stored = await page.evaluate((key: string) => {
+    const raw = localStorage.getItem(key);
+    if (!raw) return null;
+    return JSON.parse(raw).find((r: { id: string }) => r.id === 'nutrition-e2e-olio-grams') ?? null;
+  }, STORAGE_KEY);
+
+  expect(stored?.ingredientNutrition?.[0]?.grams).toBe(20);
+  expect(stored?.ingredientNutrition?.[0]?.gramsEstimated).toBe(false);
+  expect(stored?.ingredientNutrition?.[0]?.source?.provider).toBe('manual');
+  expect(stored?.ingredientNutrition?.[0]?.source?.userEdited).toBe(true);
+  expect(stored?.nutrition?.status).toBe('manual');
+});
+
+// ─── Recalculate preserves user-edited entries ────────────────────────────────
+
+test('Recalculate preserves ingredients with source.userEdited=true', async ({ page }) => {
+  // olio is user-edited (20g, userEdited:true); pasta is not.
+  // After Recalculate:
+  //   - olio must remain at 20g with userEdited=true (not re-fetched)
+  //   - pasta may be re-fetched from the provider (expected same data)
+  //   - kcal should reflect the 20g olio, not the estimated 10g
+  const recipe = {
+    id:              'nutrition-e2e-recalc-preserve',
+    name:            'Recalc Preserve Test',
+    source:          'manual',
+    preparationType: 'classic',
+    ingredients:     ['1 cucchiaio olio', '200 g pasta'],
+    steps:           ['Cuoci'],
+    servings:        '2',
+    ingredientNutrition: [
+      {
+        ingredientName: '1 cucchiaio olio',
+        grams: 20,  // user set to 20g (default estimation would be 10g)
+        gramsEstimated: false,
+        source: { provider: 'manual', userEdited: true },
+        nutritionPer100g: { kcal: 880, proteinG: 0, carbsG: 0, fatG: 100, fiberG: 0 },
+      },
+      {
+        ingredientName: '200 g pasta',
+        grams: 200,
+        gramsEstimated: false,
+        source: { provider: 'openfoodfacts', confidence: 0.95 },
+        nutritionPer100g: { kcal: 350, proteinG: 13, carbsG: 70, fatG: 1.5, fiberG: 2.7 },
+      },
+    ],
+    nutrition: {
+      status: 'manual',
+      perServing: { kcal: 438, proteinG: 13, carbsG: 70, fatG: 11.5, fiberG: 2.7 },
+      perRecipe:  { kcal: 876, proteinG: 26, carbsG: 140, fatG: 23.0, fiberG: 5.4 },
+      servingsUsed: 2,
+      calculatedAt: new Date().toISOString(),
+      ingredientsFingerprint: '1 cucchiaio olio|200 g pasta',
+      sources: [{ provider: 'manual', userEdited: true }],
+    },
+  };
+
+  await seedState(page, { recipes: [recipe] });
+  await gotoRoute(page, 'recipe-book/nutrition-e2e-recalc-preserve');
+  await expect(page.locator('#saved-detail-view')).toBeVisible();
+
+  // Badge shows manual (because olio was user-edited)
+  await expect(page.locator('.nutrition-badge')).toHaveClass(/nutrition-badge--manual/);
+
+  // Record kcal before Recalculate
+  const kcalLocator = page.locator('.nutrition-kcal-val');
+  const kcalBefore = parseInt((await kcalLocator.textContent()) ?? '0', 10);
+  expect(kcalBefore).toBeGreaterThan(400);  // reflects 20g olio
+
+  // Click Recalculate
+  const calcBtn = page.locator('.nutrition-footer button').filter({ hasText: /ricalcol|recalcul/i }).first();
+  await calcBtn.click();
+
+  // Wait for calculation to finish (badge changes from missing/manual to something)
+  await expect(page.locator('.nutrition-badge')).not.toHaveClass(/nutrition-badge--missing/, { timeout: 8000 });
+
+  // olio should still contribute its 20g (not reverted to estimated 10g)
+  // So kcal should be ≥ the 20g value (~438 per serving), not the 10g value (~394)
+  const kcalAfter = parseInt((await kcalLocator.textContent()) ?? '0', 10);
+  expect(kcalAfter).toBeGreaterThan(400);
+
+  // Verify in storage
+  const stored = await page.evaluate((key: string) => {
+    const raw = localStorage.getItem(key);
+    if (!raw) return null;
+    return JSON.parse(raw).find((r: { id: string }) => r.id === 'nutrition-e2e-recalc-preserve') ?? null;
+  }, STORAGE_KEY);
+
+  const olioEntry = stored?.ingredientNutrition?.find(
+    (e: { ingredientName: string }) => e.ingredientName === '1 cucchiaio olio',
+  );
+  expect(olioEntry?.grams).toBe(20);
+  expect(olioEntry?.source?.userEdited).toBe(true);
+});

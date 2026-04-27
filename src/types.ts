@@ -47,6 +47,7 @@ export type NutritionSource = {
   externalUrl?: string;
   confidence?: number;  // 0–1
   fetchedAt?: string;   // ISO date string
+  userEdited?: boolean; // true when the user manually set grams or per-100g values in the editor
 };
 
 export type IngredientNutrition = {

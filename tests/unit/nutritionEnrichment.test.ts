@@ -723,3 +723,142 @@ describe('enrichRecipeNutritionWithProviders — provider ordering', () => {
     expect(nutrition.perRecipe?.kcal).toBeGreaterThan(0);
   });
 });
+
+// ─── Preserve user-edited entries ─────────────────────────────────────────────
+
+describe('enrichRecipeNutritionWithProviders — preserve user-edited entries', () => {
+  it('skips provider lookup for ingredients with source.userEdited=true', async () => {
+    let searchCalled = false;
+    const trackingProvider: NutritionProviderClient = {
+      provider: 'manual',
+      displayName: 'Tracking',
+      async search() {
+        searchCalled = true;
+        return [{ ...pastaResult }];
+      },
+    };
+
+    const recipe = makeRecipe({
+      ingredients: ['200 g pasta'],
+      ingredientNutrition: [
+        {
+          ingredientName: '200 g pasta',
+          grams: 150,  // user-overridden grams
+          gramsEstimated: false,
+          source: { provider: 'manual', userEdited: true },
+          nutritionPer100g: { kcal: 350, proteinG: 12 },
+        },
+      ],
+    });
+
+    const { ingredientNutrition } = await enrichRecipeNutritionWithProviders(recipe, [trackingProvider]);
+
+    expect(searchCalled).toBe(false);
+    expect(ingredientNutrition).toHaveLength(1);
+    expect(ingredientNutrition[0].grams).toBe(150);  // preserved
+    expect(ingredientNutrition[0].source?.userEdited).toBe(true);  // flag preserved
+  });
+
+  it('re-fetches ingredients without userEdited flag even if provider is manual', async () => {
+    const provider = stubProvider('db', 'manual', { pasta: pastaResult });
+
+    const recipe = makeRecipe({
+      ingredients: ['200 g pasta'],
+      ingredientNutrition: [
+        {
+          ingredientName: '200 g pasta',
+          grams: 999,  // stale grams — should be overwritten by re-fetch
+          source: { provider: 'manual' },  // no userEdited flag
+          nutritionPer100g: { kcal: 1 },
+        },
+      ],
+    });
+
+    const { ingredientNutrition } = await enrichRecipeNutritionWithProviders(recipe, [provider]);
+
+    expect(ingredientNutrition).toHaveLength(1);
+    expect(ingredientNutrition[0].grams).toBe(200);  // re-parsed from ingredient string
+    expect(ingredientNutrition[0].source?.userEdited).toBeUndefined();
+  });
+
+  it('preserves user-edited entry while re-fetching non-edited entries', async () => {
+    const provider = stubProvider('db', 'manual', { pasta: pastaResult, riso: risottoResult });
+
+    const recipe = makeRecipe({
+      ingredients: ['200 g pasta', '100 g riso'],
+      ingredientNutrition: [
+        {
+          ingredientName: '200 g pasta',
+          grams: 80,  // user override
+          gramsEstimated: false,
+          source: { provider: 'manual', userEdited: true },
+          nutritionPer100g: { kcal: 350, proteinG: 12 },
+        },
+      ],
+    });
+
+    const { ingredientNutrition } = await enrichRecipeNutritionWithProviders(recipe, [provider]);
+
+    expect(ingredientNutrition).toHaveLength(2);
+    const pasta = ingredientNutrition.find(e => e.ingredientName === '200 g pasta');
+    const riso  = ingredientNutrition.find(e => e.normalizedName === 'riso');
+    expect(pasta?.grams).toBe(80);                    // preserved from user edit
+    expect(pasta?.source?.userEdited).toBe(true);
+    expect(riso?.grams).toBe(100);                    // re-fetched
+    expect(riso?.source?.userEdited).toBeUndefined();
+  });
+
+  it('falls back to parsed.name for user-edited entries with short ingredientName', async () => {
+    // Older seed data may have ingredientName='pasta' instead of '200 g pasta'.
+    const provider = stubProvider('db', 'manual', { pasta: pastaResult });
+
+    const recipe = makeRecipe({
+      ingredients: ['200 g pasta'],
+      ingredientNutrition: [
+        {
+          ingredientName: 'pasta',  // short name (legacy format)
+          grams: 80,
+          source: { provider: 'manual', userEdited: true },
+          nutritionPer100g: { kcal: 350, proteinG: 12 },
+        },
+      ],
+    });
+
+    let searchCalled = false;
+    const trackingProvider: NutritionProviderClient = {
+      ...provider,
+      async search(q) {
+        searchCalled = true;
+        return provider.search(q);
+      },
+    };
+
+    const { ingredientNutrition } = await enrichRecipeNutritionWithProviders(recipe, [trackingProvider]);
+
+    expect(searchCalled).toBe(false);  // matched via parsed.name fallback
+    expect(ingredientNutrition[0].grams).toBe(80);
+  });
+
+  it('nutrition recalculates using preserved user-edited grams', async () => {
+    const provider = stubProvider('db', 'manual', {});  // no matches → user entry is the only data
+
+    const recipe = makeRecipe({
+      ingredients: ['200 g pasta'],
+      servings: '2',
+      ingredientNutrition: [
+        {
+          ingredientName: '200 g pasta',
+          grams: 100,
+          source: { provider: 'manual', userEdited: true },
+          nutritionPer100g: { kcal: 350, proteinG: 13, carbsG: 70, fatG: 1.5, fiberG: 2.7 },
+        },
+      ],
+    });
+
+    const { nutrition } = await enrichRecipeNutritionWithProviders(recipe, [provider]);
+
+    // 100g pasta × 350 kcal/100g = 350 kcal total ÷ 2 servings = 175 kcal/serving
+    expect(nutrition.perRecipe?.kcal).toBeCloseTo(350, 1);
+    expect(nutrition.perServing?.kcal).toBeCloseTo(175, 1);
+  });
+});

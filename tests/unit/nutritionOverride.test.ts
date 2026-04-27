@@ -1,5 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { parseGramsInput, applyGramsOverrides } from '../../src/lib/nutritionOverride';
+import {
+  parseGramsInput,
+  parseNutrientInput,
+  applyGramsOverrides,
+  applyNutritionOverrides,
+} from '../../src/lib/nutritionOverride';
 import type { IngredientNutrition } from '../../src/types';
 
 // ─── parseGramsInput ──────────────────────────────────────────────────────────
@@ -162,5 +167,265 @@ describe('applyGramsOverrides', () => {
     });
     expect(ingredientNutrition[0].grams).toBeUndefined();
     expect(ingredientNutrition[0].gramsEstimated).toBeUndefined();
+  });
+});
+
+// ─── parseNutrientInput ───────────────────────────────────────────────────────
+
+describe('parseNutrientInput', () => {
+  it('parses integer', () => {
+    expect(parseNutrientInput('350')).toBe(350);
+  });
+
+  it('parses decimal with dot', () => {
+    expect(parseNutrientInput('1.5')).toBe(1.5);
+  });
+
+  it('parses decimal with comma', () => {
+    expect(parseNutrientInput('10,5')).toBe(10.5);
+  });
+
+  it('allows zero (unlike parseGramsInput)', () => {
+    expect(parseNutrientInput('0')).toBe(0);
+  });
+
+  it('returns undefined for empty string', () => {
+    expect(parseNutrientInput('')).toBeUndefined();
+  });
+
+  it('returns undefined for negative values', () => {
+    expect(parseNutrientInput('-1')).toBeUndefined();
+  });
+
+  it('returns undefined for non-numeric text', () => {
+    expect(parseNutrientInput('abc')).toBeUndefined();
+  });
+
+  it('returns undefined for Infinity', () => {
+    expect(parseNutrientInput('Infinity')).toBeUndefined();
+  });
+});
+
+// ─── applyNutritionOverrides ──────────────────────────────────────────────────
+
+function makeIngNoNutrition(ingredientName: string): IngredientNutrition {
+  return { ingredientName, grams: undefined, source: { provider: 'openfoodfacts' as const } };
+}
+
+describe('applyNutritionOverrides — per-100g patch', () => {
+  it('updates nutritionPer100g fields from per100g patch', () => {
+    const ing = makeIng('pasta', 200, 10, 70, 1);
+    const { ingredientNutrition } = applyNutritionOverrides({
+      ingredientNutrition: [ing],
+      gramsOverrides:  {},
+      per100gOverrides: { pasta: { proteinG: 15 } },
+      ingredients: ['200g pasta'],
+    });
+    expect(ingredientNutrition[0].nutritionPer100g?.proteinG).toBe(15);
+    // other fields preserved
+    expect(ingredientNutrition[0].nutritionPer100g?.carbsG).toBe(70);
+    expect(ingredientNutrition[0].nutritionPer100g?.fatG).toBe(1);
+  });
+
+  it('sets source.provider to manual when per100g patched', () => {
+    const ing = makeIng('pasta', 200);
+    const { ingredientNutrition } = applyNutritionOverrides({
+      ingredientNutrition: [ing],
+      gramsOverrides:  {},
+      per100gOverrides: { pasta: { kcal: 360 } },
+      ingredients: ['200g pasta'],
+    });
+    expect(ingredientNutrition[0].source?.provider).toBe('manual');
+  });
+
+  it('kcal recalculates proportionally after per100g patch', () => {
+    // pasta 200g, original kcal 350/100g → 700 kcal total
+    const ing = makeIng('pasta', 200);
+    (ing.nutritionPer100g as any).kcal = 350;
+    const { nutrition: before } = applyNutritionOverrides({
+      ingredientNutrition: [ing],
+      gramsOverrides:  {},
+      per100gOverrides: {},
+      ingredients: ['200g pasta'],
+    });
+    // Change to 700 kcal/100g → should double
+    const { nutrition: after } = applyNutritionOverrides({
+      ingredientNutrition: [ing],
+      gramsOverrides:  {},
+      per100gOverrides: { pasta: { kcal: 700 } },
+      ingredients: ['200g pasta'],
+    });
+    const kcalBefore = before.perRecipe?.kcal ?? 0;
+    const kcalAfter  = after.perRecipe?.kcal  ?? 0;
+    expect(kcalAfter).toBeCloseTo(kcalBefore * 2, 1);
+  });
+
+  it('clearing a per100g field removes its contribution', () => {
+    const ing = makeIng('pasta', 200, 10, 70, 5);
+    const { nutrition: withProtein } = applyNutritionOverrides({
+      ingredientNutrition: [ing],
+      gramsOverrides:  {},
+      per100gOverrides: {},
+      ingredients: ['200g pasta'],
+    });
+    const { nutrition: withoutProtein } = applyNutritionOverrides({
+      ingredientNutrition: [ing],
+      gramsOverrides:  {},
+      per100gOverrides: { pasta: { proteinG: undefined } },
+      ingredients: ['200g pasta'],
+    });
+    const pBefore = withProtein.perRecipe?.proteinG ?? 0;
+    const pAfter  = withoutProtein.perRecipe?.proteinG ?? 0;
+    expect(pBefore).toBeGreaterThan(0);
+    expect(pAfter).toBe(0);
+  });
+
+  it('creates nutritionPer100g when ingredient had none', () => {
+    const ing = makeIngNoNutrition('sale');
+    ing.grams = 5;
+    const { ingredientNutrition } = applyNutritionOverrides({
+      ingredientNutrition: [ing],
+      gramsOverrides:  {},
+      per100gOverrides: { sale: { kcal: 0, proteinG: 0, carbsG: 0, fatG: 0, fiberG: 0 } },
+      ingredients: ['sale q.b.'],
+    });
+    expect(ingredientNutrition[0].nutritionPer100g).toBeDefined();
+    expect(ingredientNutrition[0].nutritionPer100g?.kcal).toBe(0);
+  });
+
+  it('does not mutate the input ingredientNutrition', () => {
+    const original = [makeIng('pasta', 200)];
+    const originalProtein = original[0].nutritionPer100g?.proteinG;
+    applyNutritionOverrides({
+      ingredientNutrition: original,
+      gramsOverrides:  {},
+      per100gOverrides: { pasta: { proteinG: 99 } },
+      ingredients: ['200g pasta'],
+    });
+    expect(original[0].nutritionPer100g?.proteinG).toBe(originalProtein);
+  });
+
+  it('leaves unpatched ingredients unchanged', () => {
+    const ings = [makeIng('pasta', 200), makeIng('pomodoro', 100)];
+    const { ingredientNutrition } = applyNutritionOverrides({
+      ingredientNutrition: ings,
+      gramsOverrides:  {},
+      per100gOverrides: { pasta: { kcal: 999 } },
+      ingredients: ['200g pasta', '100g pomodoro'],
+    });
+    expect(ingredientNutrition[1].source?.provider).toBe('openfoodfacts');
+    expect(ingredientNutrition[1].nutritionPer100g?.proteinG).toBe(10);
+  });
+
+  it('returns status manual', () => {
+    const { nutrition } = applyNutritionOverrides({
+      ingredientNutrition: [makeIng('pasta', 200)],
+      gramsOverrides:  {},
+      per100gOverrides: { pasta: { kcal: 350 } },
+      ingredients: ['200g pasta'],
+    });
+    expect(nutrition.status).toBe('manual');
+  });
+
+  it('combined grams + per100g patch recalculates correctly', () => {
+    // 200g pasta @ 350kcal/100g = 700 kcal.  Change to 100g + 700kcal/100g → still 700 kcal.
+    const ing = makeIng('pasta', 200);
+    (ing.nutritionPer100g as any).kcal = 350;
+    const { nutrition } = applyNutritionOverrides({
+      ingredientNutrition: [ing],
+      gramsOverrides:  { pasta: 100 },
+      per100gOverrides: { pasta: { kcal: 700 } },
+      ingredients: ['200g pasta'],
+    });
+    expect(nutrition.perRecipe?.kcal).toBeCloseTo(700, 1);
+  });
+
+  it('partial edit: only edited per100g field changes; others preserved and recalculate', () => {
+    const ing = makeIng('pasta', 100, 13, 70, 1);
+    const { ingredientNutrition } = applyNutritionOverrides({
+      ingredientNutrition: [ing],
+      gramsOverrides:  {},
+      per100gOverrides: { pasta: { proteinG: 20 } },
+      ingredients: ['100g pasta'],
+    });
+    expect(ingredientNutrition[0].nutritionPer100g?.proteinG).toBe(20);
+    expect(ingredientNutrition[0].nutritionPer100g?.carbsG).toBe(70);
+    expect(ingredientNutrition[0].nutritionPer100g?.fatG).toBe(1);
+  });
+
+  it('sets source.userEdited=true on overridden ingredients', () => {
+    const ing = makeIng('pasta', 200);
+    const { ingredientNutrition } = applyNutritionOverrides({
+      ingredientNutrition: [ing],
+      gramsOverrides:  { pasta: 100 },
+      per100gOverrides: {},
+      ingredients: ['200g pasta'],
+    });
+    expect(ingredientNutrition[0].source?.userEdited).toBe(true);
+  });
+
+  it('does not set source.userEdited on untouched ingredients', () => {
+    const ings = [makeIng('pasta', 200), makeIng('riso', 100)];
+    const { ingredientNutrition } = applyNutritionOverrides({
+      ingredientNutrition: ings,
+      gramsOverrides:  { pasta: 150 },
+      per100gOverrides: {},
+      ingredients: ['200g pasta', '100g riso'],
+    });
+    expect(ingredientNutrition[0].source?.userEdited).toBe(true);  // pasta was overridden
+    expect(ingredientNutrition[1].source?.userEdited).toBeUndefined();  // riso was not
+  });
+});
+
+// ─── manual grams / per100g coverage ─────────────────────────────────────────
+
+describe('manual override coverage', () => {
+  it('manual grams + existing per100g increases recipe total when grams double', () => {
+    // olio: 880 kcal/100g — doubling grams from 10 to 20 doubles kcal contribution
+    const ing: IngredientNutrition = {
+      ingredientName: '1 cucchiaio olio',
+      grams: 10,
+      gramsEstimated: true,
+      source: { provider: 'openfoodfacts' },
+      nutritionPer100g: { kcal: 880, proteinG: 0, carbsG: 0, fatG: 100, fiberG: 0 },
+    };
+
+    const { nutrition: before } = applyNutritionOverrides({
+      ingredientNutrition: [ing],
+      gramsOverrides:  {},
+      per100gOverrides: {},
+      ingredients: ['1 cucchiaio olio'],
+    });
+    const { nutrition: after } = applyNutritionOverrides({
+      ingredientNutrition: [ing],
+      gramsOverrides:  { '1 cucchiaio olio': 20 },
+      per100gOverrides: {},
+      ingredients: ['1 cucchiaio olio'],
+    });
+
+    expect(after.perRecipe?.kcal).toBeCloseTo((before.perRecipe?.kcal ?? 0) * 2, 1);
+  });
+
+  it('manual grams without nutritionPer100g leaves ingredient excluded from totals', () => {
+    // sale with grams set but no per-100g data: isUsable=false → zero contribution
+    const ing: IngredientNutrition = {
+      ingredientName: 'sale q.b.',
+      grams: undefined,
+      source: { provider: 'openfoodfacts' },
+      nutritionPer100g: undefined,
+    };
+
+    const { ingredientNutrition, nutrition } = applyNutritionOverrides({
+      ingredientNutrition: [ing],
+      gramsOverrides:  { 'sale q.b.': 5 },
+      per100gOverrides: {},
+      ingredients: ['sale q.b.'],
+    });
+
+    // Grams are set
+    expect(ingredientNutrition[0].grams).toBe(5);
+    // But no nutritionPer100g → calculateRecipeNutrition cannot sum it → totals are undefined/zero
+    expect(nutrition.perRecipe?.kcal ?? 0).toBe(0);
+    expect(nutrition.status).toBe('manual');
   });
 });

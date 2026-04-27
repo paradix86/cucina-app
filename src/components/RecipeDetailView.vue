@@ -8,7 +8,7 @@ import { useRecipeBookStore } from '../stores/recipeBook';
 import { buildShareUrl } from '../lib/recipeShare';
 import { enrichRecipeNutritionWithProviders } from '../lib/nutritionEnrichment';
 import { NUTRITION_PROVIDERS } from '../lib/nutritionProviders';
-import { parseGramsInput, applyGramsOverrides } from '../lib/nutritionOverride';
+import { parseGramsInput, parseNutrientInput, applyNutritionOverrides } from '../lib/nutritionOverride';
 import { deriveEstimatedIngredients, deriveExcludedIngredients, deriveProviderNames, deriveConfidenceLabel } from '../lib/nutritionTransparency';
 
 const props = defineProps({
@@ -37,8 +37,18 @@ const { items: shoppingItems } = storeToRefs(shoppingStore);
 const recipeBookStore = useRecipeBookStore();
 
 const isCalculatingNutrition = ref(false);
-const showNutritionEditor = ref(false);
-const nutritionEditDraft = ref({});
+const showNutritionEditor    = ref(false);
+const nutritionEditDraft     = ref({});   // { [ingredientName]: gramsString }
+const per100gEditDraft       = ref({});   // { [ingredientName]: { kcal, proteinG, carbsG, fatG, fiberG } → string }
+const expandedPer100gRows    = ref({});   // { [ingredientName]: boolean }
+
+const PER100G_FIELDS = [
+  { key: 'kcal',     labelKey: null,               label: 'kcal', unit: 'kcal' },
+  { key: 'proteinG', labelKey: 'section_proteins',                unit: 'g' },
+  { key: 'carbsG',   labelKey: 'section_carbs',                   unit: 'g' },
+  { key: 'fatG',     labelKey: 'nutrition_fat',                    unit: 'g' },
+  { key: 'fiberG',   labelKey: 'nutrition_fiber',                  unit: 'g' },
+];
 
 const nutritionContext = computed(() => {
   const n = props.recipe.nutrition;
@@ -294,27 +304,79 @@ function onShoppingAction() {
 }
 
 function openNutritionEditor() {
-  const draft = {};
+  const gDraft   = {};
+  const p100Draft = {};
   for (const ing of props.recipe.ingredientNutrition ?? []) {
-    draft[ing.ingredientName] = ing.grams != null ? String(ing.grams) : '';
+    gDraft[ing.ingredientName] = ing.grams != null ? String(ing.grams) : '';
+    const p = ing.nutritionPer100g ?? {};
+    p100Draft[ing.ingredientName] = {
+      kcal:     p.kcal     != null ? String(p.kcal)     : '',
+      proteinG: p.proteinG != null ? String(p.proteinG) : '',
+      carbsG:   p.carbsG   != null ? String(p.carbsG)   : '',
+      fatG:     p.fatG     != null ? String(p.fatG)     : '',
+      fiberG:   p.fiberG   != null ? String(p.fiberG)   : '',
+    };
   }
-  nutritionEditDraft.value = draft;
+  nutritionEditDraft.value  = gDraft;
+  per100gEditDraft.value    = p100Draft;
+  expandedPer100gRows.value = {};
   showNutritionEditor.value = true;
 }
 
 function cancelNutritionEditor() {
   showNutritionEditor.value = false;
-  nutritionEditDraft.value = {};
+  nutritionEditDraft.value  = {};
+  per100gEditDraft.value    = {};
+  expandedPer100gRows.value = {};
+}
+
+function togglePer100gRow(name) {
+  expandedPer100gRows.value = { ...expandedPer100gRows.value, [name]: !expandedPer100gRows.value[name] };
+}
+
+function setPer100gField(name, field, value) {
+  const current = per100gEditDraft.value[name] ?? {};
+  per100gEditDraft.value = { ...per100gEditDraft.value, [name]: { ...current, [field]: value } };
 }
 
 function saveNutritionOverrides() {
-  const overrides = {};
+  // Build a lookup of stored entries so we can compare draft values against what's
+  // already persisted and only include fields that actually changed.
+  const storedMap = new Map(
+    (props.recipe.ingredientNutrition ?? []).map(ing => [ing.ingredientName, ing]),
+  );
+
+  // Only include gram overrides where the value differs from what's stored.
+  // This prevents marking unmodified ingredients as user-edited.
+  const gramsOverrides = {};
   for (const [name, raw] of Object.entries(nutritionEditDraft.value)) {
-    overrides[name] = parseGramsInput(String(raw));
+    const parsed = parseGramsInput(String(raw));
+    if (parsed !== (storedMap.get(name)?.grams ?? undefined)) {
+      gramsOverrides[name] = parsed;
+    }
   }
-  const result = applyGramsOverrides({
+
+  // Only include per-100g patches where at least one field changed.
+  const per100gOverrides = {};
+  for (const [name, fields] of Object.entries(per100gEditDraft.value)) {
+    const storedPer100g = storedMap.get(name)?.nutritionPer100g;
+    const patch = {
+      kcal:     parseNutrientInput(String(fields.kcal     ?? '')),
+      proteinG: parseNutrientInput(String(fields.proteinG ?? '')),
+      carbsG:   parseNutrientInput(String(fields.carbsG   ?? '')),
+      fatG:     parseNutrientInput(String(fields.fatG     ?? '')),
+      fiberG:   parseNutrientInput(String(fields.fiberG   ?? '')),
+    };
+    const anyChanged = Object.keys(patch).some(
+      k => patch[k] !== (storedPer100g ? storedPer100g[k] : undefined),
+    );
+    if (anyChanged) per100gOverrides[name] = patch;
+  }
+
+  const result = applyNutritionOverrides({
     ingredientNutrition: props.recipe.ingredientNutrition ?? [],
-    overrides,
+    gramsOverrides,
+    per100gOverrides,
     ingredients: props.recipe.ingredients ?? [],
     servings: props.recipe.servings,
   });
@@ -324,8 +386,10 @@ function saveNutritionOverrides() {
     nutrition: { ...result.nutrition, ingredientsFingerprint: fingerprint },
   });
   showNutritionEditor.value = false;
-  nutritionEditDraft.value = {};
-  emit('toast', t('nutrition_quantities_updated'), 'success');
+  nutritionEditDraft.value  = {};
+  per100gEditDraft.value    = {};
+  expandedPer100gRows.value = {};
+  emit('toast', t('nutrition_values_updated'), 'success');
 }
 
 function printRecipe() {
@@ -655,18 +719,47 @@ function closeQr() {
           <div
             v-for="ing in recipe.ingredientNutrition"
             :key="ing.ingredientName"
-            class="nutrition-editor-row"
+            class="nutrition-editor-ingredient"
           >
-            <span class="nutrition-editor-name">{{ ing.ingredientName }}</span>
-            <input
-              class="nutrition-editor-input"
-              type="text"
-              inputmode="decimal"
-              :value="nutritionEditDraft[ing.ingredientName]"
-              @input="nutritionEditDraft[ing.ingredientName] = $event.target.value"
-            />
-            <span class="nutrition-editor-unit">g</span>
+            <div class="nutrition-editor-row">
+              <span class="nutrition-editor-name">{{ ing.ingredientName }}</span>
+              <input
+                class="nutrition-editor-input"
+                type="text"
+                inputmode="decimal"
+                :value="nutritionEditDraft[ing.ingredientName]"
+                @input="nutritionEditDraft[ing.ingredientName] = $event.target.value"
+              />
+              <span class="nutrition-editor-unit">g</span>
+            </div>
+            <button
+              class="nutrition-editor-expand-btn"
+              type="button"
+              @click="togglePer100gRow(ing.ingredientName)"
+            >
+              <span class="nutrition-editor-expand-arrow">{{ expandedPer100gRows[ing.ingredientName] ? '▾' : '▸' }}</span>
+              {{ t('nutrition_edit_values') }}
+            </button>
+            <div v-if="expandedPer100gRows[ing.ingredientName]" class="nutrition-editor-per100g">
+              <span class="nutrition-per100g-hint">{{ t('nutrition_per_100g') }}</span>
+              <div
+                v-for="field in PER100G_FIELDS"
+                :key="field.key"
+                class="nutrition-per100g-row"
+              >
+                <span class="nutrition-per100g-label">{{ field.labelKey ? t(field.labelKey) : field.label }}</span>
+                <input
+                  class="nutrition-editor-input"
+                  type="text"
+                  inputmode="decimal"
+                  :value="per100gEditDraft[ing.ingredientName]?.[field.key] ?? ''"
+                  @input="setPer100gField(ing.ingredientName, field.key, $event.target.value)"
+                />
+                <span class="nutrition-editor-unit">{{ field.unit }}</span>
+              </div>
+            </div>
           </div>
+          <p class="nutrition-editor-hint">{{ t('nutrition_salt_note') }}</p>
           <div class="nutrition-editor-actions">
             <button class="btn-primary" type="button" @click="saveNutritionOverrides">{{ t('recipe_edit_save') }}</button>
             <button class="btn-ghost" type="button" @click="cancelNutritionEditor">{{ t('recipe_edit_cancel') }}</button>
@@ -1177,7 +1270,19 @@ function closeQr() {
   padding-top: 10px;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
+}
+
+.nutrition-editor-ingredient {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border);
+}
+
+.nutrition-editor-ingredient:last-of-type {
+  border-bottom: none;
 }
 
 .nutrition-editor-row {
@@ -1212,13 +1317,71 @@ function closeQr() {
   font-size: 0.8rem;
   color: var(--text-muted);
   flex-shrink: 0;
-  width: 12px;
+  width: 28px;
+}
+
+.nutrition-editor-expand-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: none;
+  border: none;
+  padding: 4px 0;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  cursor: pointer;
+  text-align: left;
+  min-height: 36px;
+}
+
+.nutrition-editor-expand-btn:hover {
+  color: var(--text);
+}
+
+.nutrition-editor-expand-arrow {
+  font-size: 0.65rem;
+  flex-shrink: 0;
+}
+
+.nutrition-editor-per100g {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px 0 4px 8px;
+  border-left: 2px solid var(--border);
+  margin-left: 2px;
+}
+
+.nutrition-per100g-hint {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  font-style: italic;
+  margin-bottom: 2px;
+}
+
+.nutrition-per100g-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.nutrition-per100g-label {
+  flex: 1;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.nutrition-editor-hint {
+  font-size: 0.75rem;
+  color: var(--color-text-muted, #888);
+  font-style: italic;
+  margin: 4px 0 0;
 }
 
 .nutrition-editor-actions {
   display: flex;
   gap: 8px;
-  padding-top: 6px;
+  padding-top: 8px;
 }
 
 .nutrition-editor-actions button {

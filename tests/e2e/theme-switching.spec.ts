@@ -22,9 +22,13 @@ async function verifyThemeSwitching(page: Page) {
 
   await page.goto(APP_ROOT);
   await expect(page.locator('#theme-select')).toBeVisible();
+  // Wait for the SPA router to finish its initial navigation before touching
+  // localStorage — otherwise page.evaluate races with the router's context reset.
+  await expect(page.locator('main.app .panel.active').first()).toBeVisible();
   await page.evaluate(() => localStorage.removeItem('cucina_theme'));
   await page.reload();
   await expect(page.locator('#theme-select')).toBeVisible();
+  await expect(page.locator('main.app .panel.active').first()).toBeVisible();
 
   await page.locator('#theme-select').selectOption('dark');
   await expect.poll(() => themeSnapshot(page)).toMatchObject({
