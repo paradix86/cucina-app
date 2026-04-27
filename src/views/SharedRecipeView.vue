@@ -52,6 +52,7 @@ onMounted(() => {
     payload.value = decoded;
   } else {
     invalid.value = true;
+    emit('toast', t('shared_invalid'), 'error');
   }
 });
 
@@ -77,18 +78,26 @@ function handleSave(recipe: Recipe) {
       <div class="shared-banner">
         <p class="shared-banner-title">{{ t('shared_title') }}</p>
         <p class="shared-banner-subtitle">{{ t('shared_subtitle') }}</p>
+        <button
+          v-if="!saved"
+          class="btn-primary shared-save-cta"
+          type="button"
+          @click="previewRecipe && handleSave(previewRecipe)"
+        >{{ t('builtin_save') }}</button>
+        <p v-else class="shared-saved-confirm">✓ {{ t('shared_saved_ok') }}</p>
       </div>
 
       <RecipeDetailView
         :recipe="previewRecipe"
         :back-label="t('shared_back')"
         :saved-mode="false"
-        :can-save-builtin="true"
+        :can-save-builtin="!saved"
         @back="router.push('/recipe-book')"
         @save-builtin="handleSave"
         @start-cooking="(r) => emit('start-cooking', r)"
         @start-recipe-timer="(r) => emit('start-recipe-timer', r)"
         @add-to-shopping="(p) => emit('add-to-shopping', p)"
+        @toast="(msg, type) => emit('toast', msg, type)"
       />
     </template>
   </section>
@@ -128,5 +137,20 @@ function handleSave(recipe: Recipe) {
   font-size: 0.9rem;
   color: var(--color-text-secondary, #666);
   margin: 0 0 0.75rem;
+}
+
+.shared-save-cta {
+  width: 100%;
+  padding: 0.65rem 1rem;
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.shared-saved-confirm {
+  font-size: 0.9rem;
+  color: var(--color-accent, #43A047);
+  font-weight: 600;
+  margin: 0 0 0.5rem;
 }
 </style>

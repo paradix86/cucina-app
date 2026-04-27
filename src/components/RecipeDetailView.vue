@@ -28,6 +28,7 @@ const emit = defineEmits([
   'save-notes',
   'duplicate-recipe',
   'save-recipe-edit',
+  'toast',
 ]);
 
 const shoppingStore = useShoppingListStore();
@@ -76,14 +77,30 @@ const nutritionTransparency = computed(() => {
   return { estimated, excluded, sources, confidence };
 });
 
+function computeIngredientsFingerprint(ingredients) {
+  return (ingredients ?? []).join('|');
+}
+
+const isNutritionStale = computed(() => {
+  const stored = props.recipe.nutrition?.ingredientsFingerprint;
+  if (!stored) return false;
+  return stored !== computeIngredientsFingerprint(props.recipe.ingredients);
+});
+
+const allMacrosZero = computed(() => {
+  if (!nutritionContext.value) return false;
+  return macroDonut.value === null;
+});
+
 async function calculateNutrition() {
   if (isCalculatingNutrition.value || !props.recipe.id) return;
   isCalculatingNutrition.value = true;
   try {
     const result = await enrichRecipeNutritionWithProviders(props.recipe, NUTRITION_PROVIDERS);
+    const fingerprint = computeIngredientsFingerprint(props.recipe.ingredients);
     recipeBookStore.update(props.recipe.id, {
       ingredientNutrition: result.ingredientNutrition,
-      nutrition: result.nutrition,
+      nutrition: { ...result.nutrition, ingredientsFingerprint: fingerprint },
     });
   } finally {
     isCalculatingNutrition.value = false;
@@ -290,11 +307,14 @@ async function copyUrlToClipboard(url) {
     try {
       await navigator.clipboard.writeText(url);
       shareStatus.value = 'ok';
+      emit('toast', t('share_copy_ok'), 'success');
     } catch {
       shareStatus.value = 'err';
+      emit('toast', t('share_copy_err'), 'error');
     }
   } else {
     shareStatus.value = 'err';
+    emit('toast', t('share_copy_err'), 'error');
   }
   scheduleShareClear();
 }
@@ -360,11 +380,14 @@ async function copyQrLink() {
     try {
       await navigator.clipboard.writeText(qrModalUrl.value);
       qrCopyStatus.value = 'ok';
+      emit('toast', t('share_copy_ok'), 'success');
     } catch {
       qrCopyStatus.value = 'err';
+      emit('toast', t('share_copy_err'), 'error');
     }
   } else {
     qrCopyStatus.value = 'err';
+    emit('toast', t('share_copy_err'), 'error');
   }
   if (qrCopyTimer) clearTimeout(qrCopyTimer);
   qrCopyTimer = setTimeout(() => { qrCopyStatus.value = ''; }, 2500);
@@ -494,7 +517,17 @@ function closeQr() {
         <div v-if="nutritionContext" class="nutrition-body">
           <div class="nutrition-visual">
             <div
-              v-if="macroDonut"
+              v-if="isCalculatingNutrition"
+              class="nutrition-donut nutrition-donut--loading"
+              role="img"
+              :aria-label="t('calculate_nutrition')"
+            >
+              <div class="nutrition-donut-hole">
+                <span class="nutrition-spinner" aria-hidden="true"></span>
+              </div>
+            </div>
+            <div
+              v-else-if="macroDonut"
               class="nutrition-donut"
               role="img"
               :aria-label="t('nutrition_distribution')"
@@ -535,9 +568,13 @@ function closeQr() {
           </div>
         </div>
 
+        <p v-if="allMacrosZero" class="nutrition-no-macros-note">{{ t('nutrition_no_macros') }}</p>
+
         <p v-if="recipe.nutrition?.status === 'partial'" class="nutrition-partial-note">
           {{ t('nutrition_partial_note') }}
         </p>
+
+        <p v-if="isNutritionStale" class="nutrition-stale-warning">⚠ {{ t('nutrition_stale_warning') }}</p>
 
         <div v-if="nutritionTransparency" class="nutrition-transparency">
           <p v-if="nutritionTransparency.sources.length" class="nutrition-sources">
@@ -730,9 +767,18 @@ function closeQr() {
       <div class="qr-modal card">
         <p class="qr-modal-title">{{ t('share_recipe') }}</p>
         <p class="qr-modal-name">{{ recipe.emoji || '🍴' }} {{ recipe.name }}</p>
-        <img v-if="qrDataUrl" :src="qrDataUrl" class="qr-img" alt="QR code" width="240" height="240" />
+        <img v-if="qrDataUrl" :src="qrDataUrl" class="qr-img" :alt="`QR code – ${recipe.name}`" width="240" height="240" />
         <div v-else class="qr-placeholder">…</div>
         <p class="qr-modal-hint">{{ t('share_qr_hint') }}</p>
+        <input
+          v-if="qrModalUrl"
+          type="text"
+          readonly
+          :value="qrModalUrl"
+          class="qr-url-input"
+          :aria-label="t('share_recipe')"
+          @click="($event.target).select()"
+        />
         <div class="qr-modal-actions">
           <button class="btn-secondary" type="button" @click="copyQrLink">
             {{ qrCopyStatus === 'ok' ? t('share_copy_ok') : t('share_qr_copy') }}
@@ -846,6 +892,20 @@ function closeQr() {
   color: var(--text-muted);
   margin: 0;
   line-height: 1.4;
+}
+
+.qr-url-input {
+  width: 100%;
+  font-size: 0.72rem;
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg-secondary, var(--bg));
+  color: var(--text-muted);
+  cursor: text;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .qr-modal-actions {
@@ -1057,6 +1117,40 @@ function closeQr() {
   margin: 0;
 }
 
+.nutrition-no-macros-note {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin: 0 0 4px;
+  font-style: italic;
+}
+
+.nutrition-stale-warning {
+  font-size: 0.78rem;
+  color: var(--color-warn, #b45309);
+  background: var(--color-warn-bg, #fef3c7);
+  border-radius: 6px;
+  padding: 4px 8px;
+  margin: 4px 0;
+}
+
+.nutrition-donut--loading {
+  background: conic-gradient(var(--border, #e0e0e0) 0% 100%);
+}
+
+.nutrition-spinner {
+  display: block;
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--border, #e0e0e0);
+  border-top-color: var(--color-accent, #43a047);
+  border-radius: 50%;
+  animation: nutrition-spin 0.8s linear infinite;
+}
+
+@keyframes nutrition-spin {
+  to { transform: rotate(360deg); }
+}
+
 .nutrition-details-group {
   font-size: 0.78rem;
 }
@@ -1066,6 +1160,10 @@ function closeQr() {
   color: var(--text-muted);
   list-style: none;
   user-select: none;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  padding: 4px 0;
 }
 
 .nutrition-details-group summary::before {

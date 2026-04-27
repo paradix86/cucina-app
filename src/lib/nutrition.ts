@@ -349,10 +349,11 @@ export function normalizeRecipeNutrition(value: unknown): RecipeNutrition {
     : [];
   return {
     status,
-    perRecipe:    normalizeNutritionPer100g(v['perRecipe']),
-    perServing:   normalizeNutritionPer100g(v['perServing']),
+    perRecipe:              normalizeNutritionPer100g(v['perRecipe']),
+    perServing:             normalizeNutritionPer100g(v['perServing']),
     servingsUsed,
-    calculatedAt: typeof v['calculatedAt'] === 'string' ? v['calculatedAt'] : undefined,
-    sources:      rawSources.length > 0 ? rawSources : undefined,
+    calculatedAt:           typeof v['calculatedAt']            === 'string' ? v['calculatedAt']            : undefined,
+    ingredientsFingerprint: typeof v['ingredientsFingerprint']  === 'string' ? v['ingredientsFingerprint']  : undefined,
+    sources:                rawSources.length > 0 ? rawSources : undefined,
   };
 }

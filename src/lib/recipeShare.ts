@@ -90,45 +90,66 @@ export function buildShareUrl(recipe: Recipe): { url: string } | { error: 'too_l
 
 const VALID_PREP_TYPES = new Set<string>(['classic', 'bimby', 'airfryer']);
 
-/** Pure decode + validate. Returns null for any invalid/unsafe input. */
+function validateAndSanitizePayload(raw: unknown): SharedRecipePayload | null {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
+  const obj = raw as Record<string, unknown>;
+  if (obj['v'] !== SHARE_SCHEMA_VERSION) return null;
+  if (typeof obj['name'] !== 'string' || !obj['name'].trim()) return null;
+  if (!isStrArray(obj['ingredients']) || (obj['ingredients'] as string[]).length === 0) return null;
+  if (!isStrArray(obj['steps']) || (obj['steps'] as string[]).length === 0) return null;
+
+  const payload: SharedRecipePayload = {
+    v: 1,
+    name: clampStr(obj['name'], 200),
+    ingredients: sanitizeStrArray(obj['ingredients'], 100, 500),
+    steps: sanitizeStrArray(obj['steps'], 100, 2000),
+  };
+  if (typeof obj['category'] === 'string') payload.category = clampStr(obj['category'], 100);
+  if (typeof obj['emoji'] === 'string') payload.emoji = clampStr(obj['emoji'], 10);
+  if (typeof obj['time'] === 'string') payload.time = clampStr(obj['time'], 50);
+  if (typeof obj['servings'] === 'string') payload.servings = clampStr(obj['servings'], 20);
+  if (typeof obj['preparationType'] === 'string' && VALID_PREP_TYPES.has(obj['preparationType'])) {
+    payload.preparationType = obj['preparationType'] as PreparationType;
+  }
+  if (typeof obj['timerMinutes'] === 'number' && obj['timerMinutes'] > 0 && obj['timerMinutes'] < 1440) {
+    payload.timerMinutes = Math.floor(obj['timerMinutes']);
+  }
+  if (typeof obj['notes'] === 'string') payload.notes = clampStr(obj['notes'], 2000);
+  const coverUrl = sanitizeCoverImageUrl(obj['coverImageUrl']);
+  if (coverUrl) payload.coverImageUrl = coverUrl;
+  if (isStrArray(obj['tags'])) payload.tags = sanitizeStrArray(obj['tags'], 20, 50);
+
+  return payload;
+}
+
+/** Pure decode + validate. Returns null for any invalid/unsafe input.
+ *  Tries lz-string decompression first, then base64url plain-JSON as a fallback
+ *  for backward compatibility with any links generated before compression was added.
+ */
 export function decodeShareData(data: unknown): SharedRecipePayload | null {
   if (typeof data !== 'string') return null;
   if (data.length > MAX_ENCODED_DATA_LEN) return null;
+
+  // Primary: lz-string compressed
   try {
     const json = decompressFromEncodedURIComponent(data);
-    if (!json) return null;
-    const raw = JSON.parse(json) as Record<string, unknown>;
-    if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
-    if (raw['v'] !== SHARE_SCHEMA_VERSION) return null;
-    if (typeof raw['name'] !== 'string' || !raw['name'].trim()) return null;
-    if (!isStrArray(raw['ingredients']) || (raw['ingredients'] as string[]).length === 0) return null;
-    if (!isStrArray(raw['steps']) || (raw['steps'] as string[]).length === 0) return null;
-
-    const payload: SharedRecipePayload = {
-      v: 1,
-      name: clampStr(raw['name'], 200),
-      ingredients: sanitizeStrArray(raw['ingredients'], 100, 500),
-      steps: sanitizeStrArray(raw['steps'], 100, 2000),
-    };
-    if (typeof raw['category'] === 'string') payload.category = clampStr(raw['category'], 100);
-    if (typeof raw['emoji'] === 'string') payload.emoji = clampStr(raw['emoji'], 10);
-    if (typeof raw['time'] === 'string') payload.time = clampStr(raw['time'], 50);
-    if (typeof raw['servings'] === 'string') payload.servings = clampStr(raw['servings'], 20);
-    if (typeof raw['preparationType'] === 'string' && VALID_PREP_TYPES.has(raw['preparationType'])) {
-      payload.preparationType = raw['preparationType'] as PreparationType;
+    if (json) {
+      const result = validateAndSanitizePayload(JSON.parse(json));
+      if (result) return result;
     }
-    if (typeof raw['timerMinutes'] === 'number' && raw['timerMinutes'] > 0 && raw['timerMinutes'] < 1440) {
-      payload.timerMinutes = Math.floor(raw['timerMinutes']);
-    }
-    if (typeof raw['notes'] === 'string') payload.notes = clampStr(raw['notes'], 2000);
-    const coverUrl = sanitizeCoverImageUrl(raw['coverImageUrl']);
-    if (coverUrl) payload.coverImageUrl = coverUrl;
-    if (isStrArray(raw['tags'])) payload.tags = sanitizeStrArray(raw['tags'], 20, 50);
+  } catch { /* fall through to legacy path */ }
 
-    return payload;
-  } catch {
-    return null;
-  }
+  // Legacy fallback: plain base64url-encoded JSON
+  try {
+    const base64 = data.replace(/-/g, '+').replace(/_/g, '/');
+    const json = atob(base64);
+    if (json) {
+      const result = validateAndSanitizePayload(JSON.parse(json));
+      if (result) return result;
+    }
+  } catch { /* not base64url either */ }
+
+  return null;
 }
 
 /** Convert a validated payload to a full Recipe for saving. */

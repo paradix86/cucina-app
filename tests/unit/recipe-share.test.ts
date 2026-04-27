@@ -165,6 +165,71 @@ describe('sharedPayloadToRecipe', () => {
   });
 });
 
+describe('decodeShareData — backward compat (base64url fallback)', () => {
+  it('decodes plain base64url-encoded JSON as legacy fallback', () => {
+    const legacyPayload = {
+      v: 1,
+      name: 'Legacy Pasta',
+      ingredients: ['200g pasta', '400g pomodori'],
+      steps: ['Cuoci', 'Servi'],
+    };
+    // base64url: replace + with -, / with _, strip padding
+    const b64 = btoa(JSON.stringify(legacyPayload))
+      .replace(/\+/g, '-')
+      .replace(/\//g, '_')
+      .replace(/=/g, '');
+    const result = decodeShareData(b64);
+    expect(result).not.toBeNull();
+    expect(result!.name).toBe('Legacy Pasta');
+    expect(result!.ingredients).toHaveLength(2);
+  });
+
+  it('returns null for base64url input with invalid structure', () => {
+    const bad = btoa(JSON.stringify({ foo: 'bar' }))
+      .replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+    expect(decodeShareData(bad)).toBeNull();
+  });
+
+  it('returns null for base64url with wrong schema version', () => {
+    const bad = btoa(JSON.stringify({ v: 99, name: 'x', ingredients: ['a'], steps: ['b'] }))
+      .replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+    expect(decodeShareData(bad)).toBeNull();
+  });
+});
+
+describe('compression ratio', () => {
+  it('compressed payload is shorter than plain JSON for a typical recipe', () => {
+    const longRecipe: Recipe = {
+      ...BASE_RECIPE,
+      ingredients: Array(20).fill('100 grammi di ingrediente molto lungo con descrizione dettagliata'),
+      steps: Array(15).fill('Prendere gli ingredienti e procedere con la preparazione seguendo attentamente le istruzioni'),
+      notes: 'Queste note sono molto lunghe e contengono molti dettagli sulla ricetta, incluse varianti e suggerimenti di presentazione.',
+    };
+    const compressed = encodeSharePayload(longRecipe);
+    const plainJson = JSON.stringify({
+      v: 1,
+      name: longRecipe.name,
+      ingredients: longRecipe.ingredients,
+      steps: longRecipe.steps,
+      notes: longRecipe.notes,
+    });
+    expect(compressed.length).toBeLessThan(plainJson.length);
+  });
+
+  it('compressed payload decodes correctly for a large recipe', () => {
+    const largeRecipe: Recipe = {
+      ...BASE_RECIPE,
+      ingredients: Array(30).fill('200 grammi di ingrediente vario'),
+      steps: Array(20).fill('Procedere con la preparazione degli ingredienti'),
+    };
+    const encoded = encodeSharePayload(largeRecipe);
+    const decoded = decodeShareData(encoded);
+    expect(decoded).not.toBeNull();
+    expect(decoded!.ingredients).toHaveLength(30);
+    expect(decoded!.steps).toHaveLength(20);
+  });
+});
+
 describe('buildShareUrl URL format', () => {
   // Note: buildShareUrl requires browser context (window + import.meta.env)
   // These tests verify the URL format logic when available

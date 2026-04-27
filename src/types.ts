@@ -79,6 +79,7 @@ export type RecipeNutrition = {
   servingsUsed?: number;
   calculatedAt?: string;  // ISO date string
   sources?: NutritionSource[];
+  ingredientsFingerprint?: string;  // joined ingredients at calculation time; used to detect staleness
 };
 
 export interface Recipe {
