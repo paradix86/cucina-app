@@ -167,6 +167,51 @@ The app uses a cache-first service worker (`public/sw.js`).
 When changing deployable static assets, **bump `CACHE_NAME`** in `public/sw.js`.
 If runtime behavior looks stale in a deployed environment, clear service workers + caches and reload.
 
+### Service Worker update toast verification
+
+The update toast ("New version available — reload?") only fires in **production builds**.
+`npm run dev` explicitly unregisters all service workers — the update flow cannot be tested there.
+
+**Steps to verify locally:**
+
+1. Build and serve:
+   ```bash
+   npm run build
+   npm run preview
+   ```
+
+2. Open the preview URL (printed by Vite, e.g. `http://localhost:4173/cucina-app/`).
+
+3. Confirm the SW is controlling the page:
+   - DevTools → Application → Service Workers should show the worker as **activated and running**.
+   - Or in the console: `(await navigator.serviceWorker.getRegistration())?.active?.state` → `"activated"`
+
+4. Simulate a new version by editing `dist/sw.js` and changing `CACHE_NAME`:
+   ```
+   cucina-vue-v9  →  cucina-vue-v10
+   ```
+   (The file is a plain copy of `public/sw.js`; edit it directly without rebuilding.)
+
+5. Trigger update detection in the already-open tab — either reload the page, or run in the console:
+   ```js
+   navigator.serviceWorker.getRegistration().then(reg => reg?.update())
+   ```
+
+6. The toast should appear within ~1 second: **"New version available — reload?"**
+
+7. Click **Reload**.
+
+8. Verify:
+   - The page reloads exactly once (no loop).
+   - DevTools → Application → Service Workers shows the new worker as active.
+   - DevTools → Application → Cache Storage contains only the new `CACHE_NAME`; the old cache is gone.
+
+**Troubleshooting:**
+
+- No toast? Confirm you are running a `npm run preview` (production) build, not `npm run dev`.
+- The toast requires an existing active controller. On a **first-ever install** (no previous SW), `navigator.serviceWorker.controller` is `null` when the new SW reaches `installed` state, so the toast is intentionally suppressed. Load the page once, let the SW install and trigger its first-install reload, then repeat the steps above.
+- Use DevTools → Application → Service Workers to inspect `active`, `waiting`, and `installing` states at each step.
+
 ## Deployment
 
 `npm run build` outputs static assets in `dist/`.

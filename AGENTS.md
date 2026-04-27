@@ -86,6 +86,7 @@ Extended reference for AI agents working in this repository. Start with `CLAUDE.
 ## Common pitfalls
 
 - **Stale service worker**: the cache-first SW can serve old JS/CSS in a deployed environment; always bump `CACHE_NAME` after changing cached assets in production
+- **SW update toast only fires in production builds**: `initServiceWorkerUpdates` in `src/composables/useServiceWorker.js` checks `import.meta.env.PROD` and explicitly unregisters all workers in dev mode. The "New version available — reload?" toast cannot appear during `npm run dev`. Use `npm run build && npm run preview` to exercise the full update flow. See **Service Worker update toast verification** in `README.md` for the step-by-step procedure.
 - **Pinia ref unwrapping**: accessing `store.someRef` in script returns the unwrapped value; use `storeToRefs()` when you need the actual `Ref<T>` object
 - **localStorage schema**: saved recipes may be in legacy Italian shape (`nome`, `cat`, `fonte`) or v3 English shape; `normalizeStoredRecipe()` in `storage.ts` handles this — do not bypass it
 - **Storage adapter seam**: `src/lib/storage.ts` is now the public persistence facade over an active synchronous `StorageAdapter`. Keep stores importing the facade, not a concrete backend implementation, so a future IndexedDB/Dexie adapter can be introduced without rewiring store call sites.
