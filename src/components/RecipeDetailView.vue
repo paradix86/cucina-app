@@ -8,6 +8,7 @@ import { useRecipeBookStore } from '../stores/recipeBook';
 import { buildShareUrl } from '../lib/recipeShare';
 import { enrichRecipeNutritionWithProviders } from '../lib/nutritionEnrichment';
 import { NUTRITION_PROVIDERS } from '../lib/nutritionProviders';
+import { parseGramsInput, applyGramsOverrides } from '../lib/nutritionOverride';
 import { deriveEstimatedIngredients, deriveExcludedIngredients, deriveProviderNames, deriveConfidenceLabel } from '../lib/nutritionTransparency';
 
 const props = defineProps({
@@ -36,6 +37,8 @@ const { items: shoppingItems } = storeToRefs(shoppingStore);
 const recipeBookStore = useRecipeBookStore();
 
 const isCalculatingNutrition = ref(false);
+const showNutritionEditor = ref(false);
+const nutritionEditDraft = ref({});
 
 const nutritionContext = computed(() => {
   const n = props.recipe.nutrition;
@@ -288,6 +291,41 @@ function onShoppingAction() {
     selectedServings: servings.value,
     baseServings,
   });
+}
+
+function openNutritionEditor() {
+  const draft = {};
+  for (const ing of props.recipe.ingredientNutrition ?? []) {
+    draft[ing.ingredientName] = ing.grams != null ? String(ing.grams) : '';
+  }
+  nutritionEditDraft.value = draft;
+  showNutritionEditor.value = true;
+}
+
+function cancelNutritionEditor() {
+  showNutritionEditor.value = false;
+  nutritionEditDraft.value = {};
+}
+
+function saveNutritionOverrides() {
+  const overrides = {};
+  for (const [name, raw] of Object.entries(nutritionEditDraft.value)) {
+    overrides[name] = parseGramsInput(String(raw));
+  }
+  const result = applyGramsOverrides({
+    ingredientNutrition: props.recipe.ingredientNutrition ?? [],
+    overrides,
+    ingredients: props.recipe.ingredients ?? [],
+    servings: props.recipe.servings,
+  });
+  const fingerprint = computeIngredientsFingerprint(props.recipe.ingredients);
+  recipeBookStore.update(props.recipe.id, {
+    ingredientNutrition: result.ingredientNutrition,
+    nutrition: { ...result.nutrition, ingredientsFingerprint: fingerprint },
+  });
+  showNutritionEditor.value = false;
+  nutritionEditDraft.value = {};
+  emit('toast', t('nutrition_quantities_updated'), 'success');
 }
 
 function printRecipe() {
@@ -605,6 +643,34 @@ function closeQr() {
             type="button"
             @click="calculateNutrition"
           >{{ isCalculatingNutrition ? '…' : t('calculate_nutrition') }}</button>
+          <button
+            v-if="recipe.ingredientNutrition && recipe.ingredientNutrition.length > 0 && !showNutritionEditor"
+            class="btn-ghost"
+            type="button"
+            @click="openNutritionEditor"
+          >{{ t('nutrition_edit_quantities') }}</button>
+        </div>
+
+        <div v-if="showNutritionEditor" class="nutrition-editor">
+          <div
+            v-for="ing in recipe.ingredientNutrition"
+            :key="ing.ingredientName"
+            class="nutrition-editor-row"
+          >
+            <span class="nutrition-editor-name">{{ ing.ingredientName }}</span>
+            <input
+              class="nutrition-editor-input"
+              type="text"
+              inputmode="decimal"
+              :value="nutritionEditDraft[ing.ingredientName]"
+              @input="nutritionEditDraft[ing.ingredientName] = $event.target.value"
+            />
+            <span class="nutrition-editor-unit">g</span>
+          </div>
+          <div class="nutrition-editor-actions">
+            <button class="btn-primary" type="button" @click="saveNutritionOverrides">{{ t('recipe_edit_save') }}</button>
+            <button class="btn-ghost" type="button" @click="cancelNutritionEditor">{{ t('recipe_edit_cancel') }}</button>
+          </div>
         </div>
       </div>
 
@@ -1097,9 +1163,65 @@ function closeQr() {
 
 .nutrition-footer {
   display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
 .nutrition-footer button {
+  flex: 1;
+  min-width: 120px;
+}
+
+.nutrition-editor {
+  border-top: 1px solid var(--border);
+  padding-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.nutrition-editor-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.nutrition-editor-name {
+  flex: 1;
+  font-size: 0.85rem;
+  color: var(--text);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.nutrition-editor-input {
+  width: 72px;
+  flex-shrink: 0;
+  padding: 4px 6px;
+  font-size: 0.9rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text);
+  text-align: right;
+}
+
+.nutrition-editor-unit {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  flex-shrink: 0;
+  width: 12px;
+}
+
+.nutrition-editor-actions {
+  display: flex;
+  gap: 8px;
+  padding-top: 6px;
+}
+
+.nutrition-editor-actions button {
   flex: 1;
 }
 

@@ -204,6 +204,93 @@ test('estimated quantities: shows transparency section for tbsp ingredient', asy
   await expect(estimatedDetails).toBeVisible();
 });
 
+test('manual override: edit quantities updates kcal, sets manual badge, persists on reload', async ({ page }) => {
+  // Seed a recipe that already has calculated nutrition so the editor button is immediately visible.
+  // pasta: 350 kcal/100g, proteinG 13, carbsG 70, fatG 1.5 → at 200g: 700 kcal
+  const preCalculatedRecipe = {
+    id:              'nutrition-e2e-override',
+    name:            'Override Test',
+    source:          'manual',
+    preparationType: 'classic',
+    ingredients:     ['200 g pasta'],
+    steps:           ['Cuoci'],
+    servings:        '2',
+    ingredientNutrition: [
+      {
+        ingredientName: 'pasta',
+        grams: 200,
+        gramsEstimated: false,
+        source: { provider: 'openfoodfacts' },
+        nutritionPer100g: { kcal: 350, proteinG: 13, carbsG: 70, fatG: 1.5, fiberG: 2.7 },
+      },
+    ],
+    nutrition: {
+      status: 'complete',
+      perServing: { kcal: 350, proteinG: 13, carbsG: 70, fatG: 1.5, fiberG: 2.7 },
+      perRecipe:  { kcal: 700, proteinG: 26, carbsG: 140, fatG: 3.0, fiberG: 5.4 },
+      servingsUsed: 2,
+      calculatedAt: new Date().toISOString(),
+      ingredientsFingerprint: '200 g pasta',
+    },
+  };
+
+  await seedState(page, { recipes: [preCalculatedRecipe] });
+  await gotoRoute(page, 'recipe-book/nutrition-e2e-override');
+
+  await expect(page.locator('#saved-detail-view')).toBeVisible();
+
+  // Badge should show complete initially
+  const badge = page.locator('.nutrition-badge');
+  await expect(badge).toHaveClass(/nutrition-badge--complete/);
+
+  // "Edit quantities" button should be visible
+  const editBtn = page.locator('.nutrition-footer button').filter({ hasText: /edit|quantit/i }).first();
+  await expect(editBtn).toBeVisible();
+  await editBtn.click();
+
+  // Editor rows should appear
+  const editorRow = page.locator('.nutrition-editor-row').first();
+  await expect(editorRow).toBeVisible();
+
+  // Change grams from 200 to 100
+  const input = page.locator('.nutrition-editor-input').first();
+  await input.fill('100');
+
+  // Save
+  const saveBtn = page.locator('.nutrition-editor-actions button').first();
+  await saveBtn.click();
+
+  // Editor should close
+  await expect(page.locator('.nutrition-editor')).not.toBeVisible();
+
+  // Badge should now be "manual"
+  await expect(badge).toHaveClass(/nutrition-badge--manual/);
+
+  // Kcal should be lower (100g → 350 kcal per recipe vs 700 kcal before)
+  const kcalVal = page.locator('.nutrition-kcal-val');
+  const kcalText = await kcalVal.textContent();
+  const kcal = parseInt(kcalText ?? '0', 10);
+  // At 100g pasta (350 kcal/100g), per serving of 2: 175 kcal each
+  expect(kcal).toBeLessThan(400);
+  expect(kcal).toBeGreaterThan(0);
+
+  // Reload and verify persistence
+  await gotoRoute(page, 'recipe-book/nutrition-e2e-override');
+  await expect(page.locator('.nutrition-badge')).toHaveClass(/nutrition-badge--manual/);
+
+  const stored = await page.evaluate((key: string) => {
+    const raw = localStorage.getItem(key);
+    if (!raw) return null;
+    const recipes = JSON.parse(raw);
+    return recipes.find((r: { id: string }) => r.id === 'nutrition-e2e-override') ?? null;
+  }, STORAGE_KEY);
+
+  expect(stored?.nutrition?.status).toBe('manual');
+  expect(stored?.ingredientNutrition?.[0]?.grams).toBe(100);
+  expect(stored?.ingredientNutrition?.[0]?.gramsEstimated).toBe(false);
+  expect(stored?.ingredientNutrition?.[0]?.source?.provider).toBe('manual');
+});
+
 test('not-included: shows excluded ingredient after partial calculation', async ({ page }) => {
   await seedState(page, { recipes: [partialRecipe] });
   await gotoRoute(page, 'recipe-book/nutrition-e2e-partial');
