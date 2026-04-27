@@ -8,7 +8,7 @@ import { useRecipeBookStore } from '../stores/recipeBook';
 import { buildShareUrl } from '../lib/recipeShare';
 import { enrichRecipeNutritionWithProviders } from '../lib/nutritionEnrichment';
 import { NUTRITION_PROVIDERS } from '../lib/nutritionProviders';
-import { deriveEstimatedIngredients, deriveExcludedIngredients, deriveProviderNames } from '../lib/nutritionTransparency';
+import { deriveEstimatedIngredients, deriveExcludedIngredients, deriveProviderNames, deriveConfidenceLabel } from '../lib/nutritionTransparency';
 
 const props = defineProps({
   recipe: { type: Object, required: true },
@@ -68,11 +68,12 @@ const macroDonut = computed(() => {
 
 const nutritionTransparency = computed(() => {
   const ingNutrition = props.recipe.ingredientNutrition ?? [];
-  const estimated = deriveEstimatedIngredients(ingNutrition);
-  const excluded  = deriveExcludedIngredients(props.recipe.ingredients ?? [], ingNutrition);
-  const sources   = deriveProviderNames(props.recipe.nutrition?.sources);
+  const estimated   = deriveEstimatedIngredients(ingNutrition);
+  const excluded    = deriveExcludedIngredients(props.recipe.ingredients ?? [], ingNutrition);
+  const sources     = deriveProviderNames(props.recipe.nutrition?.sources);
+  const confidence  = deriveConfidenceLabel(props.recipe.nutrition?.sources);
   if (estimated.length === 0 && excluded.length === 0 && sources.length === 0) return null;
-  return { estimated, excluded, sources };
+  return { estimated, excluded, sources, confidence };
 });
 
 async function calculateNutrition() {
@@ -540,7 +541,7 @@ function closeQr() {
 
         <div v-if="nutritionTransparency" class="nutrition-transparency">
           <p v-if="nutritionTransparency.sources.length" class="nutrition-sources">
-            {{ t('nutrition_sources') }}: {{ nutritionTransparency.sources.join(', ') }}
+            {{ t('nutrition_sources') }}: {{ nutritionTransparency.sources.join(', ') }}<span v-if="nutritionTransparency.confidence"> · {{ t('nutrition_confidence_' + nutritionTransparency.confidence) }}</span>
           </p>
           <details v-if="nutritionTransparency.estimated.length" class="nutrition-details-group">
             <summary>{{ t('nutrition_estimated_quantities') }} ({{ nutritionTransparency.estimated.length }})</summary>

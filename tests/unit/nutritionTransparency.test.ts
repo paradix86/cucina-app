@@ -3,6 +3,7 @@ import {
   deriveEstimatedIngredients,
   deriveExcludedIngredients,
   deriveProviderNames,
+  deriveConfidenceLabel,
 } from '../../src/lib/nutritionTransparency';
 import type { IngredientNutrition, NutritionSource } from '../../src/types';
 
@@ -200,5 +201,73 @@ describe('deriveProviderNames', () => {
   it('handles unknown provider id gracefully', () => {
     const result = deriveProviderNames([{ provider: 'unknown' }]);
     expect(result).toEqual(['Unknown']);
+  });
+});
+
+// ─── deriveConfidenceLabel ────────────────────────────────────────────────────
+
+describe('deriveConfidenceLabel', () => {
+  it('returns undefined for undefined sources', () => {
+    expect(deriveConfidenceLabel(undefined)).toBeUndefined();
+  });
+
+  it('returns undefined for empty sources array', () => {
+    expect(deriveConfidenceLabel([])).toBeUndefined();
+  });
+
+  it('returns undefined when all sources have no confidence value', () => {
+    const sources: NutritionSource[] = [{ provider: 'manual' }, { provider: 'openfoodfacts' }];
+    expect(deriveConfidenceLabel(sources)).toBeUndefined();
+  });
+
+  it('returns "high" for average confidence >= 0.75', () => {
+    expect(deriveConfidenceLabel([{ provider: 'manual', confidence: 0.95 }])).toBe('high');
+    expect(deriveConfidenceLabel([{ provider: 'manual', confidence: 0.75 }])).toBe('high');
+  });
+
+  it('returns "medium" for average confidence in [0.5, 0.75)', () => {
+    expect(deriveConfidenceLabel([{ provider: 'manual', confidence: 0.6 }])).toBe('medium');
+    expect(deriveConfidenceLabel([{ provider: 'manual', confidence: 0.5 }])).toBe('medium');
+  });
+
+  it('returns "low" for average confidence < 0.5', () => {
+    expect(deriveConfidenceLabel([{ provider: 'manual', confidence: 0.3 }])).toBe('low');
+    expect(deriveConfidenceLabel([{ provider: 'manual', confidence: 0.0 }])).toBe('low');
+  });
+
+  it('averages confidence across multiple sources', () => {
+    // (0.9 + 0.6) / 2 = 0.75 → 'high'
+    const sources: NutritionSource[] = [
+      { provider: 'manual',        confidence: 0.9 },
+      { provider: 'openfoodfacts', confidence: 0.6 },
+    ];
+    expect(deriveConfidenceLabel(sources)).toBe('high');
+  });
+
+  it('ignores sources without confidence when computing average', () => {
+    // Only 0.9 counts; the source without confidence is excluded
+    const sources: NutritionSource[] = [
+      { provider: 'manual',        confidence: 0.9 },
+      { provider: 'openfoodfacts' },
+    ];
+    expect(deriveConfidenceLabel(sources)).toBe('high');
+  });
+
+  it('mixed low+high averages to medium', () => {
+    // (0.9 + 0.2) / 2 = 0.55 → 'medium'
+    const sources: NutritionSource[] = [
+      { provider: 'manual',        confidence: 0.9 },
+      { provider: 'openfoodfacts', confidence: 0.2 },
+    ];
+    expect(deriveConfidenceLabel(sources)).toBe('medium');
+  });
+
+  it('returns "low" when average is just below 0.5', () => {
+    // (0.6 + 0.3) / 2 = 0.45 → 'low'
+    const sources: NutritionSource[] = [
+      { provider: 'manual',        confidence: 0.6 },
+      { provider: 'openfoodfacts', confidence: 0.3 },
+    ];
+    expect(deriveConfidenceLabel(sources)).toBe('low');
   });
 });

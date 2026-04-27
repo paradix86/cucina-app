@@ -39,6 +39,27 @@ export function deriveExcludedIngredients(
   });
 }
 
+export type ConfidenceLabel = 'high' | 'medium' | 'low';
+
+/**
+ * Derive a human-readable confidence bucket from the per-ingredient source list.
+ * Uses the average confidence across all sources that carry a value.
+ * Returns undefined when no confidence values are present.
+ */
+export function deriveConfidenceLabel(
+  sources: NutritionSource[] | undefined,
+): ConfidenceLabel | undefined {
+  if (!sources || sources.length === 0) return undefined;
+  const values = sources
+    .map(s => s.confidence)
+    .filter((c): c is number => c !== undefined);
+  if (values.length === 0) return undefined;
+  const avg = values.reduce((a, b) => a + b, 0) / values.length;
+  if (avg >= 0.75) return 'high';
+  if (avg >= 0.5)  return 'medium';
+  return 'low';
+}
+
 const PROVIDER_NAMES: Record<string, string> = {
   manual:         'Manual',
   openfoodfacts:  'OpenFoodFacts',
