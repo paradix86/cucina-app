@@ -237,6 +237,10 @@ type UnitConversionEntry = {
 // Density (g/ml) for water-like liquids where volumetric measurement is common.
 // Only ingredients with a well-known, stable density are included.
 // Do NOT add oils, syrups, or anything with density varying by brand/temperature.
+export function computeIngredientsFingerprint(ingredients: string[] | null | undefined): string {
+  return (ingredients ?? []).join('|');
+}
+
 export const LIQUID_DENSITIES: Readonly<Record<string, number>> = {
   acqua:                         1.00,
   latte:                         1.03,

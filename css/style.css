@@ -43,6 +43,9 @@
   --nutrition-carbs:        #f59e0b;
   --nutrition-fat:          #ef4444;
   --nutrition-fiber:        #0d9488;
+  --color-warn:             #b45309;
+  --color-warn-bg:          #fef3c7;
+  --color-accent:           #43a047;
 }
 
 :root[data-theme="light"] {
@@ -68,6 +71,9 @@
   --nutrition-carbs:        #f59e0b;
   --nutrition-fat:          #ef4444;
   --nutrition-fiber:        #0d9488;
+  --color-warn:             #b45309;
+  --color-warn-bg:          #fef3c7;
+  --color-accent:           #43a047;
 }
 
 :root[data-theme="dark"] {
@@ -94,7 +100,10 @@
   --nutrition-protein:      #4ade80;
   --nutrition-carbs:        #fbbf24;
   --nutrition-fat:          #f87171;
-  --nutrition-fiber:        #86efac;
+  --nutrition-fiber:        #5eead4;
+  --color-warn:             #fbbf24;
+  --color-warn-bg:          rgba(251, 191, 36, 0.15);
+  --color-accent:           #4ade80;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -123,6 +132,9 @@
     --nutrition-carbs:        #fbbf24;
     --nutrition-fat:          #f87171;
     --nutrition-fiber:        #5eead4;
+    --color-warn:             #fbbf24;
+    --color-warn-bg:          rgba(251, 191, 36, 0.15);
+    --color-accent:           #4ade80;
   }
 }
 

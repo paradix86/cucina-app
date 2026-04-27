@@ -153,6 +153,29 @@ export function applyNutritionOverrides(params: {
     };
   });
 
+  // Create new entries for ingredients referenced in overrides but not yet in
+  // ingredientNutrition (e.g. unmatched ingredients the user manually filled in).
+  const existingNames = new Set(ingredientNutrition.map(ing => ing.ingredientName));
+  const candidateNames = new Set([
+    ...Object.keys(gramsOverrides),
+    ...Object.keys(per100gOverrides),
+  ].filter(name => !existingNames.has(name)));
+
+  for (const name of candidateNames) {
+    const newGrams     = gramsOverrides[name];
+    const per100gPatch = per100gOverrides[name];
+    const hasPer100g   = per100gPatch !== undefined &&
+      Object.values(per100gPatch).some(v => v !== undefined);
+    if (newGrams === undefined && !hasPer100g) continue;
+    updated.push({
+      ingredientName:   name,
+      grams:            newGrams,
+      gramsEstimated:   newGrams !== undefined ? false : undefined,
+      source:           { provider: 'manual' as const, userEdited: true },
+      nutritionPer100g: hasPer100g ? { ...per100gPatch } : undefined,
+    });
+  }
+
   const base = calculateRecipeNutrition({ ingredients, ingredientNutrition: updated, servings });
   const nutrition: RecipeNutrition = {
     ...base,

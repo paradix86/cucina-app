@@ -217,7 +217,7 @@ test('manual override: edit quantities updates kcal, sets manual badge, persists
     servings:        '2',
     ingredientNutrition: [
       {
-        ingredientName: 'pasta',
+        ingredientName: '200 g pasta',
         grams: 200,
         gramsEstimated: false,
         source: { provider: 'openfoodfacts' },
@@ -244,7 +244,7 @@ test('manual override: edit quantities updates kcal, sets manual badge, persists
   await expect(badge).toHaveClass(/nutrition-badge--complete/);
 
   // "Edit quantities" button should be visible
-  const editBtn = page.locator('.nutrition-footer button').filter({ hasText: /edit|quantit/i }).first();
+  const editBtn = page.locator('.nutrition-details-edit button').filter({ hasText: /edit|quantit/i }).first();
   await expect(editBtn).toBeVisible();
   await editBtn.click();
 
@@ -268,6 +268,7 @@ test('manual override: edit quantities updates kcal, sets manual badge, persists
 
   // Kcal should be lower (100g → 350 kcal per recipe vs 700 kcal before)
   const kcalVal = page.locator('.nutrition-kcal-val');
+  await page.waitForTimeout(800); // wait for count-up animation (700ms) to finish
   const kcalText = await kcalVal.textContent();
   const kcal = parseInt(kcalText ?? '0', 10);
   // At 100g pasta (350 kcal/100g), per serving of 2: 175 kcal each
@@ -324,7 +325,7 @@ const per100gBaseRecipe = {
   servings:        '2',
   ingredientNutrition: [
     {
-      ingredientName: 'pasta',
+      ingredientName: '200 g pasta',
       grams: 200,
       gramsEstimated: false,
       source: { provider: 'openfoodfacts' },
@@ -348,7 +349,7 @@ test('per-100g edit: protein change updates macro display and persists', async (
   await expect(page.locator('#saved-detail-view')).toBeVisible();
 
   // Open the editor
-  const editBtn = page.locator('.nutrition-footer button').filter({ hasText: /edit|quantit/i }).first();
+  const editBtn = page.locator('.nutrition-details-edit button').filter({ hasText: /edit|quantit/i }).first();
   await expect(editBtn).toBeVisible();
   await editBtn.click();
 
@@ -381,6 +382,7 @@ test('per-100g edit: protein change updates macro display and persists', async (
   // Protein macro row should now reflect the doubled value
   const proteinRow = page.locator('.nutrition-macro-row--protein .nutrition-macro-val');
   await expect(proteinRow).toBeVisible();
+  await page.waitForTimeout(800); // wait for count-up animation (700ms) to finish
   const proteinText = await proteinRow.textContent();
   const proteinVal = parseFloat(proteinText?.replace('g', '') ?? '0');
   // At 200g with 26g protein/100g → 52g protein per recipe, per serving = 26g
@@ -408,7 +410,7 @@ test('per-100g edit: comma decimal accepted (10,5 → 10.5)', async ({ page }) =
 
   await expect(page.locator('#saved-detail-view')).toBeVisible();
 
-  const editBtn = page.locator('.nutrition-footer button').filter({ hasText: /edit|quantit/i }).first();
+  const editBtn = page.locator('.nutrition-details-edit button').filter({ hasText: /edit|quantit/i }).first();
   await editBtn.click();
 
   const expandBtn = page.locator('.nutrition-editor-expand-btn').first();
@@ -437,7 +439,7 @@ test('per-100g edit: expand panel toggle works — expand then collapse', async 
 
   await expect(page.locator('#saved-detail-view')).toBeVisible();
 
-  const editBtn = page.locator('.nutrition-footer button').filter({ hasText: /edit|quantit/i }).first();
+  const editBtn = page.locator('.nutrition-details-edit button').filter({ hasText: /edit|quantit/i }).first();
   await editBtn.click();
 
   const expandBtn = page.locator('.nutrition-editor-expand-btn').first();
@@ -507,7 +509,7 @@ test('QA: missing grams → setting grams removes ingredient from not-included l
   await expect(notIncludedDetails).toBeVisible();
 
   // Open editor
-  const editBtn = page.locator('.nutrition-footer button').filter({ hasText: /edit|quantit|modific/i }).first();
+  const editBtn = page.locator('.nutrition-details-edit button').filter({ hasText: /edit|quantit|modific/i }).first();
   await editBtn.click();
 
   // Find the "sale q.b." row — it's the first (index 0 based on ingredient order)
@@ -584,7 +586,7 @@ test('QA: missing nutrition → per-100g edit removes ingredient from not-includ
   await expect(notIncludedDetails).toBeVisible();
 
   // Open editor
-  const editBtn = page.locator('.nutrition-footer button').filter({ hasText: /edit|quantit|modific/i }).first();
+  const editBtn = page.locator('.nutrition-details-edit button').filter({ hasText: /edit|quantit|modific/i }).first();
   await editBtn.click();
 
   // Expand per-100g for the first ingredient ("ingrediente speciale 100g")
@@ -611,6 +613,7 @@ test('QA: missing nutrition → per-100g edit removes ingredient from not-includ
   await expect(notIncludedDetails).not.toBeVisible();
 
   // Kcal increased (ingrediente added 100 kcal/100g × 100g = 100 more kcal to recipe)
+  await page.waitForTimeout(800); // wait for count-up animation (700ms) to finish
   const kcalText = await page.locator('.nutrition-kcal-val').textContent();
   const kcal = parseInt(kcalText ?? '0', 10);
   expect(kcal).toBeGreaterThan(350); // was 350 per serving (pasta only), now includes speciale
@@ -675,7 +678,7 @@ test('QA: estimated grams → manual grams removes ingredient from estimated sec
   await expect(estimatedDetails).toBeVisible();
 
   // Open editor
-  const editBtn = page.locator('.nutrition-footer button').filter({ hasText: /edit|quantit|modific/i }).first();
+  const editBtn = page.locator('.nutrition-details-edit button').filter({ hasText: /edit|quantit|modific/i }).first();
   await editBtn.click();
 
   // Edit grams for "1 cucchiaio olio" (first row) from 10 to 12
@@ -756,7 +759,7 @@ test('olio grams: doubling grams from 10 to 20 visibly increases kcal', async ({
   expect(kcalBefore).toBeGreaterThan(300);
 
   // Open editor
-  const editBtn = page.locator('.nutrition-footer button').filter({ hasText: /edit|quantit|modific/i }).first();
+  const editBtn = page.locator('.nutrition-details-edit button').filter({ hasText: /edit|quantit|modific/i }).first();
   await editBtn.click();
   await expect(page.locator('.nutrition-editor')).toBeVisible();
 
@@ -772,6 +775,7 @@ test('olio grams: doubling grams from 10 to 20 visibly increases kcal', async ({
   await expect(page.locator('.nutrition-badge')).toHaveClass(/nutrition-badge--manual/);
 
   // Kcal must have increased (≈438 per serving now vs ≈394 before)
+  await page.waitForTimeout(800); // wait for count-up animation (700ms) to finish
   const kcalAfter = parseInt((await kcalLocator.textContent()) ?? '0', 10);
   expect(kcalAfter).toBeGreaterThan(kcalBefore);
   expect(kcalAfter).toBeGreaterThan(400);
@@ -854,6 +858,7 @@ test('Recalculate preserves ingredients with source.userEdited=true', async ({ p
 
   // olio should still contribute its 20g (not reverted to estimated 10g)
   // So kcal should be ≥ the 20g value (~438 per serving), not the 10g value (~394)
+  await page.waitForTimeout(800); // wait for count-up animation (700ms) to finish
   const kcalAfter = parseInt((await kcalLocator.textContent()) ?? '0', 10);
   expect(kcalAfter).toBeGreaterThan(400);
 
@@ -909,6 +914,7 @@ test('base_ingredients: porridge recipe calculates kcal from oats, milk, and cin
   // kcal should appear (oats 60g + milk 250ml contribute ~350 kcal)
   const kcalVal = page.locator('.nutrition-kcal-val');
   await expect(kcalVal).not.toHaveText('—', { timeout: 8000 });
+  await page.waitForTimeout(800); // wait for count-up animation (700ms) to finish
   const kcalText = await kcalVal.textContent();
   const kcal = parseInt(kcalText ?? '0', 10);
   expect(kcal).toBeGreaterThan(100);
@@ -967,4 +973,108 @@ test('base_ingredients: porridge kcal and nutrition persist after reload', async
   // Should still show kcal without recalculating
   await expect(page.locator('.nutrition-kcal-val')).not.toHaveText('—');
   await expect(page.locator('.nutrition-badge')).not.toHaveClass(/nutrition-badge--missing/);
+});
+
+// ─── no_match excluded ingredient: editor coverage ───────────────────────────
+
+test('no_match: excluded ingredient appears in editor and can be completed manually', async ({ page }) => {
+  // Recipe with one recognised ingredient and one fully unmatched one (no entry in ingredientNutrition).
+  // "ingrediente sconosciuto 50g" has no match → excluded with reason no_match.
+  const recipe = {
+    id:              'nutrition-e2e-no-match',
+    name:            'No Match Test',
+    source:          'manual',
+    preparationType: 'classic',
+    ingredients:     ['200 g pasta', 'ingrediente sconosciuto 50g'],
+    steps:           ['Cuoci'],
+    servings:        '2',
+    ingredientNutrition: [
+      {
+        ingredientName: '200 g pasta',
+        grams: 200,
+        gramsEstimated: false,
+        source: { provider: 'openfoodfacts', confidence: 0.95 },
+        nutritionPer100g: { kcal: 350, proteinG: 13, carbsG: 70, fatG: 1.5, fiberG: 2.7 },
+      },
+      // No entry for 'ingrediente sconosciuto 50g' → it will be listed as no_match
+    ],
+    nutrition: {
+      status: 'partial',
+      perServing: { kcal: 350, proteinG: 13, carbsG: 70, fatG: 1.5, fiberG: 2.7 },
+      perRecipe:  { kcal: 700, proteinG: 26, carbsG: 140, fatG: 3.0, fiberG: 5.4 },
+      servingsUsed: 2,
+      calculatedAt: new Date().toISOString(),
+      ingredientsFingerprint: '200 g pasta|ingrediente sconosciuto 50g',
+    },
+  };
+
+  await seedState(page, { recipes: [recipe] });
+  await gotoRoute(page, 'recipe-book/nutrition-e2e-no-match');
+
+  await expect(page.locator('#saved-detail-view')).toBeVisible();
+  await expect(page.locator('.nutrition-badge')).toHaveClass(/nutrition-badge--partial/);
+
+  // Open the editor — button must be visible (recipe.nutrition exists and ingredients.length > 0)
+  const editBtn = page.locator('.nutrition-details-edit button').filter({ hasText: /edit|quantit|modific/i }).first();
+  await expect(editBtn).toBeVisible();
+  await editBtn.click();
+
+  // Editor must show TWO rows: one per recipe.ingredients entry (source of truth)
+  const editorIngredients = page.locator('.nutrition-editor-ingredient');
+  await expect(editorIngredients).toHaveCount(2);
+
+  // The unmatched ingredient row must be present with its name
+  const unmatchedRow = editorIngredients.filter({ hasText: /ingrediente sconosciuto/i });
+  await expect(unmatchedRow).toBeVisible();
+
+  // Fill grams for the unmatched ingredient (second row, index 1)
+  const gramsInputs = page.locator('.nutrition-editor-row .nutrition-editor-input');
+  await gramsInputs.nth(1).fill('50');
+
+  // Expand per-100g for that row and fill kcal + other fields
+  const expandBtns = page.locator('.nutrition-editor-expand-btn');
+  await expandBtns.nth(1).click();
+  const per100gSection = page.locator('.nutrition-editor-ingredient').nth(1).locator('.nutrition-editor-per100g');
+  await expect(per100gSection).toBeVisible();
+  const per100gInputs = per100gSection.locator('.nutrition-editor-input');
+  await per100gInputs.nth(0).fill('200');  // kcal
+  await per100gInputs.nth(1).fill('10');   // proteinG
+  await per100gInputs.nth(2).fill('30');   // carbsG
+  await per100gInputs.nth(3).fill('5');    // fatG
+  await per100gInputs.nth(4).fill('2');    // fiberG
+
+  // Save
+  await page.locator('.nutrition-editor-actions button').first().click();
+  await expect(page.locator('.nutrition-editor')).not.toBeVisible();
+
+  // Badge flips to manual
+  await expect(page.locator('.nutrition-badge')).toHaveClass(/nutrition-badge--manual/);
+
+  // Not-included section should be gone (both ingredients now have grams + per100g)
+  const notIncludedDetails = page.locator('.nutrition-details-group').filter({ hasText: /non inclus|not includ/i });
+  await expect(notIncludedDetails).not.toBeVisible();
+
+  // Kcal increased beyond pasta-only value (700 kcal) by adding the new ingredient
+  await page.waitForTimeout(800); // wait for count-up animation (700ms) to finish
+  const kcalText = await page.locator('.nutrition-kcal-val').textContent();
+  const kcal = parseInt(kcalText ?? '0', 10);
+  // 200g pasta = 700 kcal + 50g @ 200kcal/100g = 100 kcal → total 800; perServing ≈ 400
+  expect(kcal).toBeGreaterThan(350);
+
+  // Persisted: new entry must be in ingredientNutrition
+  const stored = await page.evaluate((key: string) => {
+    const raw = localStorage.getItem(key);
+    if (!raw) return null;
+    return JSON.parse(raw).find((r: { id: string }) => r.id === 'nutrition-e2e-no-match') ?? null;
+  }, STORAGE_KEY);
+
+  const newEntry = stored?.ingredientNutrition?.find(
+    (e: { ingredientName: string }) => e.ingredientName === 'ingrediente sconosciuto 50g',
+  );
+  expect(newEntry).toBeDefined();
+  expect(newEntry?.grams).toBe(50);
+  expect(newEntry?.gramsEstimated).toBe(false);
+  expect(newEntry?.source?.provider).toBe('manual');
+  expect(newEntry?.nutritionPer100g?.kcal).toBe(200);
+  expect(stored?.nutrition?.status).toBe('manual');
 });

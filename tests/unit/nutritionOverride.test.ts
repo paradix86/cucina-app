@@ -406,6 +406,63 @@ describe('manual override coverage', () => {
     expect(after.perRecipe?.kcal).toBeCloseTo((before.perRecipe?.kcal ?? 0) * 2, 1);
   });
 
+  it('creates a new entry for an unmatched ingredient when both grams and per100g are supplied', () => {
+    const { ingredientNutrition, nutrition } = applyNutritionOverrides({
+      ingredientNutrition: [],
+      gramsOverrides:  { 'olio evo': 10 },
+      per100gOverrides: { 'olio evo': { kcal: 884, fatG: 100, proteinG: 0, carbsG: 0, fiberG: 0 } },
+      ingredients: ['olio evo'],
+    });
+
+    expect(ingredientNutrition).toHaveLength(1);
+    expect(ingredientNutrition[0].ingredientName).toBe('olio evo');
+    expect(ingredientNutrition[0].grams).toBe(10);
+    expect(ingredientNutrition[0].gramsEstimated).toBe(false);
+    expect(ingredientNutrition[0].source.provider).toBe('manual');
+    expect(ingredientNutrition[0].nutritionPer100g?.kcal).toBe(884);
+    expect(nutrition.status).toBe('manual');
+    expect((nutrition.perRecipe?.kcal ?? 0)).toBeGreaterThan(0);
+  });
+
+  it('creates a new entry for an unmatched ingredient with grams only (still missing nutrition)', () => {
+    const { ingredientNutrition, nutrition } = applyNutritionOverrides({
+      ingredientNutrition: [],
+      gramsOverrides:  { 'sale q.b.': 5 },
+      per100gOverrides: {},
+      ingredients: ['sale q.b.'],
+    });
+
+    expect(ingredientNutrition).toHaveLength(1);
+    expect(ingredientNutrition[0].grams).toBe(5);
+    expect(ingredientNutrition[0].nutritionPer100g).toBeUndefined();
+    // No per100g → contributes zero kcal
+    expect(nutrition.perRecipe?.kcal ?? 0).toBe(0);
+  });
+
+  it('creates a new entry for an unmatched ingredient with per100g only (still missing grams)', () => {
+    const { ingredientNutrition } = applyNutritionOverrides({
+      ingredientNutrition: [],
+      gramsOverrides:  {},
+      per100gOverrides: { 'olio evo': { kcal: 884, fatG: 100, proteinG: 0, carbsG: 0, fiberG: 0 } },
+      ingredients: ['olio evo'],
+    });
+
+    expect(ingredientNutrition).toHaveLength(1);
+    expect(ingredientNutrition[0].grams).toBeUndefined();
+    expect(ingredientNutrition[0].nutritionPer100g?.kcal).toBe(884);
+  });
+
+  it('does not create a new entry when an unmatched ingredient has empty grams and no per100g', () => {
+    const { ingredientNutrition } = applyNutritionOverrides({
+      ingredientNutrition: [],
+      gramsOverrides:  { 'sale q.b.': undefined },
+      per100gOverrides: { 'sale q.b.': { kcal: undefined, proteinG: undefined, carbsG: undefined, fatG: undefined, fiberG: undefined } },
+      ingredients: ['sale q.b.'],
+    });
+
+    expect(ingredientNutrition).toHaveLength(0);
+  });
+
   it('manual grams without nutritionPer100g leaves ingredient excluded from totals', () => {
     // sale with grams set but no per-100g data: isUsable=false → zero contribution
     const ing: IngredientNutrition = {

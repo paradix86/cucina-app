@@ -6,6 +6,16 @@ export type ChangelogEntry = {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '0.10.2',
+    date: '2026-04-27',
+    changes: [
+      'Nutrition summary extracted into its own component — smoother animation, reduced view complexity',
+      'Nutrition editor now shows all recipe ingredients (including unmatched ones) so manual values can be filled in for every ingredient',
+      'Manual per-100g overrides for unmatched ingredients now generate new nutrition entries and update totals correctly',
+      'New CSS design tokens: --color-warn, --color-warn-bg, --color-accent (consistent theming across light/dark/system)',
+    ],
+  },
+  {
     version: '0.10.1',
     date: '2026-04-27',
     changes: [

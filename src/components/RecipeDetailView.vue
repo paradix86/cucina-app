@@ -1,5 +1,5 @@
 <script setup>
-import { computed, nextTick, onUnmounted, ref, watch } from 'vue';
+import { computed, nextTick, ref, watch } from 'vue';
 import { storeToRefs } from 'pinia';
 import { buildStepsHtml, formatTimerLabel, getPreparationInfo, getSourceDomainLabel, joinMetaParts, scaleIngredients, suggestMealOccasions } from '../lib/recipes.js';
 import { t } from '../lib/i18n.js';
@@ -9,7 +9,9 @@ import { buildShareUrl } from '../lib/recipeShare';
 import { enrichRecipeNutritionWithProviders } from '../lib/nutritionEnrichment';
 import { NUTRITION_PROVIDERS } from '../lib/nutritionProviders';
 import { parseGramsInput, parseNutrientInput, applyNutritionOverrides } from '../lib/nutritionOverride';
+import { computeIngredientsFingerprint } from '../lib/nutrition';
 import { deriveEstimatedIngredients, deriveExcludedIngredients, deriveProviderNames, deriveConfidenceLabel } from '../lib/nutritionTransparency';
+import NutritionSummary from './NutritionSummary.vue';
 
 const props = defineProps({
   recipe: { type: Object, required: true },
@@ -36,8 +38,9 @@ const shoppingStore = useShoppingListStore();
 const { items: shoppingItems } = storeToRefs(shoppingStore);
 const recipeBookStore = useRecipeBookStore();
 
-const isCalculatingNutrition = ref(false);
-const showNutritionEditor    = ref(false);
+const isCalculatingNutrition  = ref(false);
+const showNutritionEditor     = ref(false);
+const showNutritionDetails    = ref(true);
 const nutritionEditDraft     = ref({});   // { [ingredientName]: gramsString }
 const per100gEditDraft       = ref({});   // { [ingredientName]: { kcal, proteinG, carbsG, fatG, fiberG } → string }
 const expandedPer100gRows    = ref({});   // { [ingredientName]: boolean }
@@ -64,69 +67,6 @@ const nutritionContext = computed(() => {
   return null;
 });
 
-const macroDonut = computed(() => {
-  const d = nutritionContext.value?.data;
-  if (!d) return null;
-  const p  = d.proteinG ?? 0;
-  const c  = d.carbsG   ?? 0;
-  const f  = d.fatG     ?? 0;
-  const fi = d.fiberG   ?? 0;
-  const total = p + c + f + fi;
-  if (total === 0) return null;
-  const s1 = ((p              / total) * 100).toFixed(2);
-  const s2 = (((p + c)        / total) * 100).toFixed(2);
-  const s3 = (((p + c + f)    / total) * 100).toFixed(2);
-  return { s1, s2, s3 };
-});
-
-const donutProgress = ref(1);
-let donutRafId = null;
-
-function animateDonut() {
-  if (donutRafId != null) cancelAnimationFrame(donutRafId);
-  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-    donutProgress.value = 1;
-    return;
-  }
-  const DURATION = 700;
-  const start = performance.now();
-  function step(now) {
-    const t = Math.min((now - start) / DURATION, 1);
-    // cubic ease-out
-    donutProgress.value = 1 - Math.pow(1 - t, 3);
-    if (t < 1) {
-      donutRafId = requestAnimationFrame(step);
-    } else {
-      donutRafId = null;
-    }
-  }
-  donutRafId = requestAnimationFrame(step);
-}
-
-watch(
-  () => props.recipe.nutrition?.calculatedAt,
-  (val, old) => {
-    if (val && val !== old) {
-      donutProgress.value = 0;
-      nextTick(animateDonut);
-    }
-  },
-);
-
-onUnmounted(() => {
-  if (donutRafId != null) cancelAnimationFrame(donutRafId);
-});
-
-const animatedDonutGradient = computed(() => {
-  if (!macroDonut.value) return null;
-  const p = donutProgress.value;
-  const s1 = (parseFloat(macroDonut.value.s1) * p).toFixed(2);
-  const s2 = (parseFloat(macroDonut.value.s2) * p).toFixed(2);
-  const s3 = (parseFloat(macroDonut.value.s3) * p).toFixed(2);
-  const s4 = (100 * p).toFixed(2);
-  return `conic-gradient(var(--nutrition-protein) 0% ${s1}%, var(--nutrition-carbs) ${s1}% ${s2}%, var(--nutrition-fat) ${s2}% ${s3}%, var(--nutrition-fiber) ${s3}% ${s4}%, var(--color-border, #e0e0e0) ${s4}% 100%)`;
-});
-
 const nutritionTransparency = computed(() => {
   const ingNutrition = props.recipe.ingredientNutrition ?? [];
   const estimated   = deriveEstimatedIngredients(ingNutrition);
@@ -135,21 +75,6 @@ const nutritionTransparency = computed(() => {
   const confidence  = deriveConfidenceLabel(props.recipe.nutrition?.sources);
   if (estimated.length === 0 && excluded.length === 0 && sources.length === 0) return null;
   return { estimated, excluded, sources, confidence };
-});
-
-function computeIngredientsFingerprint(ingredients) {
-  return (ingredients ?? []).join('|');
-}
-
-const isNutritionStale = computed(() => {
-  const stored = props.recipe.nutrition?.ingredientsFingerprint;
-  if (!stored) return false;
-  return stored !== computeIngredientsFingerprint(props.recipe.ingredients);
-});
-
-const allMacrosZero = computed(() => {
-  if (!nutritionContext.value) return false;
-  return macroDonut.value === null;
 });
 
 async function calculateNutrition() {
@@ -351,12 +276,16 @@ function onShoppingAction() {
 }
 
 function openNutritionEditor() {
-  const gDraft   = {};
+  const gDraft    = {};
   const p100Draft = {};
-  for (const ing of props.recipe.ingredientNutrition ?? []) {
-    gDraft[ing.ingredientName] = ing.grams != null ? String(ing.grams) : '';
-    const p = ing.nutritionPer100g ?? {};
-    p100Draft[ing.ingredientName] = {
+  const ingMap    = new Map(
+    (props.recipe.ingredientNutrition ?? []).map(ing => [ing.ingredientName, ing]),
+  );
+  for (const raw of props.recipe.ingredients ?? []) {
+    const ing = ingMap.get(raw);
+    gDraft[raw] = ing?.grams != null ? String(ing.grams) : '';
+    const p = ing?.nutritionPer100g ?? {};
+    p100Draft[raw] = {
       kcal:     p.kcal     != null ? String(p.kcal)     : '',
       proteinG: p.proteinG != null ? String(p.proteinG) : '',
       carbsG:   p.carbsG   != null ? String(p.carbsG)   : '',
@@ -577,25 +506,56 @@ function closeQr() {
       </div>
     </div>
     <div v-if="!isEditing" class="detail-wrap">
-      <div class="detail-head">
-        <div class="detail-cover-wrap">
-          <img
-            v-if="showCoverImage"
-            class="detail-cover-img"
-            :src="resolvedCoverImageUrl"
-            :alt="recipe.name"
-            loading="lazy"
-            decoding="async"
-            @error="onCoverImageError"
-          />
-          <div v-else class="detail-cover-placeholder" aria-hidden="true">
-            <span class="detail-cover-placeholder-icon">{{ recipe.emoji || '🍽️' }}</span>
+      <!-- ── Desktop two-column header area ── -->
+      <div class="detail-header-layout">
+        <!-- Left column: cover image -->
+        <div class="detail-col-image">
+          <div class="detail-cover-wrap">
+            <img
+              v-if="showCoverImage"
+              class="detail-cover-img"
+              :src="resolvedCoverImageUrl"
+              :alt="recipe.name"
+              loading="lazy"
+              decoding="async"
+              @error="onCoverImageError"
+            />
+            <div v-else class="detail-cover-placeholder" aria-hidden="true">
+              <span class="detail-cover-placeholder-icon">{{ recipe.emoji || '🍽️' }}</span>
+            </div>
           </div>
         </div>
-        <h2 class="detail-title">{{ recipe.emoji || '🍴' }} {{ recipe.name }}</h2>
-        <p class="detail-meta">{{ joinMetaParts([recipe.category, recipe.time, recipe.difficolta]) }}</p>
-        <button class="btn-start-cooking detail-top-start" @click="emit('start-cooking', recipe)">{{ t('cooking_start') }}</button>
-        <p class="detail-print-servings print-only">{{ t('detail_servings') }}: {{ servings }}</p>
+
+        <!-- Right column: title + meta + nutrition summary -->
+        <div class="detail-col-meta">
+          <div class="detail-head">
+            <h2 class="detail-title">{{ recipe.emoji || '🍴' }} {{ recipe.name }}</h2>
+            <p class="detail-meta">{{ joinMetaParts([recipe.category, recipe.time, recipe.difficolta]) }}</p>
+
+            <!-- Nutrition micro-summary -->
+            <p
+              v-if="savedMode && nutritionContext && nutritionContext.data"
+              class="nutrition-micro-summary"
+            >
+              {{ nutritionContext.data.kcal != null ? Math.round(nutritionContext.data.kcal) : '—' }} kcal
+              <span v-if="nutritionContext.data.proteinG != null"> · {{ nutritionContext.data.proteinG.toFixed(1) }}g {{ t('section_proteins') }}</span>
+              <span v-if="nutritionContext.data.carbsG != null"> · {{ nutritionContext.data.carbsG.toFixed(1) }}g {{ t('section_carbs') }}</span>
+            </p>
+
+            <button class="btn-start-cooking detail-top-start" @click="emit('start-cooking', recipe)">{{ t('cooking_start') }}</button>
+            <p class="detail-print-servings print-only">{{ t('detail_servings') }}: {{ servings }}</p>
+          </div>
+
+          <!-- Nutrition summary (desktop: in right column; mobile: below image via order) -->
+          <div v-if="savedMode" class="nutrition-wrap card nutrition-summary-slot">
+            <NutritionSummary
+              :recipe="recipe"
+              :is-calculating="isCalculatingNutrition"
+              :nutrition-context="nutritionContext"
+              @calculate="calculateNutrition"
+            />
+          </div>
+        </div>
       </div>
 
       <div class="detail-meta-grid detail-meta-panel">
@@ -655,161 +615,104 @@ function closeQr() {
         </div>
       </div>
 
-      <div v-if="savedMode" class="nutrition-wrap card">
-        <div class="nutrition-header">
-          <p class="sec-label">{{ t('nutrition') }}</p>
-          <span class="nutrition-badge" :class="`nutrition-badge--${recipe.nutrition?.status ?? 'missing'}`">
-            {{ t(`nutrition_status_${recipe.nutrition?.status ?? 'missing'}`) }}
-          </span>
-        </div>
+      <!-- ── Nutrition Details section ── -->
+      <div v-if="savedMode && (nutritionTransparency || (recipe.ingredientNutrition && recipe.ingredientNutrition.length > 0))" class="nutrition-details-card card">
+        <button
+          class="nutrition-details-toggle"
+          type="button"
+          :aria-expanded="showNutritionDetails"
+          @click="showNutritionDetails = !showNutritionDetails"
+        >
+          <p class="sec-label">{{ t('nutrition_details_title') }}</p>
+          <span class="nutrition-details-chevron" :class="{ open: showNutritionDetails }" aria-hidden="true">&#9660;</span>
+        </button>
 
-        <div v-if="nutritionContext" class="nutrition-body">
-          <div class="nutrition-visual">
-            <div
-              v-if="isCalculatingNutrition"
-              class="nutrition-donut nutrition-donut--loading"
-              role="img"
-              :aria-label="t('calculate_nutrition')"
-            >
-              <div class="nutrition-donut-hole">
-                <span class="nutrition-spinner" aria-hidden="true"></span>
-              </div>
-            </div>
-            <div
-              v-else-if="animatedDonutGradient"
-              class="nutrition-donut"
-              role="img"
-              :aria-label="t('nutrition_distribution')"
-              :style="{ background: animatedDonutGradient }"
-            >
-              <div class="nutrition-donut-hole">
-                <span class="nutrition-kcal-val">{{ nutritionContext.data.kcal != null ? Math.round(nutritionContext.data.kcal) : '—' }}</span>
-                <span class="nutrition-kcal-lbl">kcal</span>
-              </div>
-            </div>
-            <div v-else class="nutrition-kcal-solo">
-              <span class="nutrition-kcal-val">{{ nutritionContext.data.kcal != null ? Math.round(nutritionContext.data.kcal) : '—' }}</span>
-              <span class="nutrition-kcal-lbl">kcal</span>
-            </div>
+        <div
+          class="nutrition-details-body"
+          :class="{ 'nutrition-details-body--open': showNutritionDetails }"
+        >
+          <!-- Sources -->
+          <div v-if="nutritionTransparency" class="nutrition-transparency">
+            <p v-if="nutritionTransparency.sources.length" class="nutrition-sources">
+              {{ t('nutrition_sources') }}: {{ nutritionTransparency.sources.join(', ') }}<span v-if="nutritionTransparency.confidence"> · {{ t('nutrition_confidence_' + nutritionTransparency.confidence) }}</span>
+            </p>
+            <details v-if="nutritionTransparency.estimated.length" class="nutrition-details-group">
+              <summary>{{ t('nutrition_estimated_quantities') }} ({{ nutritionTransparency.estimated.length }})</summary>
+              <ul>
+                <li v-for="est in nutritionTransparency.estimated" :key="est.name">
+                  {{ est.name }} {{ t('nutrition_estimated_as', { g: est.grams }) }}
+                </li>
+              </ul>
+            </details>
+            <details v-if="nutritionTransparency.excluded.length" class="nutrition-details-group">
+              <summary>{{ t('nutrition_not_included') }} ({{ nutritionTransparency.excluded.length }})</summary>
+              <ul>
+                <li v-for="exc in nutritionTransparency.excluded" :key="exc.name">
+                  {{ exc.name }} — {{ t(`nutrition_reason_${exc.reason}`) }}
+                </li>
+              </ul>
+            </details>
           </div>
 
-          <div class="nutrition-macros">
-            <div v-if="nutritionContext.data.proteinG != null" class="nutrition-macro-row nutrition-macro-row--protein">
-              <span class="nutrition-macro-dot"></span>
-              <span class="nutrition-macro-name">{{ t('section_proteins') }}</span>
-              <span class="nutrition-macro-val">{{ nutritionContext.data.proteinG.toFixed(1) }}g</span>
-            </div>
-            <div v-if="nutritionContext.data.carbsG != null" class="nutrition-macro-row nutrition-macro-row--carbs">
-              <span class="nutrition-macro-dot"></span>
-              <span class="nutrition-macro-name">{{ t('section_carbs') }}</span>
-              <span class="nutrition-macro-val">{{ nutritionContext.data.carbsG.toFixed(1) }}g</span>
-            </div>
-            <div v-if="nutritionContext.data.fatG != null" class="nutrition-macro-row nutrition-macro-row--fat">
-              <span class="nutrition-macro-dot"></span>
-              <span class="nutrition-macro-name">{{ t('nutrition_fat') }}</span>
-              <span class="nutrition-macro-val">{{ nutritionContext.data.fatG.toFixed(1) }}g</span>
-            </div>
-            <div v-if="nutritionContext.data.fiberG != null" class="nutrition-macro-row nutrition-macro-row--fiber">
-              <span class="nutrition-macro-dot"></span>
-              <span class="nutrition-macro-name">{{ t('nutrition_fiber') }}</span>
-              <span class="nutrition-macro-val">{{ nutritionContext.data.fiberG.toFixed(1) }}g</span>
-            </div>
-          </div>
-        </div>
-
-        <p v-if="allMacrosZero" class="nutrition-no-macros-note">{{ t('nutrition_no_macros') }}</p>
-
-        <p v-if="recipe.nutrition?.status === 'partial'" class="nutrition-partial-note">
-          {{ t('nutrition_partial_note') }}
-        </p>
-
-        <p v-if="isNutritionStale" class="nutrition-stale-warning">⚠ {{ t('nutrition_stale_warning') }}</p>
-
-        <div v-if="nutritionTransparency" class="nutrition-transparency">
-          <p v-if="nutritionTransparency.sources.length" class="nutrition-sources">
-            {{ t('nutrition_sources') }}: {{ nutritionTransparency.sources.join(', ') }}<span v-if="nutritionTransparency.confidence"> · {{ t('nutrition_confidence_' + nutritionTransparency.confidence) }}</span>
-          </p>
-          <details v-if="nutritionTransparency.estimated.length" class="nutrition-details-group">
-            <summary>{{ t('nutrition_estimated_quantities') }} ({{ nutritionTransparency.estimated.length }})</summary>
-            <ul>
-              <li v-for="est in nutritionTransparency.estimated" :key="est.name">
-                {{ est.name }} {{ t('nutrition_estimated_as', { g: est.grams }) }}
-              </li>
-            </ul>
-          </details>
-          <details v-if="nutritionTransparency.excluded.length" class="nutrition-details-group">
-            <summary>{{ t('nutrition_not_included') }} ({{ nutritionTransparency.excluded.length }})</summary>
-            <ul>
-              <li v-for="exc in nutritionTransparency.excluded" :key="exc.name">
-                {{ exc.name }} — {{ t(`nutrition_reason_${exc.reason}`) }}
-              </li>
-            </ul>
-          </details>
-        </div>
-
-        <div class="nutrition-footer">
-          <button
-            class="btn-secondary"
-            :disabled="isCalculatingNutrition"
-            type="button"
-            @click="calculateNutrition"
-          >{{ isCalculatingNutrition ? '…' : t('calculate_nutrition') }}</button>
-          <button
-            v-if="recipe.ingredientNutrition && recipe.ingredientNutrition.length > 0 && !showNutritionEditor"
-            class="btn-ghost"
-            type="button"
-            @click="openNutritionEditor"
-          >{{ t('nutrition_edit_quantities') }}</button>
-        </div>
-
-        <div v-if="showNutritionEditor" class="nutrition-editor">
-          <div
-            v-for="ing in recipe.ingredientNutrition"
-            :key="ing.ingredientName"
-            class="nutrition-editor-ingredient"
-          >
-            <div class="nutrition-editor-row">
-              <span class="nutrition-editor-name">{{ ing.ingredientName }}</span>
-              <input
-                class="nutrition-editor-input"
-                type="text"
-                inputmode="decimal"
-                :value="nutritionEditDraft[ing.ingredientName]"
-                @input="nutritionEditDraft[ing.ingredientName] = $event.target.value"
-              />
-              <span class="nutrition-editor-unit">g</span>
-            </div>
+          <!-- Edit quantities button + editor -->
+          <div v-if="recipe.ingredientNutrition && recipe.ingredientNutrition.length > 0" class="nutrition-details-edit">
             <button
-              class="nutrition-editor-expand-btn"
+              v-if="!showNutritionEditor && recipe.nutrition && (recipe.ingredients?.length ?? 0) > 0"
+              class="btn-ghost"
               type="button"
-              @click="togglePer100gRow(ing.ingredientName)"
-            >
-              <span class="nutrition-editor-expand-arrow">{{ expandedPer100gRows[ing.ingredientName] ? '▾' : '▸' }}</span>
-              {{ t('nutrition_edit_values') }}
-            </button>
-            <div v-if="expandedPer100gRows[ing.ingredientName]" class="nutrition-editor-per100g">
-              <span class="nutrition-per100g-hint">{{ t('nutrition_per_100g') }}</span>
+              @click="openNutritionEditor"
+            >{{ t('nutrition_edit_quantities') }}</button>
+
+            <div v-if="showNutritionEditor" class="nutrition-editor">
               <div
-                v-for="field in PER100G_FIELDS"
-                :key="field.key"
-                class="nutrition-per100g-row"
+                v-for="raw in (recipe.ingredients ?? [])"
+                :key="raw"
+                class="nutrition-editor-ingredient"
               >
-                <span class="nutrition-per100g-label">{{ field.labelKey ? t(field.labelKey) : field.label }}</span>
-                <input
-                  class="nutrition-editor-input"
-                  type="text"
-                  inputmode="decimal"
-                  :value="per100gEditDraft[ing.ingredientName]?.[field.key] ?? ''"
-                  @input="setPer100gField(ing.ingredientName, field.key, $event.target.value)"
-                />
-                <span class="nutrition-editor-unit">{{ field.unit }}</span>
+                <div class="nutrition-editor-row">
+                  <span class="nutrition-editor-name">{{ raw }}</span>
+                  <input
+                    class="nutrition-editor-input"
+                    type="text"
+                    inputmode="decimal"
+                    :value="nutritionEditDraft[raw]"
+                    @input="nutritionEditDraft[raw] = $event.target.value"
+                  />
+                  <span class="nutrition-editor-unit">g</span>
+                </div>
+                <button
+                  class="nutrition-editor-expand-btn"
+                  type="button"
+                  @click="togglePer100gRow(raw)"
+                >
+                  <span class="nutrition-editor-expand-arrow">{{ expandedPer100gRows[raw] ? '▾' : '▸' }}</span>
+                  {{ t('nutrition_edit_values') }}
+                </button>
+                <div v-if="expandedPer100gRows[raw]" class="nutrition-editor-per100g">
+                  <span class="nutrition-per100g-hint">{{ t('nutrition_per_100g') }}</span>
+                  <div
+                    v-for="field in PER100G_FIELDS"
+                    :key="field.key"
+                    class="nutrition-per100g-row"
+                  >
+                    <span class="nutrition-per100g-label">{{ field.labelKey ? t(field.labelKey) : field.label }}</span>
+                    <input
+                      class="nutrition-editor-input"
+                      type="text"
+                      inputmode="decimal"
+                      :value="per100gEditDraft[raw]?.[field.key] ?? ''"
+                      @input="setPer100gField(raw, field.key, $event.target.value)"
+                    />
+                    <span class="nutrition-editor-unit">{{ field.unit }}</span>
+                  </div>
+                </div>
+              </div>
+              <p class="nutrition-editor-hint">{{ t('nutrition_salt_note') }}</p>
+              <div class="nutrition-editor-actions">
+                <button class="btn-primary" type="button" @click="saveNutritionOverrides">{{ t('recipe_edit_save') }}</button>
+                <button class="btn-ghost" type="button" @click="cancelNutritionEditor">{{ t('recipe_edit_cancel') }}</button>
               </div>
             </div>
-          </div>
-          <p class="nutrition-editor-hint">{{ t('nutrition_salt_note') }}</p>
-          <div class="nutrition-editor-actions">
-            <button class="btn-primary" type="button" @click="saveNutritionOverrides">{{ t('recipe_edit_save') }}</button>
-            <button class="btn-ghost" type="button" @click="cancelNutritionEditor">{{ t('recipe_edit_cancel') }}</button>
           </div>
         </div>
       </div>
@@ -1016,8 +919,8 @@ function closeQr() {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
+  width: 44px;
+  height: 44px;
   border-radius: 8px;
   border: 1px solid var(--border);
   background: var(--card-bg, var(--bg));
@@ -1125,7 +1028,7 @@ function closeQr() {
 .qr-modal-actions button {
   flex: 1;
   min-width: 100px;
-  min-height: 40px;
+  min-height: 44px;
 }
 
 .imported-info-wrap {
@@ -1155,7 +1058,48 @@ function closeQr() {
   line-height: 1.5;
 }
 
-/* ── Nutrition section ── */
+/* ── Two-column header layout ── */
+.detail-header-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.detail-col-image {
+  width: 100%;
+}
+
+.detail-col-meta {
+  width: 100%;
+}
+
+@media (min-width: 768px) {
+  .detail-header-layout {
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 24px;
+  }
+
+  .detail-col-image {
+    width: 45%;
+    flex-shrink: 0;
+  }
+
+  .detail-col-meta {
+    flex: 1;
+    min-width: 0;
+  }
+}
+
+/* Micro-summary */
+.nutrition-micro-summary {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  margin: 4px 0 8px;
+  line-height: 1.4;
+}
+
+/* ── Nutrition summary card wrapper ── */
 .nutrition-wrap {
   padding: 14px 16px;
   display: flex;
@@ -1163,155 +1107,68 @@ function closeQr() {
   gap: 12px;
 }
 
-.nutrition-header {
+/* ── Nutrition details card ── */
+.nutrition-details-card {
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.nutrition-details-toggle {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  width: 100%;
+  cursor: pointer;
+  user-select: none;
+  min-height: 44px;
   gap: 8px;
+  background: none;
+  border: none;
+  padding: 0;
+  text-align: left;
 }
 
-.nutrition-header .sec-label {
+.nutrition-details-toggle .sec-label {
   margin: 0;
 }
 
-.nutrition-badge {
-  font-size: 0.72rem;
-  font-weight: 600;
-  padding: 2px 9px;
-  border-radius: 20px;
-  letter-spacing: 0.03em;
+.nutrition-details-chevron {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  transition: transform 0.2s ease;
   flex-shrink: 0;
 }
 
-.nutrition-badge--missing {
-  background: var(--hover-bg, rgba(0,0,0,0.06));
-  color: var(--text-muted);
+.nutrition-details-chevron.open {
+  transform: rotate(180deg);
 }
 
-.nutrition-badge--partial {
-  background: var(--nutrition-partial-bg);
-  color: var(--nutrition-partial-text);
-}
-
-.nutrition-badge--complete {
-  background: var(--nutrition-complete-bg);
-  color: var(--nutrition-complete-text);
-}
-
-.nutrition-badge--manual {
-  background: var(--nutrition-manual-bg);
-  color: var(--nutrition-manual-text);
-}
-
-.nutrition-body {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
-
-.nutrition-visual {
-  flex-shrink: 0;
-}
-
-.nutrition-donut {
-  width: 108px;
-  height: 108px;
-  border-radius: 50%;
-  position: relative;
-}
-
-.nutrition-donut-hole {
-  position: absolute;
-  inset: 24px;
-  border-radius: 50%;
-  background: var(--bg);
-  display: flex;
+.nutrition-details-body {
+  display: none;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
+  gap: 12px;
+  overflow: hidden;
 }
 
-.nutrition-kcal-solo {
-  width: 108px;
-  height: 108px;
-  border-radius: 50%;
-  background: var(--bg-secondary);
+.nutrition-details-body--open {
   display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
 }
 
-.nutrition-kcal-val {
-  font-size: 1.4rem;
-  font-weight: 800;
-  color: var(--text);
-  line-height: 1.1;
+@media (prefers-reduced-motion: no-preference) {
+  .nutrition-details-body {
+    /* max-height transition for collapse — applied via JS class */
+  }
 }
 
-.nutrition-kcal-lbl {
-  font-size: 0.65rem;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--text-muted);
-  margin-top: 1px;
-}
-
-.nutrition-macros {
-  flex: 1;
+.nutrition-details-edit {
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
 
-.nutrition-macro-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.nutrition-macro-dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-
-.nutrition-macro-row--protein .nutrition-macro-dot { background: var(--nutrition-protein); }
-.nutrition-macro-row--carbs   .nutrition-macro-dot { background: var(--nutrition-carbs); }
-.nutrition-macro-row--fat     .nutrition-macro-dot { background: var(--nutrition-fat); }
-.nutrition-macro-row--fiber   .nutrition-macro-dot { background: var(--nutrition-fiber); }
-
-.nutrition-macro-name {
-  flex: 1;
-  font-size: 0.85rem;
-  color: var(--text-muted);
-}
-
-.nutrition-macro-val {
-  font-size: 0.95rem;
-  font-weight: 700;
-  color: var(--text);
-}
-
-.nutrition-partial-note {
-  font-size: 0.8rem;
-  color: var(--text-muted);
-  margin: 0;
-  line-height: 1.4;
-}
-
-.nutrition-footer {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.nutrition-footer button {
-  flex: 1;
-  min-width: 120px;
-}
-
+/* ── Editor (shared) ── */
 .nutrition-editor {
   border-top: 1px solid var(--border);
   padding-top: 10px;
@@ -1378,7 +1235,7 @@ function closeQr() {
   color: var(--text-muted);
   cursor: pointer;
   text-align: left;
-  min-height: 36px;
+  min-height: 44px;
 }
 
 .nutrition-editor-expand-btn:hover {
@@ -1420,7 +1277,7 @@ function closeQr() {
 
 .nutrition-editor-hint {
   font-size: 0.75rem;
-  color: var(--color-text-muted, #888);
+  color: var(--text-muted);
   font-style: italic;
   margin: 4px 0 0;
 }
@@ -1435,52 +1292,17 @@ function closeQr() {
   flex: 1;
 }
 
+/* ── Transparency / details groups ── */
 .nutrition-transparency {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  padding-top: 4px;
-  border-top: 1px solid var(--border);
 }
 
 .nutrition-sources {
   font-size: 0.78rem;
   color: var(--text-muted);
   margin: 0;
-}
-
-.nutrition-no-macros-note {
-  font-size: 0.8rem;
-  color: var(--text-muted);
-  margin: 0 0 4px;
-  font-style: italic;
-}
-
-.nutrition-stale-warning {
-  font-size: 0.78rem;
-  color: var(--color-warn, #b45309);
-  background: var(--color-warn-bg, #fef3c7);
-  border-radius: 6px;
-  padding: 4px 8px;
-  margin: 4px 0;
-}
-
-.nutrition-donut--loading {
-  background: conic-gradient(var(--border, #e0e0e0) 0% 100%);
-}
-
-.nutrition-spinner {
-  display: block;
-  width: 20px;
-  height: 20px;
-  border: 2px solid var(--border, #e0e0e0);
-  border-top-color: var(--color-accent, #43a047);
-  border-radius: 50%;
-  animation: nutrition-spin 0.8s linear infinite;
-}
-
-@keyframes nutrition-spin {
-  to { transform: rotate(360deg); }
 }
 
 .nutrition-details-group {
