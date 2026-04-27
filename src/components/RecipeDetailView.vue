@@ -49,6 +49,20 @@ const nutritionContext = computed(() => {
   return null;
 });
 
+const macroDonut = computed(() => {
+  const d = nutritionContext.value?.data;
+  if (!d) return null;
+  const pKcal = (d.proteinG ?? 0) * 4;
+  const cKcal = (d.carbsG ?? 0) * 4;
+  const fKcal = (d.fatG ?? 0) * 9;
+  const total = pKcal + cKcal + fKcal;
+  if (total === 0) return null;
+  const s1 = ((pKcal / total) * 100).toFixed(2);
+  const s2 = (((pKcal + cKcal) / total) * 100).toFixed(2);
+  const gradient = `conic-gradient(var(--nutrition-protein) 0% ${s1}%, var(--nutrition-carbs) ${s1}% ${s2}%, var(--nutrition-fat) ${s2}% 100%)`;
+  return { gradient };
+});
+
 async function calculateNutrition() {
   if (isCalculatingNutrition.value || !props.recipe.id) return;
   isCalculatingNutrition.value = true;
@@ -464,27 +478,45 @@ function closeQr() {
           </span>
         </div>
 
-        <div v-if="nutritionContext" class="nutrition-grid">
-          <div v-if="nutritionContext.data.kcal != null" class="nutrition-item">
-            <span class="nutrition-val">{{ Math.round(nutritionContext.data.kcal) }}</span>
-            <span class="nutrition-lbl">kcal</span>
+        <div v-if="nutritionContext" class="nutrition-body">
+          <div class="nutrition-visual">
+            <div
+              v-if="macroDonut"
+              class="nutrition-donut"
+              :style="{ background: macroDonut.gradient }"
+            >
+              <div class="nutrition-donut-hole">
+                <span class="nutrition-kcal-val">{{ nutritionContext.data.kcal != null ? Math.round(nutritionContext.data.kcal) : '—' }}</span>
+                <span class="nutrition-kcal-lbl">kcal</span>
+              </div>
+            </div>
+            <div v-else class="nutrition-kcal-solo">
+              <span class="nutrition-kcal-val">{{ nutritionContext.data.kcal != null ? Math.round(nutritionContext.data.kcal) : '—' }}</span>
+              <span class="nutrition-kcal-lbl">kcal</span>
+            </div>
           </div>
-          <div v-if="nutritionContext.data.proteinG != null" class="nutrition-item">
-            <span class="nutrition-val">{{ nutritionContext.data.proteinG.toFixed(1) }}g</span>
-            <span class="nutrition-lbl">{{ t('section_proteins') }}</span>
+
+          <div class="nutrition-macros">
+            <div v-if="nutritionContext.data.proteinG != null" class="nutrition-macro-row nutrition-macro-row--protein">
+              <span class="nutrition-macro-dot"></span>
+              <span class="nutrition-macro-name">{{ t('section_proteins') }}</span>
+              <span class="nutrition-macro-val">{{ nutritionContext.data.proteinG.toFixed(1) }}g</span>
+            </div>
+            <div v-if="nutritionContext.data.carbsG != null" class="nutrition-macro-row nutrition-macro-row--carbs">
+              <span class="nutrition-macro-dot"></span>
+              <span class="nutrition-macro-name">{{ t('section_carbs') }}</span>
+              <span class="nutrition-macro-val">{{ nutritionContext.data.carbsG.toFixed(1) }}g</span>
+            </div>
+            <div v-if="nutritionContext.data.fatG != null" class="nutrition-macro-row nutrition-macro-row--fat">
+              <span class="nutrition-macro-dot"></span>
+              <span class="nutrition-macro-name">{{ t('nutrition_fat') }}</span>
+              <span class="nutrition-macro-val">{{ nutritionContext.data.fatG.toFixed(1) }}g</span>
+            </div>
           </div>
-          <div v-if="nutritionContext.data.carbsG != null" class="nutrition-item">
-            <span class="nutrition-val">{{ nutritionContext.data.carbsG.toFixed(1) }}g</span>
-            <span class="nutrition-lbl">{{ t('section_carbs') }}</span>
-          </div>
-          <div v-if="nutritionContext.data.fatG != null" class="nutrition-item">
-            <span class="nutrition-val">{{ nutritionContext.data.fatG.toFixed(1) }}g</span>
-            <span class="nutrition-lbl">{{ t('nutrition_fat') }}</span>
-          </div>
-          <div v-if="nutritionContext.data.fiberG != null" class="nutrition-item">
-            <span class="nutrition-val">{{ nutritionContext.data.fiberG.toFixed(1) }}g</span>
-            <span class="nutrition-lbl">{{ t('nutrition_fiber') }}</span>
-          </div>
+        </div>
+
+        <div v-if="nutritionContext?.data.fiberG != null" class="nutrition-secondary">
+          <span>{{ t('nutrition_fiber') }}: <strong>{{ nutritionContext.data.fiberG.toFixed(1) }}g</strong></span>
         </div>
 
         <p v-if="recipe.nutrition?.status === 'partial'" class="nutrition-partial-note">
@@ -867,37 +899,109 @@ function closeQr() {
   color: var(--nutrition-manual-text);
 }
 
-.nutrition-grid {
+.nutrition-body {
   display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
+  align-items: center;
+  gap: 16px;
 }
 
-.nutrition-item {
+.nutrition-visual {
+  flex-shrink: 0;
+}
+
+.nutrition-donut {
+  width: 108px;
+  height: 108px;
+  border-radius: 50%;
+  position: relative;
+}
+
+.nutrition-donut-hole {
+  position: absolute;
+  inset: 24px;
+  border-radius: 50%;
+  background: var(--bg);
   display: flex;
   flex-direction: column;
   align-items: center;
-  background: var(--hover-bg, rgba(0,0,0,0.04));
-  border-radius: 8px;
-  padding: 8px 10px;
-  flex: 1;
-  min-width: 56px;
+  justify-content: center;
 }
 
-.nutrition-val {
-  font-size: 1rem;
+.nutrition-kcal-solo {
+  width: 108px;
+  height: 108px;
+  border-radius: 50%;
+  background: var(--bg-secondary);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.nutrition-kcal-val {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: var(--text);
+  line-height: 1.1;
+}
+
+.nutrition-kcal-lbl {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  margin-top: 1px;
+}
+
+.nutrition-macros {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.nutrition-macro-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.nutrition-macro-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.nutrition-macro-row--protein .nutrition-macro-dot { background: var(--nutrition-protein); }
+.nutrition-macro-row--carbs   .nutrition-macro-dot { background: var(--nutrition-carbs); }
+.nutrition-macro-row--fat     .nutrition-macro-dot { background: var(--nutrition-fat); }
+
+.nutrition-macro-name {
+  flex: 1;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.nutrition-macro-val {
+  font-size: 0.95rem;
   font-weight: 700;
   color: var(--text);
-  line-height: 1.2;
 }
 
-.nutrition-lbl {
-  font-size: 0.67rem;
+.nutrition-secondary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  font-size: 0.82rem;
   color: var(--text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  margin-top: 3px;
-  text-align: center;
+  padding-top: 4px;
+  border-top: 1px solid var(--border);
+}
+
+.nutrition-secondary strong {
+  color: var(--text);
+  font-weight: 600;
 }
 
 .nutrition-partial-note {

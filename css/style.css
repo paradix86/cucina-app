@@ -39,6 +39,9 @@
   --nutrition-complete-text:#15803d;
   --nutrition-manual-bg:    rgba( 59, 130, 246, 0.12);
   --nutrition-manual-text:  #1d4ed8;
+  --nutrition-protein:      #1D9E75;
+  --nutrition-carbs:        #CC5500;
+  --nutrition-fat:          #E24B4A;
 }
 
 :root[data-theme="light"] {
@@ -60,6 +63,9 @@
   --nutrition-complete-text:#15803d;
   --nutrition-manual-bg:    rgba( 59, 130, 246, 0.12);
   --nutrition-manual-text:  #1d4ed8;
+  --nutrition-protein:      #1D9E75;
+  --nutrition-carbs:        #CC5500;
+  --nutrition-fat:          #E24B4A;
 }
 
 :root[data-theme="dark"] {
@@ -83,6 +89,9 @@
   --nutrition-complete-text:#34d399;
   --nutrition-manual-bg:    rgba( 96, 165, 250, 0.15);
   --nutrition-manual-text:  #60a5fa;
+  --nutrition-protein:      #34d399;
+  --nutrition-carbs:        #fb923c;
+  --nutrition-fat:          #f87171;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -107,6 +116,9 @@
     --nutrition-complete-text:#34d399;
     --nutrition-manual-bg:    rgba( 96, 165, 250, 0.15);
     --nutrition-manual-text:  #60a5fa;
+    --nutrition-protein:      #34d399;
+    --nutrition-carbs:        #fb923c;
+    --nutrition-fat:          #f87171;
   }
 }
 
