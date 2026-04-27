@@ -54,7 +54,7 @@ export function initServiceWorkerUpdates(showToast) {
   function showUpdateToast(worker) {
     if (updateToastShown || !showToast) return;
     updateToastShown = true;
-    showToast(t('pwa_update_available'), 'info', {
+    showToast(t('pwa_update_available'), 'update', {
       actionLabel: t('reload'),
       onAction: () => worker.postMessage({ type: 'SKIP_WAITING' }),
     });

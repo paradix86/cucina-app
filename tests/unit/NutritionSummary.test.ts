@@ -1,7 +1,8 @@
 import { beforeAll, describe, expect, it, vi } from 'vitest';
 import { createSSRApp } from 'vue';
 import { renderToString } from '@vue/server-renderer';
-import NutritionSummary from '../../src/components/NutritionSummary.vue';
+import { createPinia } from 'pinia';
+import NutritionSummary from '../../src/components/NutritionCard.vue';
 
 // ── Browser-API stubs ─────────────────────────────────────────────────────────
 // Watches don't fire during SSR rendering, so animateDonut() is never called.
@@ -45,6 +46,7 @@ function makeContext(dataOverrides: Record<string, unknown> = {}) {
 async function render(props: Record<string, unknown>) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const app = createSSRApp(NutritionSummary as any, props);
+  app.use(createPinia());
   return renderToString(app);
 }
 

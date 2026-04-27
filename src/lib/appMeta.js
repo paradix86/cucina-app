@@ -1,4 +1,4 @@
-/* global __APP_VERSION__, __APP_COMMIT__, __APP_BUILD_DATE__, __APP_BUILD_ID__ */
+/* global __APP_VERSION__, __APP_COMMIT__, __APP_BUILD_DATE__, __APP_BUILD_ID__, __SW_CACHE_NAME__ */
 
 function normalizeVersionLabel(value) {
   const raw = String(value || '').trim();
@@ -11,6 +11,7 @@ export const APP_META = {
   commit: typeof __APP_COMMIT__ !== 'undefined' ? __APP_COMMIT__ : 'dev',
   buildDate: typeof __APP_BUILD_DATE__ !== 'undefined' ? __APP_BUILD_DATE__ : new Date().toISOString().slice(0, 10),
   buildId: typeof __APP_BUILD_ID__ !== 'undefined' ? __APP_BUILD_ID__ : '0.0.0+dev',
+  cacheName: typeof __SW_CACHE_NAME__ !== 'undefined' ? __SW_CACHE_NAME__ : 'dev',
   authorLine: 'Made with ❤️ by Alan in Switzerland',
 };
 

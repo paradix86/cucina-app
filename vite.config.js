@@ -18,6 +18,10 @@ const appBuildDate = safeGit('git show -s --format=%cd --date=format:%Y-%m-%d HE
   || new Date().toISOString().slice(0, 10);
 const appBuildId = `${appVersion}+${appCommit}`;
 
+const swSource = readFileSync(new URL('./public/sw.js', import.meta.url), 'utf-8');
+const cacheNameMatch = swSource.match(/const CACHE_NAME\s*=\s*['"]([^'"]+)['"]/);
+const swCacheName = cacheNameMatch ? cacheNameMatch[1] : 'cucina-vue-unknown';
+
 export default defineConfig({
   plugins: [vue()],
   define: {
@@ -25,6 +29,7 @@ export default defineConfig({
     __APP_COMMIT__: JSON.stringify(appCommit),
     __APP_BUILD_DATE__: JSON.stringify(appBuildDate),
     __APP_BUILD_ID__: JSON.stringify(appBuildId),
+    __SW_CACHE_NAME__: JSON.stringify(swCacheName),
   },
   base: '/cucina-app/',
   server: {

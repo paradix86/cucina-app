@@ -28,7 +28,7 @@ function buildReportProblemHref() {
 
 <template>
   <footer class="app-footer" id="app-footer">
-    <span class="footer-meta">{{ APP_META.authorLine }} · {{ year }} · {{ APP_META.version }}+{{ APP_META.commit }} · build {{ formatEuropeanDate(APP_META.buildDate) }}</span>
+    <span class="footer-meta">{{ APP_META.authorLine }} · {{ year }} · {{ APP_META.version }}+{{ APP_META.commit }} · build {{ formatEuropeanDate(APP_META.buildDate) }} · {{ APP_META.cacheName }}</span>
     <div class="footer-actions">
       <button class="footer-link-btn" id="footer-whats-new-btn" @click="changelogOpen = true">{{ APP_META.version }} · {{ t('whats_new') }}</button>
       <button class="footer-link-btn" id="footer-credits-btn" @click="creditsOpen = true">{{ t('credits_link') }}</button>

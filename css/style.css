@@ -3242,6 +3242,11 @@ input[type="number"] {
   border-color: var(--border-md);
   background: color-mix(in srgb, var(--bg) 90%, var(--bg-secondary));
 }
+.toast-update {
+  border-color: rgba(59,130,246,.45);
+  background: color-mix(in srgb, var(--bg) 82%, #3b82f6);
+  font-weight: 500;
+}
 .toast {
   display: flex;
   align-items: center;
