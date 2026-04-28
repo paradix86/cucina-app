@@ -6,7 +6,7 @@ import {
   APPROVED_BIMBY_ACTION_KEYS,
   BIMBY_ACTION_PATTERNS,
 } from '../../src/lib/bimbyIcons.js';
-import { buildStepsHtml } from '../../src/lib/recipes.js';
+import { buildStepsHtml } from '../../src/lib/recipes';
 
 const APPROVED_ACTIONS = ['reverse', 'knead', 'scissors', 'cup', 'open', 'lock'] as const;
 

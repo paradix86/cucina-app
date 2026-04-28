@@ -1,8 +1,22 @@
 import { getPreparationType } from './ingredientUtils';
 import { t } from './i18n.js';
 import { detectBimbyAction, renderBimbyActionIcon } from './bimbyIcons';
+import type { PreparationType, Recipe } from '../types';
 
-export function recipeMatchesQuery(recipe, query) {
+type SearchableRecipe = Partial<Recipe> & {
+  nome?: string;
+  cat?: string;
+  ingredienti?: string[];
+};
+
+interface PreparationInfo {
+  type: PreparationType;
+  cls: string;
+  txt: string;
+  cardCls: string;
+}
+
+export function recipeMatchesQuery(recipe: SearchableRecipe, query: string): boolean {
   if (!query) return true;
   const q = query.toLowerCase().trim();
   const haystack = [
@@ -14,23 +28,23 @@ export function recipeMatchesQuery(recipe, query) {
   return haystack.includes(q);
 }
 
-export function highlight(text, query) {
+export function highlight(text: string | null | undefined, query: string): string {
   if (!query || !text) return text || '';
   const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   return text.replace(new RegExp(`(${escaped})`, 'gi'), '<mark>$1</mark>');
 }
 
-export function parseRecipeTime(timeStr) {
+export function parseRecipeTime(timeStr: string | null | undefined): number {
   if (!timeStr) return 0;
-  const hours = (timeStr.match(/(\d+)\s*h/) || [])[1] || 0;
-  const minutes = (timeStr.match(/(\d+)\s*min/) || [])[1] || 0;
+  const hours = (timeStr.match(/(\d+)\s*h/) || [])[1] || '0';
+  const minutes = (timeStr.match(/(\d+)\s*min/) || [])[1] || '0';
   return parseInt(hours, 10) * 60 + parseInt(minutes, 10);
 }
 
-export function getSourceDomainLabel(domain) {
+export function getSourceDomainLabel(domain: string | null | undefined): string {
   const normalized = String(domain || '').trim().toLowerCase();
   if (!normalized) return '';
-  const pretty = {
+  const pretty: Record<string, string> = {
     'giallozafferano.it': 'GialloZafferano',
     'ricetteperbimby.it': 'RicettePerBimby',
     'ricette-bimby.net': 'Ricette Bimby',
@@ -44,7 +58,7 @@ export function getSourceDomainLabel(domain) {
   return pretty[normalized] || normalized;
 }
 
-export function getPreparationInfo(recipe) {
+export function getPreparationInfo(recipe: Partial<Recipe> | null | undefined): PreparationInfo {
   const preparationType = getPreparationType(recipe);
   switch (preparationType) {
     case 'bimby':
@@ -56,12 +70,12 @@ export function getPreparationInfo(recipe) {
   }
 }
 
-export function joinMetaParts(parts) {
+export function joinMetaParts(parts: Array<string | null | undefined | false> | null | undefined): string {
   return (parts || []).filter(Boolean).join(' · ');
 }
 
-export function getMealOccasionLabel(key) {
-  const map = {
+export function getMealOccasionLabel(key: string): string {
+  const map: Record<string, string> = {
     colazione: t('meal_occasion_colazione'),
     pranzo: t('meal_occasion_pranzo'),
     cena: t('meal_occasion_cena'),
@@ -70,11 +84,11 @@ export function getMealOccasionLabel(key) {
   return map[String(key).toLowerCase()] || key;
 }
 
-export const MEAL_OCCASION_OPTIONS = ['Colazione', 'Pranzo', 'Cena', 'Spuntino'];
+export const MEAL_OCCASION_OPTIONS: string[] = ['Colazione', 'Pranzo', 'Cena', 'Spuntino'];
 
-export function suggestMealOccasions(recipe) {
+export function suggestMealOccasions(recipe: Partial<Recipe>): string[] {
   const combined = ((recipe.name || '') + ' ' + (recipe.category || '')).toLowerCase();
-  const suggestions = new Set();
+  const suggestions = new Set<string>();
   if (/pancakes|colazione|breakfast|omelette|frittata|yogurt|porridge|uova|toast|shakshuka/.test(combined)) {
     suggestions.add('Colazione');
   }
@@ -90,15 +104,19 @@ export function suggestMealOccasions(recipe) {
   return Array.from(suggestions);
 }
 
-export function scaleIngredients(ingredients, base, target) {
+export function scaleIngredients(
+  ingredients: string[] | null | undefined,
+  base: number,
+  target: number,
+): string[] | null | undefined {
   if (base === target) return ingredients;
   const factor = target / base;
-  const FRAC = {
+  const FRAC: Record<string, string> = {
     '½': '0.5', '¼': '0.25', '¾': '0.75',
     '⅓': '0.333', '⅔': '0.667',
     '⅛': '0.125', '⅜': '0.375', '⅝': '0.625', '⅞': '0.875',
   };
-  const FRAC_INV = { 0.5: '½', 0.25: '¼', 0.75: '¾' };
+  const FRAC_INV: Record<number, string> = { 0.5: '½', 0.25: '¼', 0.75: '¾' };
 
   return (ingredients || []).map(ing => {
     let s = ing;
@@ -115,14 +133,14 @@ export function scaleIngredients(ingredients, base, target) {
   });
 }
 
-function escapeHtml(value) {
+function escapeHtml(value: unknown): string {
   return String(value)
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;');
 }
 
-export function buildStepsHtml(steps, preparationType) {
+export function buildStepsHtml(steps: unknown[] | null | undefined, preparationType: PreparationType): string {
   const normalizedSteps = (steps || []).map(s => (typeof s === 'string' ? s : String(s)));
   return normalizedSteps.map((step, i) => {
     if (preparationType === 'bimby') {
@@ -153,7 +171,7 @@ export function buildStepsHtml(steps, preparationType) {
   }).join('');
 }
 
-export function extractStepSeconds(stepText) {
+export function extractStepSeconds(stepText: string): number {
   const minMatch = stepText.match(/(\d+)\s*min/i);
   const secMatch = stepText.match(/(\d+)\s*sec/i);
   const hourMatch = stepText.match(/(\d+)\s*h/i);
@@ -164,7 +182,7 @@ export function extractStepSeconds(stepText) {
   return hours * 3600 + minutes * 60 + seconds;
 }
 
-export function formatTimerLabel(min) {
+export function formatTimerLabel(min: number): string {
   if (min >= 60) {
     const h = Math.floor(min / 60);
     const m = min % 60;
@@ -173,7 +191,7 @@ export function formatTimerLabel(min) {
   return `${min} ${t('minutes_short')}`;
 }
 
-export function formatClock(totalSeconds) {
+export function formatClock(totalSeconds: number): string {
   const hours = Math.floor(totalSeconds / 3600);
   const minutes = Math.floor((totalSeconds % 3600) / 60);
   const seconds = totalSeconds % 60;

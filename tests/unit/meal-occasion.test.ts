@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { suggestMealOccasions, getMealOccasionLabel, MEAL_OCCASION_OPTIONS } from '../../src/lib/recipes.js';
+import { suggestMealOccasions, getMealOccasionLabel, MEAL_OCCASION_OPTIONS } from '../../src/lib/recipes';
 
 // ─── controlled value set ─────────────────────────────────────────────────────
 

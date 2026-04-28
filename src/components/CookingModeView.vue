@@ -1,7 +1,7 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useWakeLock } from '@vueuse/core';
-import { extractStepSeconds, formatClock, getPreparationInfo } from '../lib/recipes.js';
+import { extractStepSeconds, formatClock, getPreparationInfo } from '../lib/recipes';
 import { detectBimbyAction } from '../lib/bimbyIcons';
 import { t } from '../lib/i18n.js';
 import { useToasts } from '../composables/useToasts';

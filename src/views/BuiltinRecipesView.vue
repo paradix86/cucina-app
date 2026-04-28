@@ -6,7 +6,7 @@ import RecipeDetailView from '../components/RecipeDetailView.vue';
 import { BUILTIN_RECIPES } from '../lib/builtinData';
 import { useRecipeBookStore } from '../stores/recipeBook';
 import { getPreparationType } from '../lib/ingredientUtils';
-import { getPreparationInfo, getMealOccasionLabel, getSourceDomainLabel, highlight, parseRecipeTime, recipeMatchesQuery, joinMetaParts } from '../lib/recipes.js';
+import { getPreparationInfo, getMealOccasionLabel, getSourceDomainLabel, highlight, parseRecipeTime, recipeMatchesQuery, joinMetaParts } from '../lib/recipes';
 import { t } from '../lib/i18n.js';
 
 const emit = defineEmits(['start-recipe-timer', 'start-cooking', 'add-to-shopping', 'toast', 'go-home']);

@@ -5,7 +5,7 @@ import { useRoute, useRouter } from 'vue-router';
 import { useDebounce } from '@vueuse/core';
 import RecipeDetailView from '../components/RecipeDetailView.vue';
 import { useRecipeBookStore } from '../stores/recipeBook';
-import { getPreparationInfo, getSourceDomainLabel, getMealOccasionLabel, highlight, recipeMatchesQuery, MEAL_OCCASION_OPTIONS } from '../lib/recipes.js';
+import { getPreparationInfo, getSourceDomainLabel, getMealOccasionLabel, highlight, recipeMatchesQuery, MEAL_OCCASION_OPTIONS } from '../lib/recipes';
 import { t } from '../lib/i18n.js';
 
 const emit = defineEmits(['start-recipe-timer', 'start-cooking', 'add-to-shopping', 'toast']);
