@@ -16,10 +16,16 @@ npm install
 ## Development
 
 ```bash
-npm run dev      # dev server (URL printed by Vite)
-npm run build    # production build → dist/
-npm run preview  # serve the built dist/ locally
-npx vue-tsc --noEmit   # TypeScript check for migrated scope
+npm run dev               # dev server (URL printed by Vite)
+npm run build             # production build → dist/
+npm run preview           # serve the built dist/ locally
+npm run test:unit         # run unit tests once (CI)
+npm run test:watch        # run unit tests in watch mode
+npm run test:smoke        # live import smoke tests (hits real sites, slow)
+npm run test:e2e          # Playwright E2E tests
+npm run test:e2e:ui       # Playwright E2E with interactive UI
+npm run build:duemme-pack # build Duemme built-in recipe pack
+npx vue-tsc --noEmit      # TypeScript check for migrated scope
 ```
 
 The app uses Vite with HMR. After editing files in `src/`, the browser updates automatically.
@@ -31,10 +37,10 @@ src/
   App.vue              root component
   main.js              bootstrap (Vue + Pinia + Router)
   types.ts             shared TypeScript declarations
-  router/index.js      route definitions
+  router/index.ts      route definitions
   views/               one component per route
   components/          shared components
-  stores/              Pinia stores (recipeBook, shoppingList)
+  stores/              Pinia stores (recipeBook, shoppingList, weeklyPlanner, nutritionGoalsStore)
   composables/         Vue composables
   lib/                 pure logic (no Vue imports)
     storage.ts         localStorage CRUD + shopping parsing
@@ -247,6 +253,7 @@ For any non-trivial change:
 - [ ] new UI strings added to `src/lib/i18nData.js` (all 5 languages)
 - [ ] `localStorage` backward compatibility considered
 - [ ] Playwright or targeted manual verification performed
+- [ ] `npm run test:e2e` passes (or E2E scope confirmed unaffected)
 - [ ] `CACHE_NAME` bumped in `public/sw.js` if deployed cached assets changed
 
 ## AI agents

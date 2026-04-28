@@ -8,13 +8,16 @@ For extended reference (stack snapshot, key files, editing guidelines, nutrition
 ## Commands
 
 ```bash
-npm run dev           # Dev server (localhost:4173)
-npm run build         # Production build → dist/
-npm run preview       # Serve built dist/ locally
-npm run test:unit     # Run unit tests once (CI)
-npm run test:watch    # Unit tests in watch mode
-npm run test:smoke    # Live website import smoke tests (hits real sites)
-npx vue-tsc --noEmit  # TypeScript check (run when touching .ts files)
+npm run dev               # Dev server (localhost:4173)
+npm run build             # Production build → dist/
+npm run preview           # Serve built dist/ locally
+npm run test:unit         # Run unit tests once (CI)
+npm run test:watch        # Unit tests in watch mode
+npm run test:smoke        # Live website import smoke tests (hits real sites)
+npm run test:e2e          # Playwright E2E tests
+npm run test:e2e:ui       # Playwright E2E with interactive UI
+npm run build:duemme-pack # Build Duemme built-in recipe pack
+npx vue-tsc --noEmit      # TypeScript check (run when touching .ts files)
 ```
 
 ---
@@ -54,10 +57,12 @@ Before editing:
 
    * import
    * nutrition
+   * nutrition goals
    * cooking mode
    * UI
    * storage
    * PWA
+   * weekly planner
 3. Check existing patterns before adding new ones
 4. Make the smallest coherent change
 

@@ -15,6 +15,7 @@ Tablet-friendly cooking app built with Vue 3 + Vite.
 - **Built-in Recipes**: curated dataset with preparation-type filtering
 - **Shopping List**: add ingredients from recipes, smart grouping (numeric + exact + near-duplicate normalization), clearer per-recipe provenance, plain-text copy/share export, section assignment
 - **Weekly Planner**: plan breakfast, lunch, and dinner across 7 days using recipes from your recipe book
+- **Nutrition Goals**: set personal daily targets for calories, protein, carbs, and fat; progress is shown against each recipe's nutrition data
 - **Nutrition**: on-demand calorie/macronutrient breakdown per ingredient and per recipe; three-tier provider enrichment (manual built-in → base ingredient database → OpenFoodFacts); ~55 common Italian ingredients covered offline; density-based ml→g conversion for milk and water; smart alias matching with "di X" compound safety guard; gram estimation from unit context; transparency panel (estimated quantities, excluded ingredients, provider attribution); manual gram override with recalculation; staleness detection; `status` badge (missing / partial / complete / manual)
 - **Cooking Mode**: step-by-step fullscreen mode with per-step timer
 - **Timers**: multiple parallel timers with toast completion feedback
@@ -43,8 +44,12 @@ The dev server URL is printed by Vite (default is usually `http://localhost:5173
 ```bash
 npm run build
 npm run preview
-npm run test:unit     # run unit tests once (CI mode)
-npm run test:watch    # run tests in watch mode (development)
+npm run test:unit         # run unit tests once (CI mode)
+npm run test:watch        # run tests in watch mode (development)
+npm run test:smoke        # live import smoke tests (hits real sites)
+npm run test:e2e          # Playwright E2E tests
+npm run test:e2e:ui       # Playwright E2E with interactive UI
+npm run build:duemme-pack # build Duemme built-in recipe pack
 ```
 
 ## Testing
@@ -79,18 +84,19 @@ src/
   App.vue
   main.js
   types.ts
-  router/index.js
+  router/index.ts
   views/
   components/
   stores/
     recipeBook.ts
     shoppingList.ts
     weeklyPlanner.ts
+    nutritionGoalsStore.ts
   composables/
     useImportFlow.ts
-    useTimers.js
-    useTheme.js
-    useServiceWorker.js
+    useTimers.ts
+    useTheme.ts
+    useServiceWorker.ts
   lib/
     storage.ts
     recipes.js
@@ -155,7 +161,7 @@ This produces a draft pack, a vetted-subset candidate file, and a compact review
 
 ## Persistence and Compatibility
 
-- Runtime storage uses a Dexie adapter when IndexedDB is available, with transparent fallback to the localStorage adapter.
+- Runtime storage uses `localStorage` as the active backend. A Dexie/IndexedDB adapter is planned (see `docs/architecture/dexie-migration-plan.md`) but not yet in production.
 - Recipe model is normalized before persistence.
 - Legacy data compatibility is preserved in `src/lib/storage.ts` (`migrateFromV2`, `normalizeStoredRecipe` path).
 - Legacy `bimby: boolean` remains supported, while `preparationType` is first-class.

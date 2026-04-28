@@ -4,6 +4,7 @@ const APP_ROOT = 'http://127.0.0.1:4173/cucina-app/';
 const STORAGE_KEY = 'cucina_recipebook_v3';
 const SHOPPING_LIST_KEY = 'cucina_shopping_list_v1';
 const WEEKLY_PLANNER_KEY = 'cucina_weekly_planner_v1';
+const GOALS_KEY = 'cucina_nutrition_goals_v1';
 
 const EMPTY_PLANNER = {
   monday:    { breakfast: null, lunch: null, dinner: null },
@@ -19,6 +20,7 @@ type SeedState = {
   recipes?: unknown[];
   shoppingList?: unknown[];
   planner?: unknown;
+  goals?: Record<string, number>;
 };
 
 async function gotoRoute(page: Page, route: string): Promise<void> {
@@ -32,18 +34,23 @@ async function seedState(page: Page, state: SeedState): Promise<void> {
   await expect(page.locator('main.app')).toBeVisible();
   await expect(page.locator('main.app .panel.active').first()).toBeVisible();
 
-  await page.evaluate(({ recipes, shoppingList, planner, storageKey, shoppingKey, plannerKey }) => {
+  await page.evaluate(({ recipes, shoppingList, planner, goals, storageKey, shoppingKey, plannerKey, goalsKey }) => {
     localStorage.clear();
     localStorage.setItem(storageKey, JSON.stringify(recipes || []));
     localStorage.setItem(shoppingKey, JSON.stringify(shoppingList || []));
     localStorage.setItem(plannerKey, JSON.stringify(planner));
+    if (goals !== null) {
+      localStorage.setItem(goalsKey, JSON.stringify(goals));
+    }
   }, {
     recipes:     state.recipes || [],
     shoppingList: state.shoppingList || [],
     planner:     state.planner || EMPTY_PLANNER,
+    goals:       state.goals ?? null,
     storageKey:  STORAGE_KEY,
     shoppingKey: SHOPPING_LIST_KEY,
     plannerKey:  WEEKLY_PLANNER_KEY,
+    goalsKey:    GOALS_KEY,
   });
 
   await page.goto(APP_ROOT);
@@ -192,7 +199,7 @@ test('estimated quantities: shows transparency section for tbsp ingredient', asy
   await expect(badge).not.toHaveClass(/nutrition-badge--missing/, { timeout: 5000 });
 
   // Open details section (collapsed by default)
-  const detailsToggle = page.locator('.nutrition-details-toggle');
+  const detailsToggle = page.locator('.nutrition-details-toggle:not(.nutrition-goals-toggle)');
   await expect(detailsToggle).toBeVisible();
   await detailsToggle.click();
 
@@ -249,7 +256,7 @@ test('manual override: edit quantities updates kcal, sets manual badge, persists
   await expect(badge).toHaveClass(/nutrition-badge--complete/);
 
   // Open details section (collapsed by default) to reveal the edit button
-  const detailsToggle = page.locator('.nutrition-details-toggle');
+  const detailsToggle = page.locator('.nutrition-details-toggle:not(.nutrition-goals-toggle)');
   await expect(detailsToggle).toBeVisible();
   await detailsToggle.click();
 
@@ -314,7 +321,7 @@ test('not-included: shows excluded ingredient after partial calculation', async 
   await expect(page.locator('.nutrition-badge')).not.toHaveClass(/nutrition-badge--missing/, { timeout: 5000 });
 
   // Open details section (collapsed by default)
-  const detailsToggle = page.locator('.nutrition-details-toggle');
+  const detailsToggle = page.locator('.nutrition-details-toggle:not(.nutrition-goals-toggle)');
   await expect(detailsToggle).toBeVisible();
   await detailsToggle.click();
 
@@ -364,7 +371,7 @@ test('per-100g edit: protein change updates macro display and persists', async (
   await expect(page.locator('#saved-detail-view')).toBeVisible();
 
   // Open details section (collapsed by default)
-  await page.locator('.nutrition-details-toggle').click();
+  await page.locator('.nutrition-details-toggle:not(.nutrition-goals-toggle)').click();
 
   // Open the editor
   const editBtn = page.locator('.nutrition-details-edit button').filter({ hasText: /edit|quantit/i }).first();
@@ -429,7 +436,7 @@ test('per-100g edit: comma decimal accepted (10,5 → 10.5)', async ({ page }) =
   await expect(page.locator('#saved-detail-view')).toBeVisible();
 
   // Open details section (collapsed by default)
-  await page.locator('.nutrition-details-toggle').click();
+  await page.locator('.nutrition-details-toggle:not(.nutrition-goals-toggle)').click();
 
   const editBtn = page.locator('.nutrition-details-edit button').filter({ hasText: /edit|quantit/i }).first();
   await editBtn.click();
@@ -461,7 +468,7 @@ test('per-100g edit: expand panel toggle works — expand then collapse', async 
   await expect(page.locator('#saved-detail-view')).toBeVisible();
 
   // Open details section (collapsed by default)
-  await page.locator('.nutrition-details-toggle').click();
+  await page.locator('.nutrition-details-toggle:not(.nutrition-goals-toggle)').click();
 
   const editBtn = page.locator('.nutrition-details-edit button').filter({ hasText: /edit|quantit/i }).first();
   await editBtn.click();
@@ -528,7 +535,7 @@ test('QA: missing grams → setting grams removes ingredient from not-included l
   await expect(page.locator('.nutrition-badge')).toHaveClass(/nutrition-badge--partial/);
 
   // Open details section (collapsed by default)
-  await page.locator('.nutrition-details-toggle').click();
+  await page.locator('.nutrition-details-toggle:not(.nutrition-goals-toggle)').click();
 
   // Transparency section and "not included" details must be visible
   await expect(page.locator('.nutrition-transparency')).toBeVisible();
@@ -608,7 +615,7 @@ test('QA: missing nutrition → per-100g edit removes ingredient from not-includ
   await expect(page.locator('#saved-detail-view')).toBeVisible();
 
   // Open details section (collapsed by default)
-  await page.locator('.nutrition-details-toggle').click();
+  await page.locator('.nutrition-details-toggle:not(.nutrition-goals-toggle)').click();
 
   // Confirm not-included section visible
   await expect(page.locator('.nutrition-transparency')).toBeVisible();
@@ -703,7 +710,7 @@ test('QA: estimated grams → manual grams removes ingredient from estimated sec
   await expect(page.locator('#saved-detail-view')).toBeVisible();
 
   // Open details section (collapsed by default)
-  await page.locator('.nutrition-details-toggle').click();
+  await page.locator('.nutrition-details-toggle:not(.nutrition-goals-toggle)').click();
 
   // Estimated quantities section must be visible
   await expect(page.locator('.nutrition-transparency')).toBeVisible();
@@ -792,7 +799,7 @@ test('olio grams: doubling grams from 10 to 20 visibly increases kcal', async ({
   expect(kcalBefore).toBeGreaterThan(300);
 
   // Open details section (collapsed by default)
-  await page.locator('.nutrition-details-toggle').click();
+  await page.locator('.nutrition-details-toggle:not(.nutrition-goals-toggle)').click();
 
   // Open editor
   const editBtn = page.locator('.nutrition-details-edit button').filter({ hasText: /edit|quantit|modific/i }).first();
@@ -959,7 +966,7 @@ test('base_ingredients: porridge recipe calculates kcal from oats, milk, and cin
   await expect(badge).not.toHaveClass(/nutrition-badge--missing/);
 
   // Open details section (collapsed by default) to see sources
-  const detailsToggle = page.locator('.nutrition-details-toggle');
+  const detailsToggle = page.locator('.nutrition-details-toggle:not(.nutrition-goals-toggle)');
   await expect(detailsToggle).toBeVisible();
   await detailsToggle.click();
 
@@ -1018,6 +1025,97 @@ test('base_ingredients: porridge kcal and nutrition persist after reload', async
 
 // ─── no_match excluded ingredient: editor coverage ───────────────────────────
 
+// ─── Nutrition Goals feature ──────────────────────────────────────────────────
+
+// Recipe pre-seeded with known perServing values so goal bars render immediately.
+const goalsTestRecipe = {
+  id:              'nutrition-e2e-goals',
+  name:            'Goals Test Recipe',
+  source:          'manual',
+  preparationType: 'classic',
+  ingredients:     ['200 g pasta'],
+  steps:           ['Cuoci'],
+  servings:        '2',
+  ingredientNutrition: [
+    {
+      ingredientName: '200 g pasta',
+      grams: 200,
+      gramsEstimated: false,
+      source: { provider: 'openfoodfacts' },
+      nutritionPer100g: { kcal: 350, proteinG: 13, carbsG: 70, fatG: 1.5, fiberG: 2.7 },
+    },
+  ],
+  nutrition: {
+    status: 'complete',
+    perServing: { kcal: 350, proteinG: 13, carbsG: 70, fatG: 1.5, fiberG: 2.7 },
+    perRecipe:  { kcal: 700, proteinG: 26, carbsG: 140, fatG: 3.0, fiberG: 5.4 },
+    servingsUsed: 2,
+    calculatedAt: new Date().toISOString(),
+    ingredientsFingerprint: '200 g pasta',
+  },
+};
+
+test('goals: no goal bars visible when no goals are set', async ({ page }) => {
+  await seedState(page, { recipes: [goalsTestRecipe] });
+  await gotoRoute(page, 'recipe-book/nutrition-e2e-goals');
+  await expect(page.locator('#saved-detail-view')).toBeVisible();
+  await expect(page.locator('.nutrition-goal-bar')).toHaveCount(0);
+});
+
+test('goals: 5 bars with percentages when all 5 goals set', async ({ page }) => {
+  await seedState(page, { recipes: [goalsTestRecipe], goals: { kcal: 2000, proteinG: 75, carbsG: 250, fatG: 65, fiberG: 30 } });
+  await gotoRoute(page, 'recipe-book/nutrition-e2e-goals');
+  await expect(page.locator('#saved-detail-view')).toBeVisible();
+
+  const bars = page.locator('.nutrition-goal-bar');
+  await expect(bars).toHaveCount(5);
+
+  const pct = page.locator('.nutrition-goal-pct').first();
+  await expect(pct).toBeVisible();
+  const pctText = await pct.textContent();
+  const pctVal = parseInt(pctText ?? '0', 10);
+  expect(pctVal).toBeGreaterThan(0);
+  expect(pctVal).toBeLessThanOrEqual(100);
+});
+
+test('goals: over-goal bar gets --over modifier and percentage > 100', async ({ page }) => {
+  // kcal goal = 100, perServing.kcal = 350 → 350%
+  await seedState(page, { recipes: [goalsTestRecipe], goals: { kcal: 100 } });
+  await gotoRoute(page, 'recipe-book/nutrition-e2e-goals');
+  await expect(page.locator('#saved-detail-view')).toBeVisible();
+
+  const overBar = page.locator('.nutrition-goal-bar--over');
+  await expect(overBar).toBeVisible();
+
+  const pct = page.locator('.nutrition-goal-pct').first();
+  await expect(pct).toBeVisible();
+  const pctText = await pct.textContent();
+  const pctVal = parseInt(pctText ?? '0', 10);
+  expect(pctVal).toBeGreaterThan(100);
+});
+
+test('goals: bars persist after page reload', async ({ page }) => {
+  await seedState(page, { recipes: [goalsTestRecipe], goals: { kcal: 2000, proteinG: 75, carbsG: 250 } });
+  await gotoRoute(page, 'recipe-book/nutrition-e2e-goals');
+  await expect(page.locator('#saved-detail-view')).toBeVisible();
+  await expect(page.locator('.nutrition-goal-bar')).toHaveCount(3);
+
+  // Full reload — goals must be re-read from localStorage
+  await gotoRoute(page, 'recipe-book/nutrition-e2e-goals');
+  await expect(page.locator('#saved-detail-view')).toBeVisible();
+  await expect(page.locator('.nutrition-goal-bar')).toHaveCount(3);
+});
+
+test('goals: omitting one goal renders 4 bars', async ({ page }) => {
+  // fiberG omitted → only 4 goal bars
+  await seedState(page, { recipes: [goalsTestRecipe], goals: { kcal: 2000, proteinG: 75, carbsG: 250, fatG: 65 } });
+  await gotoRoute(page, 'recipe-book/nutrition-e2e-goals');
+  await expect(page.locator('#saved-detail-view')).toBeVisible();
+  await expect(page.locator('.nutrition-goal-bar')).toHaveCount(4);
+});
+
+// ─── no_match excluded ingredient: editor coverage ───────────────────────────
+
 test('no_match: excluded ingredient appears in editor and can be completed manually', async ({ page }) => {
   // Recipe with one recognised ingredient and one fully unmatched one (no entry in ingredientNutrition).
   // "ingrediente sconosciuto 50g" has no match → excluded with reason no_match.
@@ -1056,7 +1154,7 @@ test('no_match: excluded ingredient appears in editor and can be completed manua
   await expect(page.locator('.nutrition-badge')).toHaveClass(/nutrition-badge--partial/);
 
   // Open details section (collapsed by default)
-  await page.locator('.nutrition-details-toggle').click();
+  await page.locator('.nutrition-details-toggle:not(.nutrition-goals-toggle)').click();
 
   // Open the editor — button must be visible (recipe.nutrition exists and ingredients.length > 0)
   const editBtn = page.locator('.nutrition-details-edit button').filter({ hasText: /edit|quantit|modific/i }).first();
