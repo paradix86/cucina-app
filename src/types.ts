@@ -83,6 +83,14 @@ export type RecipeNutrition = {
   ingredientsFingerprint?: string;  // joined ingredients at calculation time; used to detect staleness
 };
 
+export type NutritionGoals = {
+  kcal?: number;
+  proteinG?: number;
+  carbsG?: number;
+  fatG?: number;
+  fiberG?: number;
+};
+
 export interface Recipe {
   id: string;
   name: string;

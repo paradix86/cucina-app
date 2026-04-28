@@ -5,6 +5,8 @@ import { computeIngredientsFingerprint } from '../lib/nutrition';
 import { parseGramsInput, parseNutrientInput, applyNutritionOverrides } from '../lib/nutritionOverride';
 import { deriveEstimatedIngredients, deriveExcludedIngredients, deriveProviderNames, deriveConfidenceLabel } from '../lib/nutritionTransparency';
 import { useRecipeBookStore } from '../stores/recipeBook';
+import { useNutritionGoalsStore } from '../stores/nutritionGoalsStore';
+import { buildGoalComparison, parseGoalInput } from '../lib/nutritionGoals';
 
 const props = defineProps({
   recipe:           { type: Object,  required: true },
@@ -15,6 +17,7 @@ const props = defineProps({
 const emit = defineEmits(['calculate', 'save', 'toast']);
 
 const recipeBookStore = useRecipeBookStore();
+const goalsStore = useNutritionGoalsStore();
 
 // ── Donut animation ────────────────────────────────────────────────────────────
 const donutProgress = ref(1);
@@ -127,6 +130,83 @@ const insightBadges = computed(() => {
   if (d.kcal     != null && d.kcal     >= 700) badges.push({ key: 'nutrition_insight_high_cal',    type: 'caution'  });
   return badges.slice(0, 3);
 });
+
+// ── Nutrition Goals ────────────────────────────────────────────────────────────
+const GOAL_FIELDS = [
+  { key: 'kcal',     labelKey: 'nutrition_goals_kcal_label',    unit: 'kcal' },
+  { key: 'proteinG', labelKey: 'nutrition_goals_protein_label', unit: 'g' },
+  { key: 'carbsG',   labelKey: 'nutrition_goals_carbs_label',   unit: 'g' },
+  { key: 'fatG',     labelKey: 'nutrition_goals_fat_label',     unit: 'g' },
+  { key: 'fiberG',   labelKey: 'nutrition_goals_fiber_label',   unit: 'g' },
+];
+
+const goalComparison = computed(() => {
+  const ctx = props.nutritionContext;
+  if (!ctx) return [];
+  const goals = goalsStore.goals;
+  const hasAnyGoal = Object.values(goals).some(v => v != null);
+  if (!hasAnyGoal) return [];
+  const nutrition = ctx.perServing ?? ctx.perRecipe ?? ctx.data;
+  return buildGoalComparison(nutrition, goals);
+});
+
+const goalBadges = computed(() => {
+  const d = props.nutritionContext?.data;
+  const goals = goalsStore.goals;
+  if (!d) return [];
+  const badges = [];
+  if (goals.proteinG && d.proteinG != null && d.proteinG >= goals.proteinG * 0.30)
+    badges.push({ key: 'nutrition_goals_insight_high_protein', type: 'positive' });
+  if (goals.fiberG && d.fiberG != null && d.fiberG < goals.fiberG * 0.20)
+    badges.push({ key: 'nutrition_goals_insight_low_fiber', type: 'caution' });
+  if (goals.kcal && d.kcal != null && d.kcal >= goals.kcal * 0.40)
+    badges.push({ key: 'nutrition_goals_insight_calorie_dense', type: 'caution' });
+  if (goals.kcal && d.kcal != null && d.kcal <= goals.kcal * 0.20)
+    badges.push({ key: 'nutrition_goals_insight_light_meal', type: 'info' });
+  return badges;
+});
+
+const allBadges = computed(() => {
+  const goal = goalBadges.value;
+  const abs  = insightBadges.value;
+  const combined = [...goal];
+  for (const b of abs) {
+    if (combined.length >= 3) break;
+    if (!combined.find(g => g.key === b.key)) combined.push(b);
+  }
+  return combined.slice(0, 3);
+});
+
+// ── Goals editor ──────────────────────────────────────────────────────────────
+const showGoalsEditor = ref(false);
+const goalsDraft = ref({ kcal: '', proteinG: '', carbsG: '', fatG: '', fiberG: '' });
+
+function openGoalsEditor() {
+  const g = goalsStore.goals;
+  goalsDraft.value = {
+    kcal:     g.kcal     != null ? String(g.kcal)     : '',
+    proteinG: g.proteinG != null ? String(g.proteinG) : '',
+    carbsG:   g.carbsG   != null ? String(g.carbsG)   : '',
+    fatG:     g.fatG     != null ? String(g.fatG)     : '',
+    fiberG:   g.fiberG   != null ? String(g.fiberG)   : '',
+  };
+  showGoalsEditor.value = true;
+}
+
+function cancelGoalsEditor() {
+  showGoalsEditor.value = false;
+}
+
+function saveGoalsEditor() {
+  const next = {};
+  for (const f of GOAL_FIELDS) {
+    const val = parseGoalInput(goalsDraft.value[f.key] ?? '');
+    if (val !== undefined) next[f.key] = val;
+  }
+  goalsStore.update(next);
+  showGoalsEditor.value = false;
+  emit('toast', t('nutrition_goals_saved'), 'success');
+}
 
 const statusExplanation = computed(() => {
   const status = props.recipe.nutrition?.status;
@@ -398,14 +478,41 @@ function saveEditor() {
     </div>
 
     <!-- Insight badges -->
-    <div v-if="insightBadges.length" class="nutrition-insights" :aria-label="t('nutrition_insights_label')">
+    <div v-if="allBadges.length" class="nutrition-insights" :aria-label="t('nutrition_insights_label')">
       <span
-        v-for="badge in insightBadges"
+        v-for="badge in allBadges"
         :key="badge.key"
         class="nutrition-insight-badge"
         :class="`nutrition-insight-badge--${badge.type}`"
         role="note"
       >{{ t(badge.key) }}</span>
+    </div>
+
+    <!-- Goal comparison bars -->
+    <div v-if="goalComparison.length" class="nutrition-goal-section">
+      <p class="nutrition-goal-vs-label">{{ t('nutrition_goals_vs_daily') }}</p>
+      <div
+        v-for="item in goalComparison"
+        :key="item.key"
+        class="nutrition-goal-row"
+      >
+        <span class="nutrition-goal-name">{{ t(item.labelKey) }}</span>
+        <div
+          class="nutrition-goal-bar-wrap"
+          role="progressbar"
+          :aria-valuenow="item.pct"
+          :aria-valuemax="100"
+          :aria-label="`${t(item.labelKey)}: ${item.pct}%`"
+        >
+          <div
+            class="nutrition-goal-bar"
+            :class="{ 'nutrition-goal-bar--over': item.pct > 100 }"
+            :style="{ width: `${Math.min(item.pct, 100)}%` }"
+          ></div>
+        </div>
+        <span class="nutrition-goal-val">{{ item.unit === 'kcal' ? Math.round(item.value) : item.value.toFixed(1) }}{{ item.unit }}</span>
+        <span class="nutrition-goal-pct" :class="{ 'nutrition-goal-pct--over': item.pct > 100 }">{{ item.pct }}%</span>
+      </div>
     </div>
 
     <!-- No macros note -->
@@ -452,6 +559,38 @@ function saveEditor() {
       <p class="sec-label">{{ t('nutrition_details_title') }}</p>
       <span class="nutrition-details-chevron" :class="{ open: showDetails }" aria-hidden="true">&#9660;</span>
     </button>
+
+    <!-- Goals editor toggle -->
+    <button
+      class="nutrition-details-toggle"
+      type="button"
+      :aria-expanded="showGoalsEditor"
+      @click="showGoalsEditor ? cancelGoalsEditor() : openGoalsEditor()"
+    >
+      <p class="sec-label">{{ t('nutrition_goals_title') }}</p>
+      <span class="nutrition-details-chevron" :class="{ open: showGoalsEditor }" aria-hidden="true">&#9660;</span>
+    </button>
+
+    <!-- Goals editor -->
+    <div v-show="showGoalsEditor" class="nutrition-goals-editor" role="region" :aria-label="t('nutrition_goals_title')">
+      <div v-for="field in GOAL_FIELDS" :key="field.key" class="nutrition-goal-editor-row">
+        <label :for="`goal-${field.key}`" class="nutrition-goal-editor-label">{{ t(field.labelKey) }}</label>
+        <input
+          :id="`goal-${field.key}`"
+          class="nutrition-editor-input"
+          type="text"
+          inputmode="decimal"
+          :placeholder="field.unit"
+          :value="goalsDraft[field.key]"
+          @input="goalsDraft[field.key] = $event.target.value"
+        />
+        <span class="nutrition-editor-unit">{{ field.unit }}</span>
+      </div>
+      <div class="nutrition-editor-actions">
+        <button class="btn-primary" type="button" @click="saveGoalsEditor">{{ t('nutrition_goals_save') }}</button>
+        <button class="btn-ghost" type="button" @click="cancelGoalsEditor">{{ t('recipe_edit_cancel') }}</button>
+      </div>
+    </div>
 
     <!-- Collapsible details section (v-show keeps editor inputs alive) -->
     <div
@@ -1078,6 +1217,105 @@ function saveEditor() {
 .nutrition-insight-badge--info {
   background: var(--hover-bg, rgba(0,0,0,0.06));
   color: var(--text-muted);
+}
+
+/* ── Goal comparison ── */
+.nutrition-goal-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.nutrition-goal-vs-label {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin: 0;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.nutrition-goal-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.nutrition-goal-name {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  width: 72px;
+  flex-shrink: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.nutrition-goal-bar-wrap {
+  flex: 1;
+  height: 6px;
+  background: var(--bg-secondary, rgba(0,0,0,0.06));
+  border-radius: 3px;
+  overflow: hidden;
+  min-width: 0;
+}
+
+.nutrition-goal-bar {
+  height: 100%;
+  border-radius: 3px;
+  background: var(--color-accent);
+  transition: width 0.3s ease;
+}
+
+.nutrition-goal-bar--over {
+  background: var(--nutrition-partial-text, #d97706);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nutrition-goal-bar { transition: none; }
+}
+
+.nutrition-goal-val {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--text);
+  flex-shrink: 0;
+  min-width: 48px;
+  text-align: right;
+}
+
+.nutrition-goal-pct {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  width: 36px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.nutrition-goal-pct--over {
+  color: var(--nutrition-partial-text, #d97706);
+  font-weight: 700;
+}
+
+/* ── Goals editor ── */
+.nutrition-goals-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-bottom: 4px;
+}
+
+.nutrition-goal-editor-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+}
+
+.nutrition-goal-editor-label {
+  flex: 1;
+  font-size: 0.85rem;
+  color: var(--text);
 }
 
 /* ── Micro interactions ── */
