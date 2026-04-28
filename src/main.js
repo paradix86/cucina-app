@@ -1,7 +1,7 @@
 import { createApp } from 'vue';
 import { createPinia } from 'pinia';
 import App from './App.vue';
-import { router } from './router/index.js';
+import { router } from './router';
 import { hydrateAppState } from './bootstrap/hydrateAppState';
 import { initLanguage } from './lib/i18n.js';
 import { migrateFromV2 } from './lib/storage';

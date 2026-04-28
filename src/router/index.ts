@@ -1,4 +1,5 @@
 import { createRouter, createWebHashHistory } from 'vue-router';
+import type { RouteLocationNormalized, RouteRecordRaw, RouterScrollBehavior } from 'vue-router';
 import RecipeBookView from '../views/RecipeBookView.vue';
 
 const ImportView        = () => import('../views/ImportView.vue');
@@ -9,7 +10,7 @@ const TimerView         = () => import('../views/TimerView.vue');
 const GuidesView        = () => import('../views/GuidesView.vue');
 const SharedRecipeView  = () => import('../views/SharedRecipeView.vue');
 
-const routes = [
+const routes: RouteRecordRaw[] = [
   { path: '/', redirect: '/recipe-book' },
   { path: '/recipe-book',  name: 'recipe-book',  component: RecipeBookView },
   { path: '/recipe-book/:id', name: 'recipe-book-detail', component: RecipeBookView, props: true },
@@ -28,7 +29,11 @@ const routes = [
 export const router = createRouter({
   history: createWebHashHistory(),
   routes,
-  scrollBehavior(to, from, savedPosition) {
+  scrollBehavior(
+    to: RouteLocationNormalized,
+    from: RouteLocationNormalized,
+    savedPosition: Parameters<RouterScrollBehavior>[2],
+  ) {
     if (savedPosition) return savedPosition;
     return { top: 0 };
   },
