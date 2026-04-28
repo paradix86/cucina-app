@@ -17,7 +17,7 @@ import {
   suggestImportTags,
 } from '../lib/import/adapters';
 import { normalizePreparationTypeValue } from '../lib/ingredientUtils';
-import { t } from '../lib/i18n.js';
+import { t } from '../lib/i18n';
 import type { ImportDiagnostic, ImportPreviewRecipe, ImportSource, PreparationType, StatusState } from '../types';
 
 const sourceMap: Record<ImportSource, string> = {

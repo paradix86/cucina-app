@@ -1,5 +1,5 @@
 <script setup>
-import { currentLang, setLanguage, SUPPORTED_LANGUAGES, t } from '../lib/i18n.js';
+import { currentLang, setLanguage, SUPPORTED_LANGUAGES, t } from '../lib/i18n';
 import { useTheme } from '../composables/useTheme';
 
 defineProps({

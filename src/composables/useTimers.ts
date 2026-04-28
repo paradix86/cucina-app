@@ -1,5 +1,5 @@
 import { computed, getCurrentScope, onScopeDispose, ref } from 'vue';
-import { t } from '../lib/i18n.js';
+import { t } from '../lib/i18n';
 import { formatClock } from '../lib/recipes';
 import { useToasts } from './useToasts';
 import { useTimerAlerts } from './useTimerAlerts';

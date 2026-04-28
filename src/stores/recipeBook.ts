@@ -1,6 +1,6 @@
 import { computed, ref } from 'vue';
 import { defineStore } from 'pinia';
-import { t } from '../lib/i18n.js';
+import { t } from '../lib/i18n';
 import {
   exportRecipeBook,
   importRecipeBook,

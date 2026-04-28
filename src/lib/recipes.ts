@@ -1,5 +1,5 @@
 import { getPreparationType } from './ingredientUtils';
-import { t } from './i18n.js';
+import { t } from './i18n';
 import { detectBimbyAction, renderBimbyActionIcon } from './bimbyIcons';
 import type { PreparationType, Recipe } from '../types';
 

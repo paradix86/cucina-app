@@ -1,7 +1,7 @@
 <script setup>
 import { computed, ref } from 'vue';
 import { APP_META, formatEuropeanDate } from '../lib/appMeta';
-import { t } from '../lib/i18n.js';
+import { t } from '../lib/i18n';
 import { refreshAppRuntime } from '../composables/useServiceWorker';
 import { CHANGELOG } from '../lib/changelog.ts';
 

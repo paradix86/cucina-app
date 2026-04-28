@@ -6,6 +6,15 @@ export type ChangelogEntry = {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '0.10.3',
+    date: '2026-04-28',
+    changes: [
+      'TypeScript migration: bimbyIcons, builtinData, duemmeVettedPack, ninjaVettedPack, useTheme, i18n, i18nData, and main entry point converted from .js to .ts',
+      'All import paths updated to extension-free form for full TypeScript resolver compatibility',
+      'vue-tsc reports zero errors across the entire codebase',
+    ],
+  },
+  {
     version: '0.10.2',
     date: '2026-04-27',
     changes: [

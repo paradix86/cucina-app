@@ -2,7 +2,7 @@
 import { computed, nextTick, ref, watch } from 'vue';
 import { storeToRefs } from 'pinia';
 import { buildStepsHtml, formatTimerLabel, getPreparationInfo, getSourceDomainLabel, joinMetaParts, scaleIngredients, suggestMealOccasions } from '../lib/recipes';
-import { t } from '../lib/i18n.js';
+import { t } from '../lib/i18n';
 import { useShoppingListStore } from '../stores/shoppingList';
 import { useRecipeBookStore } from '../stores/recipeBook';
 import { buildShareUrl } from '../lib/recipeShare';

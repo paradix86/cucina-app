@@ -1,6 +1,6 @@
 import { computed, ref } from 'vue';
 import { useLocalStorage } from '@vueuse/core';
-import { t } from '../lib/i18n.js';
+import { t } from '../lib/i18n';
 
 interface TimerAlert {
   open: boolean;

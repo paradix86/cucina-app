@@ -2,7 +2,7 @@
 import { computed, ref } from 'vue';
 import { storeToRefs } from 'pinia';
 import { useRouter } from 'vue-router';
-import { t } from '../lib/i18n.js';
+import { t } from '../lib/i18n';
 import { PLANNER_DAYS, PLANNER_MEAL_SLOTS } from '../lib/planner';
 import { useToasts } from '../composables/useToasts';
 import { useRecipeBookStore } from '../stores/recipeBook';

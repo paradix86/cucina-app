@@ -4,7 +4,7 @@ import { storeToRefs } from 'pinia';
 import { useRoute } from 'vue-router';
 import { useImportFlow } from '../composables/useImportFlow';
 import { getSourceDomainLabel, joinMetaParts, suggestMealOccasions, MEAL_OCCASION_OPTIONS } from '../lib/recipes';
-import { t } from '../lib/i18n.js';
+import { t } from '../lib/i18n';
 import { useRecipeBookStore } from '../stores/recipeBook';
 import { DUEMME_VETTED_RECIPE_PACK } from '../lib/duemmeVettedPack';
 import { getNinjaVettedPack } from '../lib/ninjaVettedPack';

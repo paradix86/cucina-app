@@ -3,7 +3,7 @@ import { computed, ref } from 'vue';
 import { useTimers } from '../composables/useTimers';
 import { useTimerAlerts } from '../composables/useTimerAlerts';
 import { useCookingPreferences } from '../composables/useCookingPreferences';
-import { t } from '../lib/i18n.js';
+import { t } from '../lib/i18n';
 
 const name = ref('');
 const minutes = ref(5);

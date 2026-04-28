@@ -3,7 +3,7 @@ import { createPinia } from 'pinia';
 import App from './App.vue';
 import { router } from './router';
 import { hydrateAppState } from './bootstrap/hydrateAppState';
-import { initLanguage } from './lib/i18n.js';
+import { initLanguage } from './lib/i18n';
 import { migrateFromV2 } from './lib/storage';
 import '../css/style.css';
 

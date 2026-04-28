@@ -1,9 +1,9 @@
 /**
- * i18nData.js — Translation data and supported language list (it / en / de / fr / es)
+ * i18nData.ts — Translation data and supported language list (it / en / de / fr / es)
  * Consumed by src/lib/i18n.js — do not import directly elsewhere.
  */
 
-export const TRANSLATIONS = {
+export const TRANSLATIONS: Record<string, Record<string, string>> = {
   it: {
     // Navigation
     nav_recipebook: 'Ricettario',

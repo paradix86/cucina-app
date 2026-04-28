@@ -4,7 +4,7 @@ import { storeToRefs } from 'pinia';
 import { useRouter } from 'vue-router';
 import { parseIngredient, formatQuantity } from '../lib/ingredientUtils';
 import { useShoppingListStore } from '../stores/shoppingList';
-import { t } from '../lib/i18n.js';
+import { t } from '../lib/i18n';
 
 const emit = defineEmits(['toast']);
 const router = useRouter();

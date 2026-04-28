@@ -2,7 +2,7 @@ import 'fake-indexeddb/auto';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createPinia, setActivePinia } from 'pinia';
 import { resetStorageAdapter } from '../../src/lib/storage';
-import { t } from '../../src/lib/i18n.js';
+import { t } from '../../src/lib/i18n';
 import { useImportFlow } from '../../src/composables/useImportFlow';
 
 const {

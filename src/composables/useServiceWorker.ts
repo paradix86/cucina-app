@@ -1,5 +1,5 @@
 import { APP_META } from '../lib/appMeta';
-import { t } from '../lib/i18n.js';
+import { t } from '../lib/i18n';
 
 type ShowToast = (message: string, type?: string, options?: { actionLabel?: string; onAction?: () => void }) => void;
 

@@ -7,7 +7,7 @@ import ToastStack from './components/ToastStack.vue';
 import CookingModeView from './components/CookingModeView.vue';
 import ConfirmDialog from './components/ConfirmDialog.vue';
 import TimerAlertModal from './components/TimerAlertModal.vue';
-import { t } from './lib/i18n.js';
+import { t } from './lib/i18n';
 import { useToasts } from './composables/useToasts';
 import { useTimers } from './composables/useTimers';
 import { useTimerAlerts } from './composables/useTimerAlerts';

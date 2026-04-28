@@ -4,7 +4,7 @@ import { useRoute, useRouter } from 'vue-router';
 import RecipeDetailView from '../components/RecipeDetailView.vue';
 import { decodeShareData, sharedPayloadToRecipe } from '../lib/recipeShare';
 import { useRecipeBookStore } from '../stores/recipeBook';
-import { t } from '../lib/i18n.js';
+import { t } from '../lib/i18n';
 import type { Recipe } from '../types';
 
 const emit = defineEmits<{

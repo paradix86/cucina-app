@@ -1,6 +1,6 @@
 <script setup>
 import { computed, nextTick, onUnmounted, ref, watch } from 'vue';
-import { t } from '../lib/i18n.js';
+import { t } from '../lib/i18n';
 import { computeIngredientsFingerprint } from '../lib/nutrition';
 import { parseGramsInput, parseNutrientInput, applyNutritionOverrides } from '../lib/nutritionOverride';
 import { deriveEstimatedIngredients, deriveExcludedIngredients, deriveProviderNames, deriveConfidenceLabel } from '../lib/nutritionTransparency';
