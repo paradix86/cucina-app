@@ -1,18 +1,29 @@
-/**
- * App metadata — source of truth is appMeta.js (build-time injected via vite.config.js).
- *
- * DO NOT add static version/date strings here.
- * The real values come from:
- *   - __APP_VERSION__    → package.json "version"
- *   - __APP_BUILD_DATE__ → git commit date (injected by vite.config.js at build time)
- *   - __APP_COMMIT__     → git short hash
- *   - __SW_CACHE_NAME__  → public/sw.js CACHE_NAME constant
- *
- * To release a new version:
- *   1. Bump "version" in package.json
- *   2. Prepend a new entry to src/lib/changelog.ts (version must match package.json)
- *   3. Bump CACHE_NAME in public/sw.js (triggers PWA update toast)
- *   4. Run: npm run build && npm run test:unit
- *
- * See src/lib/appMeta.js for the runtime module imported by components.
- */
+function normalizeVersionLabel(value: string | undefined): string {
+  const raw = String(value ?? '').trim();
+  if (!raw) return 'v0.0.0';
+  return raw.startsWith('v') ? raw : `v${raw}`;
+}
+
+export interface AppMeta {
+  version: string;
+  commit: string;
+  buildDate: string;
+  buildId: string;
+  cacheName: string;
+  authorLine: string;
+}
+
+export const APP_META: AppMeta = {
+  version: normalizeVersionLabel(typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : undefined),
+  commit: typeof __APP_COMMIT__ !== 'undefined' ? __APP_COMMIT__ : 'dev',
+  buildDate: typeof __APP_BUILD_DATE__ !== 'undefined' ? __APP_BUILD_DATE__ : new Date().toISOString().slice(0, 10),
+  buildId: typeof __APP_BUILD_ID__ !== 'undefined' ? __APP_BUILD_ID__ : '0.0.0+dev',
+  cacheName: typeof __SW_CACHE_NAME__ !== 'undefined' ? __SW_CACHE_NAME__ : 'dev',
+  authorLine: 'Made with ❤️ by Alan in Switzerland',
+};
+
+export function formatEuropeanDate(isoDate: string | null | undefined): string {
+  const match = String(isoDate ?? '').match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!match) return String(isoDate ?? '');
+  return `${match[3]}-${match[2]}-${match[1]}`;
+}

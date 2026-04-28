@@ -1,4 +1,4 @@
-import { APP_META } from '../lib/appMeta.js';
+import { APP_META } from '../lib/appMeta';
 import { t } from '../lib/i18n.js';
 
 const SW_RELOAD_FLAG = `cucina_sw_reloaded_${APP_META.buildId}`;
