@@ -1,28 +1,35 @@
 import { computed, getCurrentScope, onScopeDispose, ref } from 'vue';
 import { t } from '../lib/i18n.js';
 import { formatClock } from '../lib/recipes.js';
-import { useToasts } from './useToasts.js';
-import { useTimerAlerts } from './useTimerAlerts.js';
+import { useToasts } from './useToasts';
+import { useTimerAlerts } from './useTimerAlerts';
 
-const timers = ref({});
-let timerInterval = null;
-let visibilityHandler = null;
+interface Timer {
+  name: string;
+  total: number;
+  remaining: number;
+  running: boolean;
+}
+
+const timers = ref<Record<string, Timer>>({});
+let timerInterval: ReturnType<typeof window.setInterval> | null = null;
+let visibilityHandler: (() => void) | null = null;
 let activeConsumers = 0;
 let hiddenAt = 0;
-let showToastRef = null;
-let triggerTimerAlertRef = null;
+let showToastRef: ((message: string, type?: string) => void) | null = null;
+let triggerTimerAlertRef: ((message: string, title?: string) => void) | null = null;
 
-function hasRunningTimers() {
+function hasRunningTimers(): boolean {
   return Object.values(timers.value).some(timer => timer.running && timer.remaining > 0);
 }
 
-function clearTimerInterval() {
+function clearTimerInterval(): void {
   if (!timerInterval || typeof window === 'undefined') return;
   window.clearInterval(timerInterval);
   timerInterval = null;
 }
 
-function applyTimerTick(elapsedSeconds = 1) {
+function applyTimerTick(elapsedSeconds = 1): void {
   if (!elapsedSeconds || elapsedSeconds <= 0) return;
   let changed = false;
   Object.keys(timers.value).forEach(id => {
@@ -47,7 +54,7 @@ function applyTimerTick(elapsedSeconds = 1) {
   if (!hasRunningTimers()) clearTimerInterval();
 }
 
-function syncTimerInterval() {
+function syncTimerInterval(): void {
   if (typeof window === 'undefined' || typeof document === 'undefined') return;
   if (!hasRunningTimers() || document.hidden) {
     clearTimerInterval();
@@ -59,7 +66,7 @@ function syncTimerInterval() {
   }, 1000);
 }
 
-function attachVisibilityHandler() {
+function attachVisibilityHandler(): void {
   if (visibilityHandler || typeof document === 'undefined') return;
   visibilityHandler = () => {
     if (document.hidden) {
@@ -76,13 +83,13 @@ function attachVisibilityHandler() {
   document.addEventListener('visibilitychange', visibilityHandler);
 }
 
-function detachVisibilityHandler() {
+function detachVisibilityHandler(): void {
   if (!visibilityHandler || typeof document === 'undefined') return;
   document.removeEventListener('visibilitychange', visibilityHandler);
   visibilityHandler = null;
 }
 
-export function cleanupTimersRuntime(options = {}) {
+export function cleanupTimersRuntime(options: { resetState?: boolean } = {}): void {
   const { resetState = false } = options;
   clearTimerInterval();
   detachVisibilityHandler();
@@ -93,7 +100,10 @@ export function cleanupTimersRuntime(options = {}) {
   if (resetState) timers.value = {};
 }
 
-function registerTimersConsumer(showToast, triggerTimerAlert) {
+function registerTimersConsumer(
+  showToast: (message: string, type?: string) => void,
+  triggerTimerAlert: (message: string, title?: string) => void,
+): void {
   showToastRef = showToast;
   triggerTimerAlertRef = triggerTimerAlert;
   activeConsumers += 1;
@@ -101,7 +111,7 @@ function registerTimersConsumer(showToast, triggerTimerAlert) {
   syncTimerInterval();
 }
 
-function releaseTimersConsumer() {
+function releaseTimersConsumer(): void {
   activeConsumers = Math.max(0, activeConsumers - 1);
   if (activeConsumers === 0) {
     cleanupTimersRuntime();
@@ -120,9 +130,9 @@ export function useTimers() {
     });
   }
 
-  function addTimer(name, min, sec) {
+  function addTimer(name: string, min: string | number, sec: string | number): boolean {
     const timerName = (name || '').trim() || 'Pietanza';
-    const total = (parseInt(min, 10) || 0) * 60 + (parseInt(sec, 10) || 0);
+    const total = (parseInt(String(min), 10) || 0) * 60 + (parseInt(String(sec), 10) || 0);
     if (total <= 0) {
       showToast(t('timer_invalid'), 'error');
       return false;
@@ -136,7 +146,7 @@ export function useTimers() {
     return true;
   }
 
-  function startRecipeTimer(name, seconds) {
+  function startRecipeTimer(name: string, seconds: number): boolean {
     const existing = Object.values(timers.value).find(timer => timer.name === name && timer.remaining > 0);
     if (existing) return false;
     timers.value = {
@@ -147,14 +157,14 @@ export function useTimers() {
     return true;
   }
 
-  function toggleTimer(id) {
+  function toggleTimer(id: string): void {
     if (!timers.value[id]) return;
     timers.value[id].running = !timers.value[id].running;
     timers.value = { ...timers.value };
     syncTimerInterval();
   }
 
-  function resetTimer(id) {
+  function resetTimer(id: string): void {
     if (!timers.value[id]) return;
     timers.value[id].remaining = timers.value[id].total;
     timers.value[id].running = false;
@@ -162,7 +172,7 @@ export function useTimers() {
     syncTimerInterval();
   }
 
-  function deleteTimer(id) {
+  function deleteTimer(id: string): void {
     if (!timers.value[id]) return;
     const next = { ...timers.value };
     delete next[id];

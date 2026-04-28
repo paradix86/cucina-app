@@ -8,7 +8,7 @@ import {
   saveRecipeBookAsync,
   StorageWriteError,
 } from '../lib/storage';
-import { useToasts } from '../composables/useToasts.js';
+import { useToasts } from '../composables/useToasts';
 import type { Recipe } from '../types';
 
 export const useRecipeBookStore = defineStore('recipeBook', () => {

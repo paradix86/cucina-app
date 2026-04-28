@@ -2,7 +2,22 @@ import { computed, ref } from 'vue';
 import { useLocalStorage } from '@vueuse/core';
 import { t } from '../lib/i18n.js';
 
-const timerAlert = ref({
+interface TimerAlert {
+  open: boolean;
+  title: string;
+  message: string;
+}
+
+interface OscillatorStepOptions {
+  startAt: number;
+  duration: number;
+  frequency: number;
+  endFrequency?: number;
+  type?: OscillatorType;
+  gain?: number;
+}
+
+const timerAlert = ref<TimerAlert>({
   open: false,
   title: '',
   message: '',
@@ -11,24 +26,24 @@ const timerAlert = ref({
 const TIMER_SOUND_STORAGE_KEY = 'cucina_timer_sound';
 const TIMER_VOLUME_STORAGE_KEY = 'cucina_timer_volume';
 const TIMER_DURATION_STORAGE_KEY = 'cucina_timer_duration';
-const VALID_TIMER_SOUNDS = ['beep', 'bell', 'kitchen', 'chime', 'alarm', 'digital', 'doublebell', 'siren', 'phone', 'buzzer', 'retro', 'clockradio', 'silent', 'classic_bell', 'digital_alarm', 'pro_timer', 'industrial_buzzer', 'emergency_beep', 'classic_panic'];
+const VALID_TIMER_SOUNDS: string[] = ['beep', 'bell', 'kitchen', 'chime', 'alarm', 'digital', 'doublebell', 'siren', 'phone', 'buzzer', 'retro', 'clockradio', 'silent', 'classic_bell', 'digital_alarm', 'pro_timer', 'industrial_buzzer', 'emergency_beep', 'classic_panic'];
 const selectedTimerSound = useLocalStorage(TIMER_SOUND_STORAGE_KEY, 'beep');
 const selectedTimerVolume = useLocalStorage(TIMER_VOLUME_STORAGE_KEY, 70);
 const selectedTimerDuration = useLocalStorage(TIMER_DURATION_STORAGE_KEY, 5);
 const VALID_TIMER_DURATIONS = [2, 5, 10];
 
-let audioContext = null;
-let closeTimeout = null;
+let audioContext: AudioContext | null = null;
+let closeTimeout: ReturnType<typeof window.setTimeout> | null = null;
 
-function getAudioContext() {
-  const Ctx = window.AudioContext || window.webkitAudioContext;
+function getAudioContext(): AudioContext | null {
+  const Ctx = window.AudioContext ?? (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
   if (!Ctx) return null;
   if (!audioContext) audioContext = new Ctx();
   audioContext.resume().catch(() => { });
   return audioContext;
 }
 
-function playOscillatorStep(ctx, destination, options) {
+function playOscillatorStep(ctx: AudioContext, destination: AudioNode, options: OscillatorStepOptions): void {
   const {
     startAt,
     duration,
@@ -52,7 +67,7 @@ function playOscillatorStep(ctx, destination, options) {
   osc.stop(startAt + duration);
 }
 
-function schedulePatternRepeats(ctx, cycleSeconds, totalSeconds, patternFn) {
+function schedulePatternRepeats(ctx: AudioContext, cycleSeconds: number, totalSeconds: number, patternFn: (offset: number) => void): void {
   const repeats = Math.max(1, Math.ceil(totalSeconds / cycleSeconds));
   for (let index = 0; index < repeats; index += 1) {
     patternFn(index * cycleSeconds);
@@ -63,7 +78,7 @@ function playSelectedTimerSound(
   soundId = selectedTimerSound.value,
   volume = Number(selectedTimerVolume.value) / 100,
   durationSeconds = Number(selectedTimerDuration.value),
-) {
+): void {
   try {
     if (soundId === 'silent') return;
     const ctx = getAudioContext();
@@ -73,7 +88,7 @@ function playSelectedTimerSound(
     const totalDuration = VALID_TIMER_DURATIONS.includes(Number(durationSeconds))
       ? Number(durationSeconds)
       : 5;
-    const gainOf = base => Math.max(0.0001, base * gainScale);
+    const gainOf = (base: number) => Math.max(0.0001, base * gainScale);
 
     switch (soundId) {
       case 'bell':
@@ -160,7 +175,6 @@ function playSelectedTimerSound(
         break;
       case 'classic_bell':
         schedulePatternRepeats(ctx, 1.0, totalDuration, offset => {
-          // Serie di rintocchi rapidi e metallici
           for (let i = 0; i < 8; i++) {
             playOscillatorStep(ctx, ctx.destination, {
               startAt: now + offset + (i * 0.05),
@@ -174,7 +188,6 @@ function playSelectedTimerSound(
         break;
       case 'digital_alarm':
         schedulePatternRepeats(ctx, 0.6, totalDuration, offset => {
-          // Due bip brevi e secchi
           playOscillatorStep(ctx, ctx.destination, {
             startAt: now + offset,
             duration: 0.1,
@@ -229,7 +242,7 @@ function playSelectedTimerSound(
         break;
       case 'emergency_beep':
         schedulePatternRepeats(ctx, 0.6, totalDuration, offset => {
-          [0, 0.1, 0.2, 0.3].forEach(tOffset => {
+          ([0, 0.1, 0.2, 0.3] as number[]).forEach(tOffset => {
             playOscillatorStep(ctx, ctx.destination, {
               startAt: now + offset + tOffset,
               duration: 0.05,
@@ -270,7 +283,7 @@ function playSelectedTimerSound(
   }
 }
 
-function vibrateIfAvailable() {
+function vibrateIfAvailable(): void {
   try {
     if (typeof navigator !== 'undefined' && navigator.vibrate) {
       navigator.vibrate([180, 80, 180]);
@@ -294,7 +307,7 @@ export function useTimerAlerts() {
       : 5
   ));
 
-  function dismissTimerAlert() {
+  function dismissTimerAlert(): void {
     if (closeTimeout) {
       window.clearTimeout(closeTimeout);
       closeTimeout = null;
@@ -306,7 +319,7 @@ export function useTimerAlerts() {
     };
   }
 
-  function triggerTimerAlert(message, title = t('timer_alarm_title')) {
+  function triggerTimerAlert(message: string, title = t('timer_alarm_title')): void {
     playSelectedTimerSound(timerSound.value, timerVolume.value / 100, timerDuration.value);
     vibrateIfAvailable();
     timerAlert.value = {
@@ -320,21 +333,21 @@ export function useTimerAlerts() {
     }, 10000);
   }
 
-  function setTimerSound(value) {
+  function setTimerSound(value: string): void {
     selectedTimerSound.value = VALID_TIMER_SOUNDS.includes(value) ? value : 'beep';
   }
 
-  function setTimerVolume(value) {
+  function setTimerVolume(value: number): void {
     const next = Number(value);
     selectedTimerVolume.value = Number.isFinite(next) ? Math.min(100, Math.max(0, next)) : 70;
   }
 
-  function setTimerDuration(value) {
+  function setTimerDuration(value: number): void {
     const next = Number(value);
     selectedTimerDuration.value = VALID_TIMER_DURATIONS.includes(next) ? next : 5;
   }
 
-  function previewTimerSound() {
+  function previewTimerSound(): void {
     playSelectedTimerSound(timerSound.value, timerVolume.value / 100, timerDuration.value);
   }
 

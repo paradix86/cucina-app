@@ -1,6 +1,6 @@
 <script setup>
 import { currentLang, setLanguage, SUPPORTED_LANGUAGES, t } from '../lib/i18n.js';
-import { useTheme } from '../composables/useTheme.js';
+import { useTheme } from '../composables/useTheme';
 
 defineProps({
   onHome: {

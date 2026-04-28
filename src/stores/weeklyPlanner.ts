@@ -7,7 +7,7 @@ import {
   StorageWriteError,
 } from '../lib/storage';
 import { countPlannedMeals, createEmptyWeeklyPlanner } from '../lib/planner';
-import { useToasts } from '../composables/useToasts.js';
+import { useToasts } from '../composables/useToasts';
 import type { PlannerDayId, PlannerMealSlot } from '../types';
 
 export const useWeeklyPlannerStore = defineStore('weeklyPlanner', () => {

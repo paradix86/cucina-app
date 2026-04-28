@@ -6,7 +6,7 @@ import {
   saveShoppingListAsync,
   StorageWriteError,
 } from '../lib/storage';
-import { useToasts } from '../composables/useToasts.js';
+import { useToasts } from '../composables/useToasts';
 import {
   assignSection,
   getSectionI18nKey,

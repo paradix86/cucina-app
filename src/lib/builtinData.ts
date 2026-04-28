@@ -1,22 +1,10 @@
-/**
- * data.js — Built-in recipes (classic + Bimby TM5)
- *
- * Recipe object shape:
- *   id           string   — unique identifier
- *   name         string
- *   category     string   — Primi / Secondi / Dolci / Antipasti / Zuppe / Sughi / Bevande
- *   bimby        boolean  — true = Bimby TM5 recipe
- *   emoji        string
- *   time         string   — e.g. "30 min"
- *   servings     string   — e.g. "4"
- *   source       string   — "classica" | "bimby"
- *   ingredients  string[]
- *   steps        string[] — classic: free text
- *                        — bimby: prefix "Vel.X YY° ZZmin — text"
- *   timerMinutes number   — main timer in minutes (0 = none)
- */
+import type { Recipe } from '../types';
 
-export const BUILTIN_RECIPES = [
+interface BuiltinRecipe extends Recipe {
+  scaling?: { baseWeightGrams: number; basePieces: number; supportedCuts: string[] };
+}
+
+export const BUILTIN_RECIPES: BuiltinRecipe[] = [
 
   /* ==================== CLASSICHE ==================== */
 
@@ -169,6 +157,7 @@ export const BUILTIN_RECIPES = [
     ],
     timerMinutes: 20,
   },
+
   {
     id: 'b10', name: 'Pollo speziato marinato in friggitrice ad aria', category: 'Secondi', bimby: false,
     emoji: '🍗', time: '22 min + marinatura', servings: '4', source: 'classica',
@@ -199,6 +188,7 @@ export const BUILTIN_RECIPES = [
       supportedCuts: ['cosce', 'sovracosce'],
     },
   },
+
   /* ==================== BIMBY TM5 ==================== */
 
   {

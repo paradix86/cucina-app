@@ -6,8 +6,8 @@ import { useImportFlow } from '../composables/useImportFlow';
 import { getSourceDomainLabel, joinMetaParts, suggestMealOccasions, MEAL_OCCASION_OPTIONS } from '../lib/recipes.js';
 import { t } from '../lib/i18n.js';
 import { useRecipeBookStore } from '../stores/recipeBook';
-import { DUEMME_VETTED_RECIPE_PACK } from '../lib/duemmeVettedPack.js';
-import { getNinjaVettedPack } from '../lib/ninjaVettedPack.js';
+import { DUEMME_VETTED_RECIPE_PACK } from '../lib/duemmeVettedPack';
+import { getNinjaVettedPack } from '../lib/ninjaVettedPack';
 
 const emit = defineEmits(['toast', 'go-home']);
 const route = useRoute();

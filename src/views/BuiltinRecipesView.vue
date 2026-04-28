@@ -3,7 +3,7 @@ import { computed, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useDebounce } from '@vueuse/core';
 import RecipeDetailView from '../components/RecipeDetailView.vue';
-import { BUILTIN_RECIPES } from '../lib/builtinData.js';
+import { BUILTIN_RECIPES } from '../lib/builtinData';
 import { useRecipeBookStore } from '../stores/recipeBook';
 import { getPreparationType } from '../lib/ingredientUtils';
 import { getPreparationInfo, getMealOccasionLabel, getSourceDomainLabel, highlight, parseRecipeTime, recipeMatchesQuery, joinMetaParts } from '../lib/recipes.js';

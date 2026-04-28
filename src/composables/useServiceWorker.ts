@@ -1,9 +1,11 @@
 import { APP_META } from '../lib/appMeta';
 import { t } from '../lib/i18n.js';
 
+type ShowToast = (message: string, type?: string, options?: { actionLabel?: string; onAction?: () => void }) => void;
+
 const SW_RELOAD_FLAG = `cucina_sw_reloaded_${APP_META.buildId}`;
 
-export async function refreshAppRuntime() {
+export async function refreshAppRuntime(): Promise<void> {
   try {
     sessionStorage.removeItem(SW_RELOAD_FLAG);
     if ('serviceWorker' in navigator) {
@@ -23,7 +25,7 @@ export async function refreshAppRuntime() {
   window.location.reload();
 }
 
-export function initServiceWorkerUpdates(showToast) {
+export function initServiceWorkerUpdates(showToast: ShowToast): void {
   if (!('serviceWorker' in navigator)) return;
 
   // In dev/HMR we must avoid cache-first SW interference serving stale modules.
@@ -51,7 +53,7 @@ export function initServiceWorkerUpdates(showToast) {
     window.location.reload();
   });
 
-  function showUpdateToast(worker) {
+  function showUpdateToast(worker: ServiceWorker): void {
     if (updateToastShown || !showToast) return;
     updateToastShown = true;
     showToast(t('pwa_update_available'), 'update', {

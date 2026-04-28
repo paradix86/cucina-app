@@ -4,7 +4,7 @@ import { storeToRefs } from 'pinia';
 import { useRouter } from 'vue-router';
 import { t } from '../lib/i18n.js';
 import { PLANNER_DAYS, PLANNER_MEAL_SLOTS } from '../lib/planner';
-import { useToasts } from '../composables/useToasts.js';
+import { useToasts } from '../composables/useToasts';
 import { useRecipeBookStore } from '../stores/recipeBook';
 import { useShoppingListStore } from '../stores/shoppingList';
 import { useWeeklyPlannerStore } from '../stores/weeklyPlanner';

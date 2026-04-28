@@ -1,6 +1,6 @@
 <script setup>
 import { computed } from 'vue';
-import { BIMBY_ICONS } from '../lib/bimbyIcons.js';
+import { BIMBY_ICONS } from '../lib/bimbyIcons';
 
 const props = defineProps({
   action: {

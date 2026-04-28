@@ -1,6 +1,6 @@
 import { getPreparationType } from './ingredientUtils';
 import { t } from './i18n.js';
-import { detectBimbyAction, renderBimbyActionIcon } from './bimbyIcons.js';
+import { detectBimbyAction, renderBimbyActionIcon } from './bimbyIcons';
 
 export function recipeMatchesQuery(recipe, query) {
   if (!query) return true;

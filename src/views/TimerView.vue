@@ -1,8 +1,8 @@
 <script setup>
 import { computed, ref } from 'vue';
-import { useTimers } from '../composables/useTimers.js';
-import { useTimerAlerts } from '../composables/useTimerAlerts.js';
-import { useCookingPreferences } from '../composables/useCookingPreferences.js';
+import { useTimers } from '../composables/useTimers';
+import { useTimerAlerts } from '../composables/useTimerAlerts';
+import { useCookingPreferences } from '../composables/useCookingPreferences';
 import { t } from '../lib/i18n.js';
 
 const name = ref('');

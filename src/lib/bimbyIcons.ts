@@ -1,20 +1,3 @@
-/**
- * bimbyIcons.js
- * Original lightweight Bimby/Thermomix action icons — strict approved set only.
- *
- * Approved actions: reverse, knead, scissors, cup, open, lock
- * Anything outside this set is intentionally not supported.
- *
- * Freeze policy:
- * - action set is intentionally closed
- * - false positives are worse than missing icons
- * - do not expand keys casually (e.g. simmer/tare)
- */
-
-/* ============================================================
-   APPROVED ACTION KEY SET — single frozen source of truth
-   ============================================================ */
-
 export const APPROVED_BIMBY_ACTION_KEYS = Object.freeze([
   'reverse',
   'knead',
@@ -22,13 +5,11 @@ export const APPROVED_BIMBY_ACTION_KEYS = Object.freeze([
   'cup',
   'open',
   'lock',
-]);
+] as const);
 
-/* ============================================================
-   ICON SET — minimal original SVGs for approved Bimby actions
-   ============================================================ */
+type BimbyActionKey = typeof APPROVED_BIMBY_ACTION_KEYS[number];
 
-export const BIMBY_ICONS = {
+export const BIMBY_ICONS: Record<BimbyActionKey, string> = {
   // Counterclockwise / reverse-blade rotation
   reverse: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="bimby-icon"><path d="M3 8l4 4H3V8M21 16l-4-4h4v4M9 6a8 8 0 018 8m0 8a8 8 0 01-8-8"/></svg>`,
 
@@ -48,18 +29,7 @@ export const BIMBY_ICONS = {
   lock: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="bimby-icon"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/><circle cx="12" cy="20" r="1"/></svg>`,
 };
 
-/* ============================================================
-   DETECTOR — strict allowlist mapping only
-   ============================================================
-   Rules:
-   - Each pattern must be high-confidence and Bimby-specific.
-   - Generic cooking words (open, close, reverse) must NOT match
-     unless combined with Bimby-specific context terms
-     (e.g. "coperchio", "misurino", "antiorario").
-   - False positives are worse than missing icons.
-   ============================================================ */
-
-export const BIMBY_ACTION_PATTERNS = {
+export const BIMBY_ACTION_PATTERNS: Record<BimbyActionKey, RegExp> = {
   // Counterclockwise blade rotation — Bimby-specific Italian term
   reverse: /antiorario|senso\s+antiorario|contro[-\s]?orario|counterclockwise|reverse\s+blade|blade\s+reverse/i,
 
@@ -79,7 +49,7 @@ export const BIMBY_ACTION_PATTERNS = {
   lock: /chiud\w*\s+(?:il\s+)?coperchio|blocca\s+(?:il\s+)?coperchio|coperchio\s+chiuso|lock\s+(?:the\s+)?lid|close\s+(?:the\s+)?lid/i,
 };
 
-function assertExactApprovedKeys(recordName, record) {
+function assertExactApprovedKeys(recordName: string, record: object): void {
   const expected = [...APPROVED_BIMBY_ACTION_KEYS].sort();
   const actual = Object.keys(record).sort();
   const sameLength = expected.length === actual.length;
@@ -93,14 +63,7 @@ function assertExactApprovedKeys(recordName, record) {
 assertExactApprovedKeys('BIMBY_ICONS', BIMBY_ICONS);
 assertExactApprovedKeys('BIMBY_ACTION_PATTERNS', BIMBY_ACTION_PATTERNS);
 
-/**
- * Detect which approved Bimby action (if any) the step implies.
- * Returns null for any step that does not clearly match an approved action.
- *
- * @param {string} stepText - full step text (may include tag prefix)
- * @returns {string|null} approved action key or null
- */
-export function detectBimbyAction(stepText) {
+export function detectBimbyAction(stepText: string): BimbyActionKey | null {
   if (!stepText) return null;
   for (const action of APPROVED_BIMBY_ACTION_KEYS) {
     const pattern = BIMBY_ACTION_PATTERNS[action];
@@ -109,23 +72,11 @@ export function detectBimbyAction(stepText) {
   return null;
 }
 
-/**
- * Render icon HTML for an approved action.
- *
- * @param {string|null} action - action key from detectBimbyAction
- * @returns {string} SVG HTML string or empty string
- */
-export function renderBimbyActionIcon(action) {
+export function renderBimbyActionIcon(action: string | null): string {
   if (!action || !(action in BIMBY_ICONS)) return '';
-  return `<span class="bimby-action-icon" title="${action}">${BIMBY_ICONS[action]}</span>`;
+  return `<span class="bimby-action-icon" title="${action}">${BIMBY_ICONS[action as BimbyActionKey]}</span>`;
 }
 
-/**
- * Combined convenience: detect and render for a step.
- *
- * @param {string} stepText
- * @returns {string} rendered HTML or empty string
- */
-export function renderStepActionIcon(stepText) {
+export function renderStepActionIcon(stepText: string): string {
   return renderBimbyActionIcon(detectBimbyAction(stepText));
 }

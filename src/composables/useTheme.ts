@@ -1,29 +1,32 @@
 import { watch } from 'vue';
 import { useLocalStorage } from '@vueuse/core';
 
+type Theme = 'system' | 'light' | 'dark';
+type ResolvedTheme = 'light' | 'dark';
+
 const THEME_STORAGE_KEY = 'cucina_theme';
-const VALID_THEMES = ['system', 'light', 'dark'];
-const THEME_COLORS = {
+const VALID_THEMES: string[] = ['system', 'light', 'dark'];
+const THEME_COLORS: Record<ResolvedTheme, string> = {
   light: '#ffffff',
   dark: '#1a1a18',
 };
-const theme = useLocalStorage(THEME_STORAGE_KEY, 'system');
+const theme = useLocalStorage<Theme>(THEME_STORAGE_KEY, 'system');
 const systemDarkQuery = typeof window !== 'undefined' && typeof window.matchMedia === 'function'
   ? window.matchMedia('(prefers-color-scheme: dark)')
   : null;
 
-function normalizeThemePreference(value) {
-  return VALID_THEMES.includes(value) ? value : 'system';
+function normalizeThemePreference(value: string): Theme {
+  return (VALID_THEMES.includes(value) ? value : 'system') as Theme;
 }
 
-function getResolvedTheme(value) {
+function getResolvedTheme(value: string): ResolvedTheme {
   if (value === 'light' || value === 'dark') return value;
   return systemDarkQuery?.matches ? 'dark' : 'light';
 }
 
-function ensureThemeColorMeta() {
+function ensureThemeColorMeta(): HTMLMetaElement | null {
   if (typeof document === 'undefined') return null;
-  let meta = document.querySelector('meta[name="theme-color"]');
+  let meta = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
   if (!meta) {
     meta = document.createElement('meta');
     meta.setAttribute('name', 'theme-color');
@@ -32,7 +35,7 @@ function ensureThemeColorMeta() {
   return meta;
 }
 
-function applyThemePreference(value) {
+function applyThemePreference(value: string): void {
   if (typeof document === 'undefined') return;
   const next = normalizeThemePreference(value);
   const resolved = getResolvedTheme(next);
@@ -58,7 +61,7 @@ systemDarkQuery?.addEventListener?.('change', () => {
 });
 
 export function useTheme() {
-  function setThemePreference(value) {
+  function setThemePreference(value: string): void {
     const next = normalizeThemePreference(value);
     theme.value = next;
     applyThemePreference(next);

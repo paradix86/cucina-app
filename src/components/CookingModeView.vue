@@ -2,11 +2,11 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useWakeLock } from '@vueuse/core';
 import { extractStepSeconds, formatClock, getPreparationInfo } from '../lib/recipes.js';
-import { detectBimbyAction } from '../lib/bimbyIcons.js';
+import { detectBimbyAction } from '../lib/bimbyIcons';
 import { t } from '../lib/i18n.js';
-import { useToasts } from '../composables/useToasts.js';
-import { useTimerAlerts } from '../composables/useTimerAlerts.js';
-import { useCookingPreferences } from '../composables/useCookingPreferences.js';
+import { useToasts } from '../composables/useToasts';
+import { useTimerAlerts } from '../composables/useTimerAlerts';
+import { useCookingPreferences } from '../composables/useCookingPreferences';
 import BimbyActionIcon from './BimbyActionIcon.vue';
 
 const props = defineProps({
