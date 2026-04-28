@@ -6,6 +6,16 @@ export type ChangelogEntry = {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '0.10.4',
+    date: '2026-04-28',
+    changes: [
+      'Editable daily nutrition goals (kcal, protein, carbs, fat, fiber) saved locally to your device',
+      'Per-serving nutrition comparison against your daily goals with visual progress bars',
+      'Goal progress bars highlight over-goal nutrients in a distinct color',
+      'Nutrition goals persist across sessions and page reloads',
+    ],
+  },
+  {
     version: '0.10.3',
     date: '2026-04-28',
     changes: [
