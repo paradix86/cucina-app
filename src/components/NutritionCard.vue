@@ -95,6 +95,45 @@ const animatedNumbers = computed(() => {
   };
 });
 
+const macroAnimatedPct = computed(() => {
+  const d = props.nutritionContext?.data;
+  if (!d || !macroDonut.value) return { protein: 0, carbs: 0, fat: 0, fiber: 0 };
+  const p  = d.proteinG ?? 0;
+  const c  = d.carbsG   ?? 0;
+  const f  = d.fatG     ?? 0;
+  const fi = d.fiberG   ?? 0;
+  const total = p + c + f + fi;
+  const prog = donutProgress.value;
+  if (total === 0) return { protein: 0, carbs: 0, fat: 0, fiber: 0 };
+  return {
+    protein: +((p  / total) * 100 * prog).toFixed(1),
+    carbs:   +((c  / total) * 100 * prog).toFixed(1),
+    fat:     +((f  / total) * 100 * prog).toFixed(1),
+    fiber:   +((fi / total) * 100 * prog).toFixed(1),
+  };
+});
+
+const insightBadges = computed(() => {
+  const d = props.nutritionContext?.data;
+  if (!d) return [];
+  const badges = [];
+  if (d.proteinG != null && d.proteinG >= 20) badges.push({ key: 'nutrition_insight_high_protein', type: 'positive' });
+  if (d.fiberG   != null && d.fiberG   >= 10) badges.push({ key: 'nutrition_insight_high_fiber',   type: 'positive' });
+  if (d.fiberG   != null && d.fiberG   <   5) badges.push({ key: 'nutrition_insight_low_fiber',    type: 'caution'  });
+  if (d.fatG     != null && d.fatG     >= 25) badges.push({ key: 'nutrition_insight_high_fat',     type: 'caution'  });
+  if (d.fatG     != null && d.fatG     <   5) badges.push({ key: 'nutrition_insight_low_fat',      type: 'positive' });
+  if (d.carbsG   != null && d.carbsG   <  20) badges.push({ key: 'nutrition_insight_low_carb',     type: 'info'     });
+  if (d.kcal     != null && d.kcal     < 300) badges.push({ key: 'nutrition_insight_low_cal',      type: 'info'     });
+  if (d.kcal     != null && d.kcal     >= 700) badges.push({ key: 'nutrition_insight_high_cal',    type: 'caution'  });
+  return badges.slice(0, 3);
+});
+
+const statusExplanation = computed(() => {
+  const status = props.recipe.nutrition?.status;
+  if (!status || status === 'missing') return null;
+  return `nutrition_status_desc_${status}`;
+});
+
 const noDisplayableMacros = computed(() => {
   if (!props.nutritionContext) return false;
   return macroDonut.value === null;
@@ -229,6 +268,8 @@ function saveEditor() {
   per100gDraft.value    = {};
   expandedPer100g.value = {};
   emit('toast', t('nutrition_values_updated'), 'success');
+  donutProgress.value = 0;
+  nextTick(animateDonut);
 }
 </script>
 
@@ -244,6 +285,7 @@ function saveEditor() {
         {{ t(`nutrition_status_${recipe.nutrition?.status ?? 'missing'}`) }}
       </span>
     </div>
+    <p v-if="statusExplanation" class="nutrition-status-desc">{{ t(statusExplanation) }}</p>
 
     <!-- Stale warning -->
     <p v-if="isNutritionStale" class="nutrition-stale-warning">
@@ -290,29 +332,80 @@ function saveEditor() {
         </div>
       </div>
 
-      <!-- Macro rows -->
+      <!-- Macro rows with progress bars -->
       <div class="nutrition-macros">
         <div v-if="nutritionContext.data.proteinG != null" class="nutrition-macro-row nutrition-macro-row--protein">
-          <span class="nutrition-macro-dot"></span>
+          <span class="nutrition-macro-dot" aria-hidden="true"></span>
           <span class="nutrition-macro-name">{{ t('section_proteins') }}</span>
+          <div
+            class="nutrition-macro-bar-wrap"
+            role="progressbar"
+            :aria-valuenow="macroAnimatedPct.protein"
+            :aria-valuemax="100"
+            :aria-label="`${t('section_proteins')}: ${macroAnimatedPct.protein.toFixed(0)}%`"
+          >
+            <div class="nutrition-macro-bar nutrition-macro-bar--protein" :style="{ width: `${macroAnimatedPct.protein}%` }"></div>
+          </div>
           <span class="nutrition-macro-val" aria-live="off">{{ animatedNumbers.proteinG != null ? animatedNumbers.proteinG.toFixed(1) : '—' }}g</span>
+          <span class="nutrition-macro-pct" aria-hidden="true">{{ macroAnimatedPct.protein.toFixed(0) }}%</span>
         </div>
         <div v-if="nutritionContext.data.carbsG != null" class="nutrition-macro-row nutrition-macro-row--carbs">
-          <span class="nutrition-macro-dot"></span>
+          <span class="nutrition-macro-dot" aria-hidden="true"></span>
           <span class="nutrition-macro-name">{{ t('section_carbs') }}</span>
+          <div
+            class="nutrition-macro-bar-wrap"
+            role="progressbar"
+            :aria-valuenow="macroAnimatedPct.carbs"
+            :aria-valuemax="100"
+            :aria-label="`${t('section_carbs')}: ${macroAnimatedPct.carbs.toFixed(0)}%`"
+          >
+            <div class="nutrition-macro-bar nutrition-macro-bar--carbs" :style="{ width: `${macroAnimatedPct.carbs}%` }"></div>
+          </div>
           <span class="nutrition-macro-val" aria-live="off">{{ animatedNumbers.carbsG != null ? animatedNumbers.carbsG.toFixed(1) : '—' }}g</span>
+          <span class="nutrition-macro-pct" aria-hidden="true">{{ macroAnimatedPct.carbs.toFixed(0) }}%</span>
         </div>
         <div v-if="nutritionContext.data.fatG != null" class="nutrition-macro-row nutrition-macro-row--fat">
-          <span class="nutrition-macro-dot"></span>
+          <span class="nutrition-macro-dot" aria-hidden="true"></span>
           <span class="nutrition-macro-name">{{ t('nutrition_fat') }}</span>
+          <div
+            class="nutrition-macro-bar-wrap"
+            role="progressbar"
+            :aria-valuenow="macroAnimatedPct.fat"
+            :aria-valuemax="100"
+            :aria-label="`${t('nutrition_fat')}: ${macroAnimatedPct.fat.toFixed(0)}%`"
+          >
+            <div class="nutrition-macro-bar nutrition-macro-bar--fat" :style="{ width: `${macroAnimatedPct.fat}%` }"></div>
+          </div>
           <span class="nutrition-macro-val" aria-live="off">{{ animatedNumbers.fatG != null ? animatedNumbers.fatG.toFixed(1) : '—' }}g</span>
+          <span class="nutrition-macro-pct" aria-hidden="true">{{ macroAnimatedPct.fat.toFixed(0) }}%</span>
         </div>
         <div v-if="nutritionContext.data.fiberG != null" class="nutrition-macro-row nutrition-macro-row--fiber">
-          <span class="nutrition-macro-dot"></span>
+          <span class="nutrition-macro-dot" aria-hidden="true"></span>
           <span class="nutrition-macro-name">{{ t('nutrition_fiber') }}</span>
+          <div
+            class="nutrition-macro-bar-wrap"
+            role="progressbar"
+            :aria-valuenow="macroAnimatedPct.fiber"
+            :aria-valuemax="100"
+            :aria-label="`${t('nutrition_fiber')}: ${macroAnimatedPct.fiber.toFixed(0)}%`"
+          >
+            <div class="nutrition-macro-bar nutrition-macro-bar--fiber" :style="{ width: `${macroAnimatedPct.fiber}%` }"></div>
+          </div>
           <span class="nutrition-macro-val" aria-live="off">{{ animatedNumbers.fiberG != null ? animatedNumbers.fiberG.toFixed(1) : '—' }}g</span>
+          <span class="nutrition-macro-pct" aria-hidden="true">{{ macroAnimatedPct.fiber.toFixed(0) }}%</span>
         </div>
       </div>
+    </div>
+
+    <!-- Insight badges -->
+    <div v-if="insightBadges.length" class="nutrition-insights" :aria-label="t('nutrition_insights_label')">
+      <span
+        v-for="badge in insightBadges"
+        :key="badge.key"
+        class="nutrition-insight-badge"
+        :class="`nutrition-insight-badge--${badge.type}`"
+        role="note"
+      >{{ t(badge.key) }}</span>
     </div>
 
     <!-- No macros note -->
@@ -904,5 +997,111 @@ function saveEditor() {
   color: var(--text-muted);
   font-size: 0.76rem;
   line-height: 1.4;
+}
+
+/* ── Status description ── */
+.nutrition-status-desc {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  margin: -4px 0 0;
+  line-height: 1.4;
+}
+
+/* ── Macro bars ── */
+.nutrition-macro-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.nutrition-macro-bar-wrap {
+  flex: 1;
+  height: 6px;
+  background: var(--bg-secondary, rgba(0,0,0,0.06));
+  border-radius: 3px;
+  overflow: hidden;
+  min-width: 0;
+}
+
+.nutrition-macro-bar {
+  height: 100%;
+  border-radius: 3px;
+  will-change: width;
+  transition: width 0.016s linear;
+}
+
+.nutrition-macro-bar--protein { background: var(--nutrition-protein); }
+.nutrition-macro-bar--carbs   { background: var(--nutrition-carbs); }
+.nutrition-macro-bar--fat     { background: var(--nutrition-fat); }
+.nutrition-macro-bar--fiber   { background: var(--nutrition-fiber); }
+
+@media (prefers-reduced-motion: reduce) {
+  .nutrition-macro-bar {
+    transition: none;
+  }
+}
+
+.nutrition-macro-pct {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  width: 30px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+/* ── Insight badges ── */
+.nutrition-insights {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.nutrition-insight-badge {
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 20px;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.nutrition-insight-badge--positive {
+  background: var(--nutrition-complete-bg);
+  color: var(--nutrition-complete-text);
+}
+
+.nutrition-insight-badge--caution {
+  background: var(--nutrition-partial-bg);
+  color: var(--nutrition-partial-text);
+}
+
+.nutrition-insight-badge--info {
+  background: var(--hover-bg, rgba(0,0,0,0.06));
+  color: var(--text-muted);
+}
+
+/* ── Micro interactions ── */
+.nutrition-footer button,
+.nutrition-editor-actions button,
+.nutrition-details-toggle,
+.btn-ghost {
+  transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
+}
+
+.nutrition-footer button:hover:not(:disabled),
+.nutrition-editor-actions button:hover:not(:disabled) {
+  transform: scale(1.02);
+}
+
+.nutrition-footer button:active:not(:disabled),
+.nutrition-editor-actions button:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nutrition-footer button,
+  .nutrition-editor-actions button {
+    transition: none;
+  }
 }
 </style>
