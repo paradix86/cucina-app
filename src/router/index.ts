@@ -9,6 +9,7 @@ const WeeklyPlannerView = () => import('../views/WeeklyPlannerView.vue');
 const TimerView         = () => import('../views/TimerView.vue');
 const GuidesView        = () => import('../views/GuidesView.vue');
 const SharedRecipeView  = () => import('../views/SharedRecipeView.vue');
+const MealComposerView  = () => import('../views/MealComposerView.vue');
 
 const routes: RouteRecordRaw[] = [
   { path: '/', redirect: '/recipe-book' },
@@ -22,6 +23,7 @@ const routes: RouteRecordRaw[] = [
   { path: '/timer',        name: 'timer',         component: TimerView },
   { path: '/guides',         name: 'guides',         component: GuidesView },
   { path: '/shared-recipe',  name: 'shared-recipe',  component: SharedRecipeView },
+  { path: '/meal-composer',  name: 'meal-composer',  component: MealComposerView },
   // Catch-all: redirect unknown paths to recipe book
   { path: '/:pathMatch(.*)*', redirect: '/recipe-book' },
 ];

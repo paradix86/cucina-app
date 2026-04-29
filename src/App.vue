@@ -42,8 +42,9 @@ const tabs = computed(() => [
   { path: '/import',      label: t('nav_import') },
   { path: '/shopping-list', label: t('nav_shopping') },
   { path: '/planner',     label: t('nav_planner') },
-  { path: '/timer',       label: t('nav_timer') },
-  { path: '/guides',      label: t('nav_guides') },
+  { path: '/timer',          label: t('nav_timer') },
+  { path: '/guides',         label: t('nav_guides') },
+  { path: '/meal-composer',  label: t('nav_meal_composer') },
 ]);
 
 function requestConfirm(options = {}) {
@@ -150,7 +151,7 @@ watch(() => route.fullPath, () => {
 <template>
   <AppHeader :on-home="goHome" />
 
-  <main class="app">
+  <main id="main-content" class="app">
     <template v-if="cookingRecipe">
       <CookingModeView :recipe="cookingRecipe" @exit="handleCookingExit" />
     </template>

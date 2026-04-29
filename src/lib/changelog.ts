@@ -6,6 +6,17 @@ export type ChangelogEntry = {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '0.10.5',
+    date: '2026-04-29',
+    changes: [
+      'Meal Composer: add selected recipes to the weekly planner in one tap',
+      'Accessibility: skip-to-content link, ConfirmDialog focus trap, aria-describedby on modal message',
+      'PWA: manifest updated with lang, categories, English description; service worker cache bumped to v14',
+      'SEO: meta description, og:title, og:description, apple-mobile-web-app-title added to index.html',
+      'html lang attribute now reflects user language selection on startup',
+    ],
+  },
+  {
     version: '0.10.4',
     date: '2026-04-28',
     changes: [

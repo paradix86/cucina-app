@@ -1,7 +1,9 @@
 {
-  "name": "Cucina Planner",
+  "name": "Cucina App",
   "short_name": "Cucina",
-  "description": "Ricette, planner pasti e lista della spesa.",
+  "description": "Recipes, meal planner, shopping list and cooking mode. Works offline.",
+  "lang": "en",
+  "categories": ["food", "lifestyle"],
   "start_url": "/cucina-app/",
   "scope": "/cucina-app/",
   "display": "standalone",

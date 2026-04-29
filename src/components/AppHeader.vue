@@ -23,6 +23,7 @@ const languageOptions = [
 </script>
 
 <template>
+  <a href="#main-content" class="skip-link">{{ t('skip_to_content') }}</a>
   <header class="app-header">
     <button class="app-brand" @click="onHome" aria-label="Cucina App home">
       <img :src="iconSrc" alt="" aria-hidden="true" class="app-logo" />
