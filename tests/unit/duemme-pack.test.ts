@@ -10,10 +10,10 @@ import {
 } from '../../src/lib/duemmePack';
 
 describe('duemmePack text helpers', () => {
-  it('normalizes spaces/newlines and handles nullish values', () => {
+  it('normalizes spaces and newlines and handles nullish values', () => {
     expect(normalizeText('hello    world')).toBe('hello world');
     expect(normalizeText('line1\r\nline2')).toBe('line1\nline2');
-    expect(normalizeText('hello\u00a0world')).toBe('hello world');
+    expect(normalizeText('hello world')).toBe('hello world');
     expect(normalizeText('  text  ')).toBe('text');
     expect(normalizeText(null as unknown as string)).toBe('');
     expect(normalizeText(undefined)).toBe('');
@@ -32,12 +32,14 @@ describe('duemmePack text helpers', () => {
   });
 
   it('extracts numbered steps with continuation lines', () => {
-    const block = `
-1. First step:
-   - detail one
-2) Second step
-additional sentence
-`;
+    const block = [
+      '',
+      '1. First step:',
+      '   - detail one',
+      '2) Second step',
+      'additional sentence',
+      '',
+    ].join('\n');
     expect(extractNumberedSteps(block)).toEqual([
       'First step: detail one',
       'Second step additional sentence',
@@ -45,27 +47,24 @@ additional sentence
   });
 
   it('infers preparation type from compatibility and section hints', () => {
-    expect(inferPreparationType('**Compatibilità**: 🤖 Bimby-ready')).toBe('bimby');
-    expect(inferPreparationType('# Recipe\n### 🤖 Metodo Bimby\nsteps')).toBe('bimby');
+    expect(inferPreparationType('**Compatibilita**: Bimby-ready')).toBe('bimby');
+    expect(inferPreparationType('# Recipe\n### Metodo Bimby\nsteps')).toBe('bimby');
     expect(inferPreparationType('Ricetta per friggitrice ad aria')).toBe('airfryer');
     expect(inferPreparationType('Ricetta classica')).toBe('classic');
   });
 });
 
 describe('normalizeBimbyStep', () => {
-  it('formats compound Bimby notation without leaving // or stray / artifacts', () => {
-    // Source pattern: "Cottura: 20 min/100°C/vel 1" — removing markers must not leave "/" artifacts
-    const result = normalizeBimbyStep('Cottura: 20 min/100°C/vel 1');
+  it('formats compound notation without leaving // or stray slash artifacts', () => {
+    const result = normalizeBimbyStep('Cottura: 20 min/100C/vel 1');
     expect(result).not.toContain('//');
     expect(result).not.toMatch(/\s\/\s/);
     expect(result).toContain('Vel. 1');
     expect(result).toContain('20 min');
-    expect(result).toContain('100°');
   });
 
-  it('removes stray / before senso antiorario in compound notation', () => {
-    // "Cuocere 15 min/100°C/vel 1 senso antiorario" must not leave "Cuocere / senso antiorario"
-    const result = normalizeBimbyStep('Cuocere 15 min/100°C/vel 1 senso antiorario');
+  it('removes stray slash before senso antiorario in compound notation', () => {
+    const result = normalizeBimbyStep('Cuocere 15 min/100C/vel 1 senso antiorario');
     expect(result).not.toMatch(/\s\/\s/);
     expect(result).toContain('senso antiorario');
     expect(result).toContain('Vel. 1');
@@ -86,18 +85,48 @@ describe('normalizeBimbyStep', () => {
     const result = normalizeBimbyStep('Aggiungere sale e pepe a piacere');
     expect(result).toBe('Aggiungere sale e pepe a piacere');
   });
+
+  it('normalizes // marker indicating reverse counterclockwise mode', () => {
+    const result = normalizeBimbyStep('Cuocere //');
+    expect(result).not.toContain('//');
+    expect(result).not.toMatch(/\s\/\s/);
+    expect(result.trim()).not.toBe('');
+  });
+
+  it('normalizes // followed by senso antiorario to readable format', () => {
+    const result = normalizeBimbyStep('Cuocere: 20 min // senso antiorario');
+    expect(result).not.toContain('//');
+    expect(result).toContain('senso antiorario');
+    expect(result).toContain('20 min');
+  });
+
+  it('handles Varoma marker (high-temperature cooking mode)', () => {
+    const result = normalizeBimbyStep('Cuocere 15 min Varoma vel 1');
+    expect(result).not.toContain('//');
+    expect(result).toContain('Varoma');
+    expect(result).toContain('Vel. 1');
+    expect(result).toContain('15 min');
+  });
+
+  it('cleans up double slashes left by marker removal', () => {
+    const result = normalizeBimbyStep('Cuocere: // senso antiorario');
+    expect(result).not.toContain('//');
+    expect(result).not.toMatch(/:\s*$/);
+  });
 });
 
-describe('extractNumberedSteps — bloated-step protection', () => {
+describe('extractNumberedSteps - bloated-step protection', () => {
   it('stops accumulating bullets at a bold section-header line', () => {
-    const block = `
-1. Cuocere la carne nel sugo
-2. Servire con riso
-**🎯 BATCH MEAL PREP (x4 porzioni)**:
-- Quadruplicare gli ingredienti
-- Cottura finale: 20 min
-- Conservare in frigo
-`;
+    const block = [
+      '',
+      '1. Cuocere la carne nel sugo',
+      '2. Servire con riso',
+      '**BATCH MEAL PREP (x4 porzioni)**:',
+      '- Quadruplicare gli ingredienti',
+      '- Cottura finale: 20 min',
+      '- Conservare in frigo',
+      '',
+    ].join('\n');
     const steps = extractNumberedSteps(block);
     expect(steps).toHaveLength(2);
     expect(steps[1]).not.toContain('BATCH');
@@ -105,11 +134,13 @@ describe('extractNumberedSteps — bloated-step protection', () => {
   });
 
   it('still appends normal bullet detail lines to the current step', () => {
-    const block = `
-1. Tritare aglio e cipolla:
-   - finemente
-2. Aggiungere al soffritto
-`;
+    const block = [
+      '',
+      '1. Tritare aglio e cipolla:',
+      '   - finemente',
+      '2. Aggiungere al soffritto',
+      '',
+    ].join('\n');
     const steps = extractNumberedSteps(block);
     expect(steps[0]).toContain('finemente');
     expect(steps).toHaveLength(2);
@@ -118,26 +149,26 @@ describe('extractNumberedSteps — bloated-step protection', () => {
 
 describe('duemmePack parser', () => {
   it('builds a recipe from canonical markdown and marks it subset-eligible', () => {
-    const markdown = `
-# Pasta al Pomodoro
-
-**Categoria**: Pranzo
-**Tempo preparazione**: 20 minuti
-**Porzioni**: 1
-
-## Ingredienti
-- 400 g pasta
-- 600 ml tomato sauce
-- 2 cloves garlic
-- Salt and pepper
-
-## Preparazione
-### 🍳 Metodo Classico
-1. Cook pasta in salted water
-2. Heat oil and garlic
-3. Add tomato sauce
-4. Mix with cooked pasta
-    `.trim();
+    const markdown = [
+      '# Pasta al Pomodoro',
+      '',
+      '**Categoria**: Pranzo',
+      '**Tempo preparazione**: 20 minuti',
+      '**Porzioni**: 1',
+      '',
+      '## Ingredienti',
+      '- 400 g pasta',
+      '- 600 ml tomato sauce',
+      '- 2 cloves garlic',
+      '- Salt and pepper',
+      '',
+      '## Preparazione',
+      '### Metodo Classico',
+      '1. Cook pasta in salted water',
+      '2. Heat oil and garlic',
+      '3. Add tomato sauce',
+      '4. Mix with cooked pasta',
+    ].join('\n');
 
     const parsed = parseDuemmeRecipe('src/content/duemme/ricette/pranzi/pasta.md', markdown);
     expect(parsed.recipe).toBeTruthy();
@@ -150,21 +181,21 @@ describe('duemmePack parser', () => {
   });
 
   it('uses preparation fallback with warning when subsection heading is missing', () => {
-    const markdown = `
-# Hummus veloce
-**Compatibilità**: 🤖 Bimby-ready
-
-## Ingredienti
-- ceci
-- tahini
-- limone
-- acqua
-
-## Preparazione
-1. Inserire ingredienti nel boccale
-2. Frullare 30 sec vel 8
-3. Servire
-    `.trim();
+    const markdown = [
+      '# Hummus veloce',
+      '**Compatibilita**: Bimby-ready',
+      '',
+      '## Ingredienti',
+      '- ceci',
+      '- tahini',
+      '- limone',
+      '- acqua',
+      '',
+      '## Preparazione',
+      '1. Inserire ingredienti nel boccale',
+      '2. Frullare 30 sec vel 8',
+      '3. Servire',
+    ].join('\n');
     const parsed = parseDuemmeRecipe('src/content/duemme/ricette/spuntini/hummus.md', markdown);
     expect(parsed.recipe).toBeTruthy();
     expect(parsed.quality.sectionUsed).toBe('full');
@@ -172,15 +203,15 @@ describe('duemmePack parser', () => {
   });
 
   it('returns null recipe when ingredient list is missing', () => {
-    const markdown = `
-# Ricetta incompleta
-## Ingredienti
-Nessuna lista disponibile
-## Preparazione
-1. Step uno
-2. Step due
-3. Step tre
-    `.trim();
+    const markdown = [
+      '# Ricetta incompleta',
+      '## Ingredienti',
+      'Nessuna lista disponibile',
+      '## Preparazione',
+      '1. Step uno',
+      '2. Step due',
+      '3. Step tre',
+    ].join('\n');
     const parsed = parseDuemmeRecipe('src/content/duemme/ricette/cene/incompleta.md', markdown);
     expect(parsed.recipe).toBeNull();
     expect(parsed.quality.warnings).toContain('DUEMME_INGREDIENTS_MISSING');

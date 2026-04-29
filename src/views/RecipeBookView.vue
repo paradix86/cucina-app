@@ -175,6 +175,14 @@ function handleDetailBack() {
   router.push(returnTarget()).catch(() => {});
 }
 
+function handleAddToMealComposer(recipe) {
+  router.push({ path: '/meal-composer', query: { add: recipe.id } }).catch(() => {});
+}
+
+function handleAddToPlanner(recipe) {
+  router.push({ path: '/planner', query: { addRecipeId: recipe.id } }).catch(() => {});
+}
+
 async function confirmDelete(id) {
   const confirmed = requestConfirm
     ? await requestConfirm({
@@ -428,6 +436,8 @@ defineExpose({
         @save-notes="saveRecipeNotes"
         @duplicate-recipe="duplicateRecipe"
         @save-recipe-edit="saveRecipeEdit"
+        @add-to-meal-composer="handleAddToMealComposer"
+        @add-to-planner="handleAddToPlanner"
       />
     </div>
   </section>

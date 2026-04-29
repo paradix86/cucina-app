@@ -1,5 +1,6 @@
 <script setup>
-import { computed, onUnmounted, ref, watch } from 'vue';
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 import { storeToRefs } from 'pinia';
 import { t } from '../lib/i18n';
 import { useRecipeBookStore } from '../stores/recipeBook';
@@ -8,6 +9,8 @@ import { useWeeklyPlannerStore } from '../stores/weeklyPlanner';
 import { useToasts } from '../composables/useToasts';
 import { buildGoalComparison } from '../lib/nutritionGoals';
 
+const route = useRoute();
+const router = useRouter();
 const recipeBookStore = useRecipeBookStore();
 const goalsStore = useNutritionGoalsStore();
 const { recipes } = storeToRefs(recipeBookStore);
@@ -16,8 +19,14 @@ const { goals } = storeToRefs(goalsStore);
 const search = ref('');
 const selectedIds = ref(new Set());
 
+const DRAFT_KEY = 'cucina_meal_composer_draft';
+
 const recipesWithNutrition = computed(() =>
   recipes.value.filter(r => r.nutrition?.perServing),
+);
+
+const hiddenRecipesCount = computed(() =>
+  recipes.value.length - recipesWithNutrition.value.length,
 );
 
 const filteredRecipes = computed(() => {
@@ -42,7 +51,36 @@ function toggleRecipe(recipe) {
 
 function clearSelection() {
   selectedIds.value = new Set();
+  try { sessionStorage.removeItem(DRAFT_KEY); } catch {}
 }
+
+watch(selectedIds, (ids) => {
+  try {
+    if (ids.size === 0) {
+      sessionStorage.removeItem(DRAFT_KEY);
+    } else {
+      sessionStorage.setItem(DRAFT_KEY, JSON.stringify([...ids]));
+    }
+  } catch {}
+});
+
+onMounted(() => {
+  try {
+    const raw = sessionStorage.getItem(DRAFT_KEY);
+    if (raw) {
+      const ids = JSON.parse(raw);
+      if (Array.isArray(ids)) selectedIds.value = new Set(ids.filter(id => typeof id === 'string'));
+    }
+  } catch {}
+
+  const addId = Array.isArray(route.query.add) ? route.query.add[0] : route.query.add;
+  if (addId && typeof addId === 'string') {
+    const next = new Set(selectedIds.value);
+    next.add(addId);
+    selectedIds.value = next;
+    router.replace({ path: '/meal-composer' }).catch(() => {});
+  }
+});
 
 const MACRO_KEYS = [
   { key: 'proteinG', unit: 'g', labelKey: 'nutrition_goals_protein_label', cssVar: '--nutrition-protein' },
@@ -184,6 +222,11 @@ const insights = computed(() => {
           type="search"
           :placeholder="t('meal_composer_search')"
         />
+
+        <p v-if="hiddenRecipesCount > 0 && recipesWithNutrition.length > 0" class="mc-hidden-note">
+          {{ t('meal_composer_hidden_count', { n: hiddenRecipesCount }) }}
+          <button class="mc-hidden-link" @click="router.push('/recipe-book')">{{ t('meal_composer_hidden_link') }}</button>
+        </p>
 
         <div v-if="recipesWithNutrition.length === 0" class="mc-empty-state">
           <span class="mc-empty-icon" aria-hidden="true">🥗</span>
@@ -972,5 +1015,26 @@ const insights = computed(() => {
   .mc-chip { animation: none; }
   .mc-bar-fill { transition: none; }
   .mc-recipe-card, .mc-card-check, .mc-chip { transition: none; }
+}
+
+/* Hidden recipes note */
+.mc-hidden-note {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin: 0 0 0.625rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+.mc-hidden-link {
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--color-accent, #43a047);
+  font-size: inherit;
+  cursor: pointer;
+  text-decoration: underline;
 }
 </style>

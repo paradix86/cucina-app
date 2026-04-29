@@ -30,6 +30,8 @@ const emit = defineEmits([
   'duplicate-recipe',
   'save-recipe-edit',
   'toast',
+  'add-to-meal-composer',
+  'add-to-planner',
 ]);
 
 const shoppingStore = useShoppingListStore();
@@ -509,6 +511,8 @@ function closeQr() {
             {{ t('detail_timer_btn', { t: formatTimerLabel(recipe.timerMinutes) }) }}
           </button>
           <button v-if="canSaveBuiltin" class="btn-secondary" @click="emit('save-builtin', recipe)">{{ t('builtin_save') }}</button>
+          <button v-if="savedMode" class="btn-secondary" @click="emit('add-to-meal-composer', recipe)">{{ t('recipe_add_to_meal') }}</button>
+          <button v-if="savedMode" class="btn-secondary" @click="emit('add-to-planner', recipe)">{{ t('recipe_add_to_planner') }}</button>
         </div>
 
         <div class="detail-actions detail-actions-utility">
