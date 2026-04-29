@@ -19,13 +19,14 @@ function onBackdropClick(event) {
     class="timer-alert-overlay"
     role="alertdialog"
     aria-modal="true"
-    :aria-label="props.title || props.message"
+    aria-labelledby="timer-alert-title"
+    aria-describedby="timer-alert-message"
     @click="onBackdropClick"
   >
     <div class="timer-alert-modal card">
       <div class="timer-alert-icon" aria-hidden="true">⏰</div>
-      <h3 class="timer-alert-title">{{ props.title }}</h3>
-      <p class="timer-alert-message">{{ props.message }}</p>
+      <h3 id="timer-alert-title" class="timer-alert-title">{{ props.title }}</h3>
+      <p id="timer-alert-message" class="timer-alert-message">{{ props.message }}</p>
       <button class="btn-primary timer-alert-dismiss" @click="emit('dismiss')">{{ props.dismissLabel }}</button>
     </div>
   </div>

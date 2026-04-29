@@ -333,7 +333,7 @@ body {
   line-height: 1.5;
 }
 .timer-alert-dismiss {
-  min-height: 42px;
+  min-height: 44px;
   margin-top: 14px;
   min-width: 120px;
 }
@@ -3545,10 +3545,13 @@ input[type="number"] {
   letter-spacing: .03em;
   text-transform: uppercase;
 }
-.cooking-timer-status.is-running,
-.cooking-timer-status.is-ready {
+.cooking-timer-status.is-running {
   background: color-mix(in srgb, var(--green-light) 70%, var(--bg));
   color: var(--green-text);
+}
+.cooking-timer-status.is-ready {
+  background: color-mix(in srgb, var(--bg-alt, var(--bg)) 80%, var(--bg));
+  color: var(--text-muted);
 }
 .cooking-timer-status.is-finished {
   background: color-mix(in srgb, var(--yellow-light) 72%, var(--bg));
@@ -3582,6 +3585,11 @@ input[type="number"] {
 }
 .cooking-step-timer.has-timer .cooking-timer-face {
   background: linear-gradient(180deg, color-mix(in srgb, var(--green-light) 32%, var(--bg)) 0%, var(--bg) 100%);
+}
+.cooking-timer-face.is-inactive {
+  background: var(--bg);
+  border-color: var(--border);
+  opacity: 0.45;
 }
 .cooking-timer-display {
   font-size: 68px;
@@ -3670,25 +3678,25 @@ input[type="number"] {
   font-family: var(--font);
   transition: background .15s ease, border-color .15s ease, transform .08s ease;
 }
-.cooking-timer-confirm-btn {
-  background: var(--green) !important;
-  color: white !important;
-  border-color: var(--green) !important;
+.cooking-timer-btns .cooking-timer-confirm-btn {
+  background: var(--green);
+  color: white;
+  border-color: var(--green);
 }
-.cooking-timer-toggle-btn {
-  background: var(--green) !important;
-  color: white !important;
-  border-color: var(--green) !important;
+.cooking-timer-btns .cooking-timer-toggle-btn {
+  background: var(--green);
+  color: white;
+  border-color: var(--green);
 }
-.cooking-timer-toggle-btn:hover,
+.cooking-timer-btns .cooking-timer-toggle-btn:hover,
 .cooking-complete-action:hover {
-  background: var(--green-dark) !important;
+  background: var(--green-dark);
 }
-.cooking-timer-reset-btn {
-  color: var(--text-muted) !important;
+.cooking-timer-btns .cooking-timer-reset-btn {
+  color: var(--text-muted);
 }
-.cooking-timer-reset-btn:hover {
-  background: var(--bg) !important;
+.cooking-timer-btns .cooking-timer-reset-btn:hover {
+  background: var(--bg);
   border-color: color-mix(in srgb, var(--border-md) 72%, var(--text-muted));
 }
 .cooking-nav {

@@ -45,7 +45,6 @@ function applyTimerTick(elapsedSeconds = 1): void {
       timer.running = false;
       changed = true;
       const message = t('toast_timer_done', { name: timer.name });
-      showToastRef?.(message, 'success');
       triggerTimerAlertRef?.(message);
     }
   });

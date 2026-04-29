@@ -132,7 +132,6 @@ function ensureTimer() {
       window.clearInterval(timerInterval);
       timerInterval = null;
       const message = t('toast_cooking_timer_done');
-      showToast(message, 'success');
       triggerTimerAlert(message);
     }
   }, 1000);
@@ -145,6 +144,8 @@ function toggleTimer() {
 }
 
 function resetTimer() {
+  window.clearInterval(timerInterval);
+  timerInterval = null;
   timerRunning.value = false;
   timerRemaining.value = timerTotal.value;
 }
@@ -183,8 +184,8 @@ async function acquireCookingWakeLock() {
   if (wakeLockSupported && wakeLockSupported.value === false) return;
   try {
     await requestWakeLock('screen');
-  } catch (error) {
-    console.warn('[cooking-mode] screen wake lock unavailable', error);
+  } catch (_) {
+    // wake lock unavailable — best effort only
   }
 }
 
@@ -236,7 +237,7 @@ onBeforeUnmount(() => {
       <span class="cooking-progress">{{ t('cooking_step_of', { current: stepIndex + 1, total: recipe.steps?.length || 0 }) }}</span>
     </div>
 
-    <div class="cooking-progress-bar" role="progressbar" :aria-valuenow="stepIndex + 1" :aria-valuemax="recipe.steps?.length || 0">
+    <div class="cooking-progress-bar" role="progressbar" aria-valuemin="1" :aria-valuenow="stepIndex + 1" :aria-valuemax="recipe.steps?.length || 0">
       <div class="cooking-progress-fill" :style="{ width: progressPct + '%' }"></div>
     </div>
 
@@ -321,11 +322,11 @@ onBeforeUnmount(() => {
           </div>
         </div>
       </template>
-      <template v-else-if="timerTotal > 0">
-        <div class="cooking-timer-face">
-          <div class="cooking-timer-display" id="cooking-timer-display">{{ formatClock(timerRemaining) }}</div>
+      <template v-else>
+        <div class="cooking-timer-face" :class="{ 'is-inactive': timerTotal <= 0 }">
+          <div class="cooking-timer-display" id="cooking-timer-display">{{ timerTotal > 0 ? formatClock(timerRemaining) : '—' }}</div>
         </div>
-        <div class="cooking-timer-btns">
+        <div v-if="timerTotal > 0" class="cooking-timer-btns">
           <button id="cooking-timer-toggle" class="cooking-timer-toggle-btn" @click="toggleTimer">{{ timerRunning ? t('timer_pause') : t('timer_start') }}</button>
           <button class="cooking-timer-reset-btn" @click="resetTimer">{{ t('timer_reset') }}</button>
         </div>

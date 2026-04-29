@@ -131,7 +131,8 @@ describe('useTimers lifecycle', () => {
     const timer = api.timers.value.find(entry => entry.id === timerId);
     expect(timer?.remaining).toBe(0);
     expect(timer?.cls).toBe('done');
-    expect(toastSpy).toHaveBeenCalledTimes(1);
+    // timer completion fires the alert modal only — toast was intentionally removed
+    expect(toastSpy).toHaveBeenCalledTimes(0);
     expect(alertSpy).toHaveBeenCalledTimes(1);
     expect(vi.getTimerCount()).toBe(0);
   });

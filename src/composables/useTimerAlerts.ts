@@ -34,6 +34,14 @@ const VALID_TIMER_DURATIONS = [2, 5, 10];
 
 let audioContext: AudioContext | null = null;
 let closeTimeout: ReturnType<typeof window.setTimeout> | null = null;
+const scheduledOscillators: OscillatorNode[] = [];
+
+function stopAllScheduledSounds(): void {
+  for (const osc of scheduledOscillators) {
+    try { osc.stop(); } catch (_) { /* already stopped */ }
+  }
+  scheduledOscillators.length = 0;
+}
 
 function getAudioContext(): AudioContext | null {
   const Ctx = window.AudioContext ?? (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
@@ -50,12 +58,12 @@ function playOscillatorStep(ctx: AudioContext, destination: AudioNode, options: 
     frequency,
     endFrequency = frequency,
     type = 'sine',
-    gain = 0.18,
+    gain = 0.28,
   } = options;
   const gainNode = ctx.createGain();
   gainNode.connect(destination);
   gainNode.gain.setValueAtTime(0.0001, startAt);
-  gainNode.gain.exponentialRampToValueAtTime(gain, startAt + 0.02);
+  gainNode.gain.exponentialRampToValueAtTime(gain, startAt + 0.01);
   gainNode.gain.exponentialRampToValueAtTime(0.0001, startAt + duration);
 
   const osc = ctx.createOscillator();
@@ -63,6 +71,11 @@ function playOscillatorStep(ctx: AudioContext, destination: AudioNode, options: 
   osc.frequency.setValueAtTime(frequency, startAt);
   osc.frequency.exponentialRampToValueAtTime(endFrequency, startAt + duration);
   osc.connect(gainNode);
+  scheduledOscillators.push(osc);
+  osc.addEventListener('ended', () => {
+    const idx = scheduledOscillators.indexOf(osc);
+    if (idx !== -1) scheduledOscillators.splice(idx, 1);
+  });
   osc.start(startAt);
   osc.stop(startAt + duration);
 }
@@ -80,6 +93,7 @@ function playSelectedTimerSound(
   durationSeconds = Number(selectedTimerDuration.value),
 ): void {
   try {
+    stopAllScheduledSounds();
     if (soundId === 'silent') return;
     const ctx = getAudioContext();
     if (!ctx) return;
@@ -93,84 +107,84 @@ function playSelectedTimerSound(
     switch (soundId) {
       case 'bell':
         schedulePatternRepeats(ctx, 1.25, totalDuration, offset => {
-          playOscillatorStep(ctx, ctx.destination, { startAt: now + offset, duration: 1.1, frequency: 1046, endFrequency: 784, type: 'triangle', gain: gainOf(0.16) });
-          playOscillatorStep(ctx, ctx.destination, { startAt: now + offset + 0.08, duration: 0.95, frequency: 1568, endFrequency: 1174, type: 'sine', gain: gainOf(0.08) });
+          playOscillatorStep(ctx, ctx.destination, { startAt: now + offset, duration: 1.1, frequency: 1046, endFrequency: 784, type: 'square', gain: gainOf(0.26) });
+          playOscillatorStep(ctx, ctx.destination, { startAt: now + offset + 0.08, duration: 0.95, frequency: 1568, endFrequency: 1174, type: 'triangle', gain: gainOf(0.14) });
         });
         break;
       case 'kitchen':
         schedulePatternRepeats(ctx, 0.72, totalDuration, offset => {
-          playOscillatorStep(ctx, ctx.destination, { startAt: now + offset, duration: 0.13, frequency: 1240, endFrequency: 1080, type: 'square', gain: gainOf(0.18) });
-          playOscillatorStep(ctx, ctx.destination, { startAt: now + offset + 0.2, duration: 0.13, frequency: 1240, endFrequency: 1080, type: 'square', gain: gainOf(0.18) });
-          playOscillatorStep(ctx, ctx.destination, { startAt: now + offset + 0.4, duration: 0.16, frequency: 1480, endFrequency: 1320, type: 'square', gain: gainOf(0.2) });
+          playOscillatorStep(ctx, ctx.destination, { startAt: now + offset, duration: 0.13, frequency: 1240, endFrequency: 1080, type: 'square', gain: gainOf(0.28) });
+          playOscillatorStep(ctx, ctx.destination, { startAt: now + offset + 0.2, duration: 0.13, frequency: 1240, endFrequency: 1080, type: 'square', gain: gainOf(0.28) });
+          playOscillatorStep(ctx, ctx.destination, { startAt: now + offset + 0.4, duration: 0.16, frequency: 1480, endFrequency: 1320, type: 'square', gain: gainOf(0.30) });
         });
         break;
       case 'chime':
         schedulePatternRepeats(ctx, 1.1, totalDuration, offset => {
-          playOscillatorStep(ctx, ctx.destination, { startAt: now + offset, duration: 0.55, frequency: 880, endFrequency: 1174, type: 'sine', gain: gainOf(0.14) });
-          playOscillatorStep(ctx, ctx.destination, { startAt: now + offset + 0.24, duration: 0.7, frequency: 1174, endFrequency: 1568, type: 'sine', gain: gainOf(0.12) });
+          playOscillatorStep(ctx, ctx.destination, { startAt: now + offset, duration: 0.55, frequency: 880, endFrequency: 1174, type: 'triangle', gain: gainOf(0.26) });
+          playOscillatorStep(ctx, ctx.destination, { startAt: now + offset + 0.24, duration: 0.7, frequency: 1174, endFrequency: 1568, type: 'triangle', gain: gainOf(0.22) });
         });
         break;
       case 'alarm':
         schedulePatternRepeats(ctx, 0.82, totalDuration, offset => {
-          playOscillatorStep(ctx, ctx.destination, { startAt: now + offset, duration: 0.22, frequency: 740, endFrequency: 940, type: 'sawtooth', gain: gainOf(0.22) });
-          playOscillatorStep(ctx, ctx.destination, { startAt: now + offset + 0.26, duration: 0.22, frequency: 940, endFrequency: 740, type: 'sawtooth', gain: gainOf(0.22) });
-          playOscillatorStep(ctx, ctx.destination, { startAt: now + offset + 0.52, duration: 0.22, frequency: 740, endFrequency: 940, type: 'sawtooth', gain: gainOf(0.22) });
+          playOscillatorStep(ctx, ctx.destination, { startAt: now + offset, duration: 0.22, frequency: 740, endFrequency: 940, type: 'sawtooth', gain: gainOf(0.32) });
+          playOscillatorStep(ctx, ctx.destination, { startAt: now + offset + 0.26, duration: 0.22, frequency: 940, endFrequency: 740, type: 'sawtooth', gain: gainOf(0.32) });
+          playOscillatorStep(ctx, ctx.destination, { startAt: now + offset + 0.52, duration: 0.22, frequency: 740, endFrequency: 940, type: 'sawtooth', gain: gainOf(0.32) });
         });
         break;
       case 'digital':
         schedulePatternRepeats(ctx, 0.84, totalDuration, offset => {
-          playOscillatorStep(ctx, ctx.destination, { startAt: now + offset, duration: 0.1, frequency: 1680, endFrequency: 1500, type: 'square', gain: gainOf(0.18) });
-          playOscillatorStep(ctx, ctx.destination, { startAt: now + offset + 0.14, duration: 0.1, frequency: 1680, endFrequency: 1500, type: 'square', gain: gainOf(0.18) });
-          playOscillatorStep(ctx, ctx.destination, { startAt: now + offset + 0.28, duration: 0.1, frequency: 1680, endFrequency: 1500, type: 'square', gain: gainOf(0.18) });
-          playOscillatorStep(ctx, ctx.destination, { startAt: now + offset + 0.5, duration: 0.16, frequency: 1220, endFrequency: 980, type: 'square', gain: gainOf(0.16) });
+          playOscillatorStep(ctx, ctx.destination, { startAt: now + offset, duration: 0.1, frequency: 1680, endFrequency: 1500, type: 'square', gain: gainOf(0.28) });
+          playOscillatorStep(ctx, ctx.destination, { startAt: now + offset + 0.14, duration: 0.1, frequency: 1680, endFrequency: 1500, type: 'square', gain: gainOf(0.28) });
+          playOscillatorStep(ctx, ctx.destination, { startAt: now + offset + 0.28, duration: 0.1, frequency: 1680, endFrequency: 1500, type: 'square', gain: gainOf(0.28) });
+          playOscillatorStep(ctx, ctx.destination, { startAt: now + offset + 0.5, duration: 0.16, frequency: 1220, endFrequency: 980, type: 'square', gain: gainOf(0.24) });
         });
         break;
       case 'doublebell':
         schedulePatternRepeats(ctx, 1.9, totalDuration, offset => {
-          playOscillatorStep(ctx, ctx.destination, { startAt: now + offset, duration: 0.82, frequency: 988, endFrequency: 740, type: 'triangle', gain: gainOf(0.14) });
-          playOscillatorStep(ctx, ctx.destination, { startAt: now + offset + 0.07, duration: 0.72, frequency: 1480, endFrequency: 1046, type: 'sine', gain: gainOf(0.08) });
-          playOscillatorStep(ctx, ctx.destination, { startAt: now + offset + 0.92, duration: 0.82, frequency: 988, endFrequency: 740, type: 'triangle', gain: gainOf(0.14) });
-          playOscillatorStep(ctx, ctx.destination, { startAt: now + offset + 0.99, duration: 0.72, frequency: 1480, endFrequency: 1046, type: 'sine', gain: gainOf(0.08) });
+          playOscillatorStep(ctx, ctx.destination, { startAt: now + offset, duration: 0.82, frequency: 988, endFrequency: 740, type: 'square', gain: gainOf(0.26) });
+          playOscillatorStep(ctx, ctx.destination, { startAt: now + offset + 0.07, duration: 0.72, frequency: 1480, endFrequency: 1046, type: 'triangle', gain: gainOf(0.16) });
+          playOscillatorStep(ctx, ctx.destination, { startAt: now + offset + 0.92, duration: 0.82, frequency: 988, endFrequency: 740, type: 'square', gain: gainOf(0.26) });
+          playOscillatorStep(ctx, ctx.destination, { startAt: now + offset + 0.99, duration: 0.72, frequency: 1480, endFrequency: 1046, type: 'triangle', gain: gainOf(0.16) });
         });
         break;
       case 'siren':
         schedulePatternRepeats(ctx, 1.02, totalDuration, offset => {
-          playOscillatorStep(ctx, ctx.destination, { startAt: now + offset, duration: 0.32, frequency: 620, endFrequency: 1180, type: 'sawtooth', gain: gainOf(0.18) });
-          playOscillatorStep(ctx, ctx.destination, { startAt: now + offset + 0.32, duration: 0.32, frequency: 1180, endFrequency: 620, type: 'sawtooth', gain: gainOf(0.18) });
-          playOscillatorStep(ctx, ctx.destination, { startAt: now + offset + 0.64, duration: 0.32, frequency: 620, endFrequency: 1180, type: 'sawtooth', gain: gainOf(0.18) });
+          playOscillatorStep(ctx, ctx.destination, { startAt: now + offset, duration: 0.32, frequency: 620, endFrequency: 1180, type: 'sawtooth', gain: gainOf(0.30) });
+          playOscillatorStep(ctx, ctx.destination, { startAt: now + offset + 0.32, duration: 0.32, frequency: 1180, endFrequency: 620, type: 'sawtooth', gain: gainOf(0.30) });
+          playOscillatorStep(ctx, ctx.destination, { startAt: now + offset + 0.64, duration: 0.32, frequency: 620, endFrequency: 1180, type: 'sawtooth', gain: gainOf(0.30) });
         });
         break;
       case 'phone':
         schedulePatternRepeats(ctx, 1.14, totalDuration, offset => {
-          playOscillatorStep(ctx, ctx.destination, { startAt: now + offset, duration: 0.18, frequency: 1320, endFrequency: 1180, type: 'triangle', gain: gainOf(0.16) });
-          playOscillatorStep(ctx, ctx.destination, { startAt: now + offset + 0.22, duration: 0.18, frequency: 1568, endFrequency: 1320, type: 'triangle', gain: gainOf(0.16) });
-          playOscillatorStep(ctx, ctx.destination, { startAt: now + offset + 0.62, duration: 0.18, frequency: 1320, endFrequency: 1180, type: 'triangle', gain: gainOf(0.16) });
-          playOscillatorStep(ctx, ctx.destination, { startAt: now + offset + 0.84, duration: 0.18, frequency: 1568, endFrequency: 1320, type: 'triangle', gain: gainOf(0.16) });
+          playOscillatorStep(ctx, ctx.destination, { startAt: now + offset, duration: 0.18, frequency: 1320, endFrequency: 1180, type: 'square', gain: gainOf(0.26) });
+          playOscillatorStep(ctx, ctx.destination, { startAt: now + offset + 0.22, duration: 0.18, frequency: 1568, endFrequency: 1320, type: 'square', gain: gainOf(0.26) });
+          playOscillatorStep(ctx, ctx.destination, { startAt: now + offset + 0.62, duration: 0.18, frequency: 1320, endFrequency: 1180, type: 'square', gain: gainOf(0.26) });
+          playOscillatorStep(ctx, ctx.destination, { startAt: now + offset + 0.84, duration: 0.18, frequency: 1568, endFrequency: 1320, type: 'square', gain: gainOf(0.26) });
         });
         break;
       case 'buzzer':
         schedulePatternRepeats(ctx, 0.86, totalDuration, offset => {
-          playOscillatorStep(ctx, ctx.destination, { startAt: now + offset, duration: 0.14, frequency: 980, endFrequency: 920, type: 'square', gain: gainOf(0.22) });
-          playOscillatorStep(ctx, ctx.destination, { startAt: now + offset + 0.18, duration: 0.14, frequency: 980, endFrequency: 920, type: 'square', gain: gainOf(0.22) });
-          playOscillatorStep(ctx, ctx.destination, { startAt: now + offset + 0.36, duration: 0.14, frequency: 980, endFrequency: 920, type: 'square', gain: gainOf(0.22) });
-          playOscillatorStep(ctx, ctx.destination, { startAt: now + offset + 0.54, duration: 0.14, frequency: 980, endFrequency: 920, type: 'square', gain: gainOf(0.22) });
+          playOscillatorStep(ctx, ctx.destination, { startAt: now + offset, duration: 0.14, frequency: 980, endFrequency: 920, type: 'square', gain: gainOf(0.32) });
+          playOscillatorStep(ctx, ctx.destination, { startAt: now + offset + 0.18, duration: 0.14, frequency: 980, endFrequency: 920, type: 'square', gain: gainOf(0.32) });
+          playOscillatorStep(ctx, ctx.destination, { startAt: now + offset + 0.36, duration: 0.14, frequency: 980, endFrequency: 920, type: 'square', gain: gainOf(0.32) });
+          playOscillatorStep(ctx, ctx.destination, { startAt: now + offset + 0.54, duration: 0.14, frequency: 980, endFrequency: 920, type: 'square', gain: gainOf(0.32) });
         });
         break;
       case 'retro':
         schedulePatternRepeats(ctx, 1.02, totalDuration, offset => {
-          playOscillatorStep(ctx, ctx.destination, { startAt: now + offset, duration: 0.16, frequency: 784, endFrequency: 784, type: 'square', gain: gainOf(0.17) });
-          playOscillatorStep(ctx, ctx.destination, { startAt: now + offset + 0.18, duration: 0.16, frequency: 988, endFrequency: 988, type: 'square', gain: gainOf(0.17) });
-          playOscillatorStep(ctx, ctx.destination, { startAt: now + offset + 0.36, duration: 0.16, frequency: 1174, endFrequency: 1174, type: 'square', gain: gainOf(0.17) });
-          playOscillatorStep(ctx, ctx.destination, { startAt: now + offset + 0.62, duration: 0.22, frequency: 988, endFrequency: 784, type: 'square', gain: gainOf(0.18) });
+          playOscillatorStep(ctx, ctx.destination, { startAt: now + offset, duration: 0.16, frequency: 784, endFrequency: 784, type: 'square', gain: gainOf(0.27) });
+          playOscillatorStep(ctx, ctx.destination, { startAt: now + offset + 0.18, duration: 0.16, frequency: 988, endFrequency: 988, type: 'square', gain: gainOf(0.27) });
+          playOscillatorStep(ctx, ctx.destination, { startAt: now + offset + 0.36, duration: 0.16, frequency: 1174, endFrequency: 1174, type: 'square', gain: gainOf(0.27) });
+          playOscillatorStep(ctx, ctx.destination, { startAt: now + offset + 0.62, duration: 0.22, frequency: 988, endFrequency: 784, type: 'square', gain: gainOf(0.28) });
         });
         break;
       case 'clockradio':
         schedulePatternRepeats(ctx, 1.48, totalDuration, offset => {
-          playOscillatorStep(ctx, ctx.destination, { startAt: now + offset, duration: 0.2, frequency: 720, endFrequency: 720, type: 'square', gain: gainOf(0.24) });
-          playOscillatorStep(ctx, ctx.destination, { startAt: now + offset + 0.24, duration: 0.2, frequency: 960, endFrequency: 960, type: 'square', gain: gainOf(0.24) });
-          playOscillatorStep(ctx, ctx.destination, { startAt: now + offset + 0.48, duration: 0.2, frequency: 720, endFrequency: 720, type: 'square', gain: gainOf(0.24) });
-          playOscillatorStep(ctx, ctx.destination, { startAt: now + offset + 0.72, duration: 0.2, frequency: 960, endFrequency: 960, type: 'square', gain: gainOf(0.24) });
-          playOscillatorStep(ctx, ctx.destination, { startAt: now + offset + 1.02, duration: 0.32, frequency: 1320, endFrequency: 1120, type: 'sawtooth', gain: gainOf(0.22) });
+          playOscillatorStep(ctx, ctx.destination, { startAt: now + offset, duration: 0.2, frequency: 720, endFrequency: 720, type: 'square', gain: gainOf(0.32) });
+          playOscillatorStep(ctx, ctx.destination, { startAt: now + offset + 0.24, duration: 0.2, frequency: 960, endFrequency: 960, type: 'square', gain: gainOf(0.32) });
+          playOscillatorStep(ctx, ctx.destination, { startAt: now + offset + 0.48, duration: 0.2, frequency: 720, endFrequency: 720, type: 'square', gain: gainOf(0.32) });
+          playOscillatorStep(ctx, ctx.destination, { startAt: now + offset + 0.72, duration: 0.2, frequency: 960, endFrequency: 960, type: 'square', gain: gainOf(0.32) });
+          playOscillatorStep(ctx, ctx.destination, { startAt: now + offset + 1.02, duration: 0.32, frequency: 1320, endFrequency: 1120, type: 'sawtooth', gain: gainOf(0.30) });
         });
         break;
       case 'classic_bell':
@@ -180,8 +194,8 @@ function playSelectedTimerSound(
               startAt: now + offset + (i * 0.05),
               duration: 0.04,
               frequency: 2500,
-              type: 'sine',
-              gain: gainOf(0.2)
+              type: 'triangle',
+              gain: gainOf(0.30)
             });
           }
         });
@@ -193,14 +207,14 @@ function playSelectedTimerSound(
             duration: 0.1,
             frequency: 2048,
             type: 'square',
-            gain: gainOf(0.15)
+            gain: gainOf(0.26)
           });
           playOscillatorStep(ctx, ctx.destination, {
             startAt: now + offset + 0.15,
             duration: 0.1,
             frequency: 2048,
             type: 'square',
-            gain: gainOf(0.15)
+            gain: gainOf(0.26)
           });
         });
         break;
@@ -211,21 +225,21 @@ function playSelectedTimerSound(
             duration: 0.08,
             frequency: 1800,
             type: 'square',
-            gain: gainOf(0.15)
+            gain: gainOf(0.26)
           });
           playOscillatorStep(ctx, ctx.destination, {
             startAt: now + offset + 0.1,
             duration: 0.08,
             frequency: 1800,
             type: 'square',
-            gain: gainOf(0.15)
+            gain: gainOf(0.26)
           });
           playOscillatorStep(ctx, ctx.destination, {
             startAt: now + offset + 0.2,
             duration: 0.2,
             frequency: 2200,
             type: 'square',
-            gain: gainOf(0.15)
+            gain: gainOf(0.26)
           });
         });
         break;
@@ -236,7 +250,7 @@ function playSelectedTimerSound(
             duration: 0.25,
             frequency: 2800,
             type: 'sawtooth',
-            gain: gainOf(0.25),
+            gain: gainOf(0.34),
           });
         });
         break;
@@ -248,7 +262,7 @@ function playSelectedTimerSound(
               duration: 0.05,
               frequency: 3500,
               type: 'square',
-              gain: gainOf(0.3),
+              gain: gainOf(0.38),
             });
           });
         });
@@ -260,21 +274,21 @@ function playSelectedTimerSound(
             duration: 0.2,
             frequency: 2000,
             type: 'square',
-            gain: gainOf(0.2),
+            gain: gainOf(0.30),
           });
           playOscillatorStep(ctx, ctx.destination, {
             startAt: now + offset + 0.2,
             duration: 0.2,
             frequency: 2500,
             type: 'square',
-            gain: gainOf(0.2),
+            gain: gainOf(0.30),
           });
         });
         break;
       case 'beep':
       default:
         schedulePatternRepeats(ctx, 0.95, totalDuration, offset => {
-          playOscillatorStep(ctx, ctx.destination, { startAt: now + offset, duration: 0.75, frequency: 880, endFrequency: 1320, type: 'sine', gain: gainOf(0.2) });
+          playOscillatorStep(ctx, ctx.destination, { startAt: now + offset, duration: 0.75, frequency: 880, endFrequency: 1320, type: 'square', gain: gainOf(0.30) });
         });
         break;
     }

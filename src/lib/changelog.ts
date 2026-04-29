@@ -6,6 +6,21 @@ export type ChangelogEntry = {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '0.10.8',
+    date: '2026-04-29',
+    changes: [
+      'Timer alerts now open a dedicated modal instead of a toast — harder to miss on mobile',
+      'All timer sounds tuned louder and cleaner; oscillator types revised for better clarity',
+      'Cooking mode timer reset now correctly stops the interval before resetting the display',
+      'Cooking mode timer face shows a dash when no timer is set, and dims when inactive',
+      'Timer inputs use numeric keyboard on mobile (inputmode="numeric")',
+      'Timer alert modal: proper aria-labelledby / aria-describedby for screen readers',
+      'Cooking step "ready" status badge now uses a neutral style distinct from the running (green) state',
+      'CSS: cooking timer button specificity fixed — removed stray !important overrides',
+      '"You can edit the timer whenever needed" hint updated in all 5 languages',
+    ],
+  },
+  {
     version: '0.10.7',
     date: '2026-04-29',
     changes: [
