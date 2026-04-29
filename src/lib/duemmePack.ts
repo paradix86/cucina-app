@@ -28,14 +28,25 @@ const duemmeRecipeModules = import.meta.glob('../content/duemme/ricette/**/*.md'
   eager: true,
 }) as MarkdownModuleMap;
 
+/**
+ * Normalize text from built-in Duemme recipes (markdown source files).
+ * Differs from normalizeImportText in utils.ts: explicitly handles non-breaking spaces ( )
+ * which may appear in Markdown source, and does not collapse triple+ newlines
+ * (they're intentional section separators in the recipe format).
+ * Keep this separate — do not merge with utils.ts normalizeImportText.
+ */
 function normalizeText(value: string | null | undefined): string {
   return String(value || '')
     .replace(/\r/g, '')
-    .replace(/\u00a0/g, ' ')
+    .replace(/ /g, ' ')
     .replace(/[ \t]+/g, ' ')
     .trim();
 }
 
+/**
+ * Strip markdown formatting from recipe text.
+ * Removes bold (**), code backticks (`), links, and headings.
+ */
 function stripMarkdown(value: string | null | undefined): string {
   return normalizeText(
     String(value || '')

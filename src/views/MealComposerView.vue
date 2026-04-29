@@ -8,6 +8,7 @@ import { useNutritionGoalsStore } from '../stores/nutritionGoalsStore';
 import { useWeeklyPlannerStore } from '../stores/weeklyPlanner';
 import { useToasts } from '../composables/useToasts';
 import { buildGoalComparison } from '../lib/nutritionGoals';
+import { MEAL_COMPOSER_DRAFT_KEY } from '../lib/storage';
 
 const route = useRoute();
 const router = useRouter();
@@ -19,7 +20,8 @@ const { goals } = storeToRefs(goalsStore);
 const search = ref('');
 const selectedIds = ref(new Set());
 
-const DRAFT_KEY = 'cucina_meal_composer_draft';
+const DRAFT_KEY = MEAL_COMPOSER_DRAFT_KEY;
+const LEGACY_DRAFT_KEY = 'cucina_meal_composer_draft';
 
 const recipesWithNutrition = computed(() =>
   recipes.value.filter(r => r.nutrition?.perServing),
@@ -35,9 +37,23 @@ const filteredRecipes = computed(() => {
   return recipesWithNutrition.value.filter(r => r.name.toLowerCase().includes(q));
 });
 
+// Selected recipes always include ALL selected ids (even those without nutrition)
+// so adding a recipe via "Aggiungi al pasto" never silently disappears.
 const selectedRecipes = computed(() =>
-  recipesWithNutrition.value.filter(r => selectedIds.value.has(r.id)),
+  recipes.value.filter(r => selectedIds.value.has(r.id)),
 );
+
+const selectedHasMissingNutrition = computed(() =>
+  selectedRecipes.value.some(r => !r.nutrition?.perServing),
+);
+
+function hasNutrition(recipe) {
+  return Boolean(recipe?.nutrition?.perServing);
+}
+
+function openRecipeDetail(recipe) {
+  router.push({ name: 'recipe-book-detail', params: { id: recipe.id } }).catch(() => {});
+}
 
 function toggleRecipe(recipe) {
   const next = new Set(selectedIds.value);
@@ -51,22 +67,33 @@ function toggleRecipe(recipe) {
 
 function clearSelection() {
   selectedIds.value = new Set();
-  try { sessionStorage.removeItem(DRAFT_KEY); } catch {}
+  try { localStorage.removeItem(DRAFT_KEY); } catch {}
 }
 
 watch(selectedIds, (ids) => {
   try {
     if (ids.size === 0) {
-      sessionStorage.removeItem(DRAFT_KEY);
+      localStorage.removeItem(DRAFT_KEY);
     } else {
-      sessionStorage.setItem(DRAFT_KEY, JSON.stringify([...ids]));
+      localStorage.setItem(DRAFT_KEY, JSON.stringify([...ids]));
     }
   } catch {}
 });
 
 onMounted(() => {
+  // One-time migration: copy legacy sessionStorage draft to localStorage if present.
   try {
-    const raw = sessionStorage.getItem(DRAFT_KEY);
+    if (!localStorage.getItem(DRAFT_KEY)) {
+      const legacy = sessionStorage.getItem(LEGACY_DRAFT_KEY);
+      if (legacy) {
+        localStorage.setItem(DRAFT_KEY, legacy);
+        sessionStorage.removeItem(LEGACY_DRAFT_KEY);
+      }
+    }
+  } catch {}
+
+  try {
+    const raw = localStorage.getItem(DRAFT_KEY);
     if (raw) {
       const ids = JSON.parse(raw);
       if (Array.isArray(ids)) selectedIds.value = new Set(ids.filter(id => typeof id === 'string'));
@@ -92,7 +119,8 @@ const MACRO_KEYS = [
 const mealTotals = computed(() => {
   const totals = {};
   for (const recipe of selectedRecipes.value) {
-    const n = recipe.nutrition.perServing;
+    const n = recipe.nutrition?.perServing;
+    if (!n) continue; // recipes without nutrition don't contribute to totals
     const allKeys = [{ key: 'kcal' }, ...MACRO_KEYS];
     for (const { key } of allKeys) {
       if (n[key] !== undefined) {
@@ -303,22 +331,41 @@ const insights = computed(() => {
           <!-- Selected recipe chips -->
           <div class="mc-chips-row">
             <div class="mc-chips" role="list" :aria-label="t('meal_composer_total')">
-              <button
+              <div
                 v-for="recipe in selectedRecipes"
                 :key="recipe.id"
                 class="mc-chip"
+                :class="{ 'mc-chip-missing': !hasNutrition(recipe) }"
                 role="listitem"
-                :aria-label="t('meal_composer_remove') + ' ' + recipe.name"
-                @click="toggleRecipe(recipe)"
               >
-                {{ recipe.name }}
-                <span class="mc-chip-x" aria-hidden="true">×</span>
-              </button>
+                <span class="mc-chip-name">{{ recipe.name }}</span>
+                <span
+                  v-if="!hasNutrition(recipe)"
+                  class="mc-chip-badge"
+                >{{ t('nutrition_missing_label') }}</span>
+                <button
+                  v-if="!hasNutrition(recipe)"
+                  class="mc-chip-calc"
+                  type="button"
+                  @click="openRecipeDetail(recipe)"
+                >{{ t('meal_composer_calc_nutrition') }}</button>
+                <button
+                  class="mc-chip-x"
+                  type="button"
+                  :aria-label="t('meal_composer_remove') + ' ' + recipe.name"
+                  @click="toggleRecipe(recipe)"
+                >×</button>
+              </div>
             </div>
             <button class="mc-clear-btn" @click="clearSelection">
               {{ t('meal_composer_clear') }}
             </button>
           </div>
+
+          <!-- Note when totals exclude recipes without nutrition -->
+          <p v-if="selectedHasMissingNutrition" class="mc-excluding-note">
+            {{ t('meal_composer_excluding_note') }}
+          </p>
 
           <!-- Macro rows -->
           <ul class="mc-macro-list">
@@ -718,27 +765,62 @@ const insights = computed(() => {
 .mc-chip {
   display: inline-flex;
   align-items: center;
-  gap: 0.3rem;
-  padding: 0.3rem 0.625rem;
+  gap: 0.4rem;
+  padding: 0.3rem 0.4rem 0.3rem 0.625rem;
   border: 1px solid var(--border-md);
   border-radius: var(--radius-pill, 999px);
   background: var(--bg);
   color: var(--text);
   font-size: 0.8125rem;
-  cursor: pointer;
   transition: background 0.12s, border-color 0.12s;
   animation: chip-in 0.2s ease;
 }
 
-.mc-chip:hover {
-  border-color: var(--color-accent, #43a047);
-  background: color-mix(in srgb, var(--color-accent, #43a047) 6%, var(--bg));
+.mc-chip-missing {
+  border-style: dashed;
+  border-color: var(--color-warning, #c47f17);
+}
+
+.mc-chip-name {
+  font-weight: 500;
+}
+
+.mc-chip-badge {
+  font-size: 0.6875rem;
+  font-weight: 500;
+  color: var(--color-warning, #c47f17);
+  background: color-mix(in srgb, var(--color-warning, #c47f17) 12%, transparent);
+  padding: 0.1rem 0.4rem;
+  border-radius: var(--radius-pill, 999px);
+}
+
+.mc-chip-calc {
+  font-size: 0.75rem;
+  color: var(--color-accent, #43a047);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.1rem 0.3rem;
+  text-decoration: underline;
 }
 
 .mc-chip-x {
   font-size: 1rem;
   line-height: 1;
   color: var(--text-muted);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0 0.3rem;
+}
+
+.mc-chip-x:hover { color: var(--text); }
+
+.mc-excluding-note {
+  margin: 0.5rem 0 0;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-style: italic;
 }
 
 @keyframes chip-in {

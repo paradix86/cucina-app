@@ -1,5 +1,16 @@
 import type { ImportFailureStage } from '../../types';
 
+export class ImportTimeoutError extends Error {
+  name = 'ImportTimeoutError';
+}
+
+export class ImportFetchError extends Error {
+  name = 'ImportFetchError';
+  constructor(public status: number, statusText?: string) {
+    super(`HTTP ${status}${statusText ? ' ' + statusText : ''}`);
+  }
+}
+
 const IMPORT_FETCH_TIMEOUT_MS = 12000;
 
 async function fetchWithTimeout(input: string, init: RequestInit = {}): Promise<Response> {
@@ -9,7 +20,7 @@ async function fetchWithTimeout(input: string, init: RequestInit = {}): Promise<
     return await fetch(input, { ...init, signal: controller.signal });
   } catch (error: unknown) {
     if ((error as Error)?.name === 'AbortError') {
-      throw new Error('WEB_TIMEOUT');
+      throw new ImportTimeoutError('Request timed out');
     }
     throw error;
   } finally {
@@ -19,7 +30,7 @@ async function fetchWithTimeout(input: string, init: RequestInit = {}): Promise<
 
 async function fetchReadableImportPage(url: string): Promise<string> {
   const resp = await fetchWithTimeout(`https://r.jina.ai/${url}`);
-  if (!resp.ok) throw new Error(`WEB_FETCH_${resp.status}`);
+  if (!resp.ok) throw new ImportFetchError(resp.status, resp.statusText);
   return resp.text();
 }
 
@@ -36,7 +47,7 @@ async function fetchHtmlForJsonLd(url: string): Promise<string> {
   const resp = await fetchWithTimeout(`https://r.jina.ai/${url}`, {
     headers: { 'x-return-format': 'html' },
   });
-  if (!resp.ok) throw new Error(`WEB_FETCH_${resp.status}`);
+  if (!resp.ok) throw new ImportFetchError(resp.status, resp.statusText);
   return resp.text();
 }
 
@@ -49,11 +60,26 @@ function extractPageHeadingsHint(markdown: string | null | undefined): string | 
   return headings.length ? headings.join(' · ') : null;
 }
 
-function inferImportFailureStage(message: string): ImportFailureStage {
-  if (!message) return 'parse-content';
-  if (message === 'WEB_TIMEOUT' || message.startsWith('WEB_FETCH_') || message.startsWith('HTTP ')) return 'fetch-readable-page';
-  if (message === 'UNSUPPORTED_WEB_IMPORT') return 'select-adapter';
-  if (/(?:_NOT_FOUND|_PARSE|_INCOMPLETE|_UNSUPPORTED|^JSONLD_)/.test(message)) return 'parse-content';
+function inferImportFailureStage(message: string | Error): ImportFailureStage {
+  let msg = '';
+  
+  if (message instanceof ImportTimeoutError) {
+    return 'fetch-readable-page';
+  }
+  if (message instanceof ImportFetchError) {
+    return 'fetch-readable-page';
+  }
+  
+  if (message instanceof Error) {
+    msg = message.message;
+  } else {
+    msg = String(message);
+  }
+  
+  if (!msg) return 'parse-content';
+  if (msg === 'WEB_TIMEOUT' || msg.startsWith('WEB_FETCH_') || msg.startsWith('HTTP ')) return 'fetch-readable-page';
+  if (msg === 'UNSUPPORTED_WEB_IMPORT') return 'select-adapter';
+  if (/(?:_NOT_FOUND|_PARSE|_INCOMPLETE|_UNSUPPORTED|^JSONLD_)/.test(msg)) return 'parse-content';
   return 'parse-content';
 }
 

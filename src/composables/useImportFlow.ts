@@ -1,4 +1,4 @@
-import { computed, ref } from 'vue';
+import { computed, ref, type Ref } from "vue";
 import { useRecipeBookStore } from '../stores/recipeBook';
 import {
   ANTHROPIC_API_KEY,
@@ -84,7 +84,7 @@ export function useImportFlow() {
     previewRecipe.value = { ...previewRecipe.value, tags: [ ...(previewRecipe.value.tags || []), trimmed ] };
   }
 
-  function addTag(inputRef: any): void {
+  function addTag(inputRef: Ref<HTMLInputElement | null> | undefined): void {
     const input = inputRef?.value;
     if (!input || !previewRecipe.value) return;
     const value = input.value.trim();

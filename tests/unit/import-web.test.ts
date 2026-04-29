@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { inferImportFailureStage } from '../../src/lib/import/web';
+import { inferImportFailureStage, ImportTimeoutError, ImportFetchError } from '../../src/lib/import/web';
 
 describe('inferImportFailureStage', () => {
   it('maps WEB_TIMEOUT error to fetch-readable-page stage', () => {
@@ -55,5 +55,23 @@ describe('inferImportFailureStage', () => {
 
   it('maps Varoma marker errors to parse-content stage', () => {
     expect(inferImportFailureStage('BIMBY_VAROMA_UNSUPPORTED')).toBe('parse-content');
+  });
+
+  it('maps ImportTimeoutError instance to fetch-readable-page stage', () => {
+    const timeoutError = new ImportTimeoutError('Request timed out');
+    expect(inferImportFailureStage(timeoutError)).toBe('fetch-readable-page');
+  });
+
+  it('maps ImportFetchError instance to fetch-readable-page stage', () => {
+    const fetchError = new ImportFetchError(404, 'Not Found');
+    expect(inferImportFailureStage(fetchError)).toBe('fetch-readable-page');
+  });
+
+  it('ImportFetchError includes status code in message', () => {
+    const fetchError = new ImportFetchError(500);
+    expect(fetchError.message).toBe('HTTP 500');
+    
+    const fetchErrorWithText = new ImportFetchError(404, 'Not Found');
+    expect(fetchErrorWithText.message).toBe('HTTP 404 Not Found');
   });
 });

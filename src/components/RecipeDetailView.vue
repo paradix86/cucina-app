@@ -501,18 +501,19 @@ function closeQr() {
       </div>
 
       <div class="detail-actions-shell">
-        <div class="detail-action-primary">
-          <button class="btn-start-cooking" @click="emit('start-cooking', recipe)">{{ t('cooking_start') }}</button>
+        <!-- Primary planning actions: meal composer, planner, shopping list. -->
+        <!-- Single primary "Inizia a cucinare" lives at the top of the page. -->
+        <div class="detail-actions detail-actions-planning">
+          <button v-if="savedMode" class="btn-secondary detail-action-meal" @click="emit('add-to-meal-composer', recipe)">{{ t('recipe_add_to_meal') }}</button>
+          <button v-if="savedMode" class="btn-secondary detail-action-planner" @click="emit('add-to-planner', recipe)">{{ t('recipe_add_to_planner') }}</button>
+          <button class="btn-secondary detail-action-shopping" @click="onShoppingAction">{{ shoppingActionLabel }}</button>
         </div>
 
         <div class="detail-actions detail-actions-secondary-tier">
-          <button class="btn-secondary detail-action-shopping" @click="onShoppingAction">{{ shoppingActionLabel }}</button>
           <button v-if="recipe.timerMinutes" class="btn-secondary" @click="emit('start-recipe-timer', recipe)">
             {{ t('detail_timer_btn', { t: formatTimerLabel(recipe.timerMinutes) }) }}
           </button>
           <button v-if="canSaveBuiltin" class="btn-secondary" @click="emit('save-builtin', recipe)">{{ t('builtin_save') }}</button>
-          <button v-if="savedMode" class="btn-secondary" @click="emit('add-to-meal-composer', recipe)">{{ t('recipe_add_to_meal') }}</button>
-          <button v-if="savedMode" class="btn-secondary" @click="emit('add-to-planner', recipe)">{{ t('recipe_add_to_planner') }}</button>
         </div>
 
         <div class="detail-actions detail-actions-utility">

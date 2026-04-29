@@ -4,7 +4,7 @@ const APP_ROOT = 'http://127.0.0.1:4173/cucina-app/';
 const STORAGE_KEY = 'cucina_recipebook_v3';
 const SHOPPING_LIST_KEY = 'cucina_shopping_list_v1';
 const WEEKLY_PLANNER_KEY = 'cucina_weekly_planner_v1';
-const DRAFT_KEY = 'cucina_meal_composer_draft';
+const DRAFT_KEY = 'cucina_meal_composer_draft_v1';
 
 const EMPTY_PLANNER = {
   monday:    { breakfast: null, lunch: null, dinner: null },
@@ -87,11 +87,11 @@ const recipeWithoutNutrition = {
 
 async function waitForDraft(page: Page, key: string): Promise<string> {
   await page.waitForFunction(
-    (k: string) => sessionStorage.getItem(k) !== null,
+    (k: string) => localStorage.getItem(k) !== null,
     key,
     { timeout: 5000 },
   );
-  return page.evaluate((k: string) => sessionStorage.getItem(k) ?? '', key);
+  return page.evaluate((k: string) => localStorage.getItem(k) ?? '', key);
 }
 
 test('Recipe Detail CTA — "Use in meal" opens Meal Composer with recipe pre-selected', async ({ page }) => {
@@ -103,7 +103,7 @@ test('Recipe Detail CTA — "Use in meal" opens Meal Composer with recipe pre-se
   await page.locator('.card-name').filter({ hasText: 'Pasta Semplice' }).click();
   await expect(page.locator('main.app .panel.active').first()).toBeVisible();
 
-  const addToMealBtn = page.locator('button').filter({ hasText: /usa in pasto|use in meal/i });
+  const addToMealBtn = page.locator('button').filter({ hasText: /add to meal|aggiungi al pasto/i });
   await expect(addToMealBtn).toBeVisible();
   await addToMealBtn.click();
 
@@ -165,8 +165,8 @@ test('Meal Composer draft persists across navigation and survives back-navigatio
     page.locator('.mc-recipe-card.selected').filter({ hasText: 'Pasta Semplice' }),
   ).toBeVisible();
 
-  // sessionStorage draft should still be present
-  const draftAfterBack = await page.evaluate((key: string) => sessionStorage.getItem(key), DRAFT_KEY);
+  // localStorage draft should still be present
+  const draftAfterBack = await page.evaluate((key: string) => localStorage.getItem(key), DRAFT_KEY);
   expect(draftAfterBack).not.toBeNull();
   expect(JSON.parse(draftAfterBack!)).toContain(recipeWithNutrition.id);
 });
@@ -185,11 +185,11 @@ test('Meal Composer draft clears on explicit clear action', async ({ page }) => 
   if (await clearBtn.count() > 0) {
     await clearBtn.first().click();
     await page.waitForFunction(
-      (key: string) => sessionStorage.getItem(key) === null,
+      (key: string) => localStorage.getItem(key) === null,
       DRAFT_KEY,
       { timeout: 3000 },
     );
-    const draftAfter = await page.evaluate((k: string) => sessionStorage.getItem(k), DRAFT_KEY);
+    const draftAfter = await page.evaluate((k: string) => localStorage.getItem(k), DRAFT_KEY);
     expect(draftAfter).toBeNull();
   }
 });

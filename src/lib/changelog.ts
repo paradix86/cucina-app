@@ -6,6 +6,17 @@ export type ChangelogEntry = {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '0.10.7',
+    date: '2026-04-29',
+    changes: [
+      'Meal Composer: recipes without nutrition data can now be added to a meal — shown with a warning badge and a direct link to calculate their nutrition',
+      'Meal Composer draft selection now persists across page reloads (moved from sessionStorage to localStorage)',
+      'Recipe detail view: "Add to meal" and "Add to planner" buttons promoted to a dedicated planning row above other actions',
+      'Import: typed error classes replace string-coded errors for more reliable failure stage detection',
+      'New i18n keys in all 5 languages: meal_composer_calc_nutrition, meal_composer_excluding_note, nutrition_missing_label',
+    ],
+  },
+  {
     version: '0.10.6',
     date: '2026-04-29',
     changes: [

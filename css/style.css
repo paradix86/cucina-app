@@ -2216,6 +2216,18 @@ input[type="number"] {
 .detail-actions-secondary-tier .btn-secondary {
   width: 100%;
 }
+.detail-actions-planning {
+  margin-top: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 8px;
+  padding-bottom: 4px;
+}
+.detail-actions-planning .btn-secondary {
+  width: 100%;
+  font-weight: 600;
+  border-width: 1.5px;
+}
 .detail-action-shopping {
   font-weight: 600;
 }
@@ -4976,10 +4988,12 @@ mark {
   .detail-actions-shell {
     gap: 10px;
   }
-  .detail-actions-secondary-tier {
+  .detail-actions-secondary-tier,
+  .detail-actions-planning {
     grid-template-columns: 1fr;
   }
   .detail-actions-secondary-tier .btn-secondary,
+  .detail-actions-planning .btn-secondary,
   .detail-actions-utility .btn-utility {
     width: 100%;
   }

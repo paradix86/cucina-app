@@ -42,6 +42,7 @@ export const STORAGE_KEY = 'cucina_recipebook_v3';
 export const STORAGE_KEY_V2 = 'cucina_ricettario_v2';
 export const SHOPPING_LIST_KEY = 'cucina_shopping_list_v1';
 export const WEEKLY_PLANNER_KEY = 'cucina_weekly_planner_v1';
+export const MEAL_COMPOSER_DRAFT_KEY = 'cucina_meal_composer_draft_v1';
 
 type LegacyV2Recipe = {
   id?: string;
