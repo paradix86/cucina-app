@@ -6,6 +6,18 @@ export type ChangelogEntry = {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '0.10.9',
+    date: '2026-04-29',
+    changes: [
+      'Navigation overhauled: sidebar on desktop (≥1280 px) with icons and labels; bottom bar on mobile retains the 4 primary tabs plus a "More" panel for secondary sections',
+      'New "More" panel slides up from the bottom nav to reach Import, Guides, and Meal Composer without crowding the main bar',
+      'Nav icons added to all tabs — each section now has a dedicated SVG icon for faster recognition',
+      'nav_more i18n key added in all 5 languages (IT/EN/DE/FR/ES)',
+      'Service worker: update toast now shows an action button; controller-change auto-reload is guarded against duplicate reloads',
+      'Service worker cache bumped to cucina-vue-v18',
+    ],
+  },
+  {
     version: '0.10.8',
     date: '2026-04-29',
     changes: [

@@ -78,7 +78,5 @@ export function initServiceWorkerUpdates(showToast: ShowToast): void {
     });
 
     reg.update().catch(() => {});
-  }).catch(error => {
-    console.warn('Service Worker registration failed:', error);
-  });
+  }).catch(() => {});
 }

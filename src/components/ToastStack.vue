@@ -16,6 +16,7 @@ function handleAction(toast) {
       <button v-if="toast.actionLabel" class="toast-action" @click.stop="handleAction(toast)">
         {{ toast.actionLabel }}
       </button>
+      <button v-if="toast.actionLabel" class="toast-close" aria-label="Chiudi" @click.stop="removeToast(toast.id)">✕</button>
     </div>
   </div>
 </template>

@@ -13,6 +13,7 @@ export const TRANSLATIONS: Record<string, Record<string, string>> = {
     nav_planner: 'Planner',
     nav_timer: 'Timer',
     nav_guides: 'Guide',
+    nav_more: 'Altro',
 
     // Recipe book
     recipebook_empty: 'Il tuo ricettario è vuoto.',
@@ -559,6 +560,7 @@ export const TRANSLATIONS: Record<string, Record<string, string>> = {
     nav_planner: 'Planner',
     nav_timer: 'Timer',
     nav_guides: 'Guides',
+    nav_more: 'More',
 
     recipebook_empty: 'Your recipe book is empty.',
     recipebook_empty_kicker: 'Start here',
@@ -1097,6 +1099,7 @@ export const TRANSLATIONS: Record<string, Record<string, string>> = {
     nav_planner: 'Planer',
     nav_timer: 'Timer',
     nav_guides: 'Guides',
+    nav_more: 'Mehr',
 
     recipebook_empty: 'Dein Rezeptbuch ist leer.',
     recipebook_empty_kicker: 'Starte hier',
@@ -1635,6 +1638,7 @@ export const TRANSLATIONS: Record<string, Record<string, string>> = {
     nav_planner: 'Planning',
     nav_timer: 'Minuteur',
     nav_guides: 'Guides',
+    nav_more: 'Plus',
 
     recipebook_empty: 'Votre livre de recettes est vide.',
     recipebook_empty_kicker: 'Commencez ici',
@@ -2173,6 +2177,7 @@ export const TRANSLATIONS: Record<string, Record<string, string>> = {
     nav_planner: 'Planificador',
     nav_timer: 'Temporizador',
     nav_guides: 'Guías',
+    nav_more: 'Más',
 
     recipebook_empty: 'Tu recetario está vacío.',
     recipebook_empty_kicker: 'Empieza aquí',
