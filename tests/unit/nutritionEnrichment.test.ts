@@ -862,3 +862,60 @@ describe('enrichRecipeNutritionWithProviders — preserve user-edited entries', 
     expect(nutrition.perServing?.kcal).toBeCloseTo(175, 1);
   });
 });
+
+// ─── language option threading ────────────────────────────────────────────────
+
+describe('enrichRecipeNutritionWithProviders — language option', () => {
+  it('passes language from options to provider.search', async () => {
+    const capturedQueries: { language?: string }[] = [];
+    const provider: NutritionProviderClient = {
+      provider: 'manual',
+      displayName: 'TestProvider',
+      search: async (q) => {
+        capturedQueries.push({ language: q.language });
+        return [];
+      },
+    };
+
+    const recipe = makeRecipe({ ingredients: ['100g pasta'] });
+    await enrichRecipeNutritionWithProviders(recipe, [provider], { language: 'en' });
+
+    expect(capturedQueries.length).toBeGreaterThan(0);
+    expect(capturedQueries[0].language).toBe('en');
+  });
+
+  it('omits language from search query when option is not set', async () => {
+    const capturedQueries: { language?: string }[] = [];
+    const provider: NutritionProviderClient = {
+      provider: 'manual',
+      displayName: 'TestProvider',
+      search: async (q) => {
+        capturedQueries.push({ language: q.language });
+        return [];
+      },
+    };
+
+    const recipe = makeRecipe({ ingredients: ['100g pasta'] });
+    await enrichRecipeNutritionWithProviders(recipe, [provider]);
+
+    expect(capturedQueries.length).toBeGreaterThan(0);
+    expect(capturedQueries[0].language).toBeUndefined();
+  });
+
+  it('passes language=de when specified', async () => {
+    const capturedQueries: { language?: string }[] = [];
+    const provider: NutritionProviderClient = {
+      provider: 'manual',
+      displayName: 'TestProvider',
+      search: async (q) => {
+        capturedQueries.push({ language: q.language });
+        return [];
+      },
+    };
+
+    const recipe = makeRecipe({ ingredients: ['200g Haferflocken'] });
+    await enrichRecipeNutritionWithProviders(recipe, [provider], { language: 'de' });
+
+    expect(capturedQueries[0].language).toBe('de');
+  });
+});

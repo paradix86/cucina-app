@@ -193,6 +193,75 @@ describe('base_ingredients enrichment — transparency', () => {
   });
 });
 
+// ─── Mexican bowl recipe (IT ingredients) ────────────────────────────────────
+
+describe('base_ingredients enrichment — Mexican bowl recipe', () => {
+  const mexicanBowlIngredients = [
+    '150g mais dolce in scatola',
+    '200g fagioli rossi',
+    '100g pomodori pelati',
+    '1 peperone rosso',
+    "2 spicchi d'aglio",
+    '1 cipolla rossa',
+    '1 cucchiaino cumino',
+    '1 cucchiaino paprika affumicata',
+    '1 cucchiaino origano',
+    '2 cucchiai cacao amaro',
+    '200ml brodo vegetale',
+    '1 lime',
+    'coriandolo fresco',
+  ];
+
+  it('matches mais dolce in scatola', async () => {
+    const recipe = makeRecipe(['150g mais dolce in scatola']);
+    const { ingredientNutrition } = await enrichRecipeNutritionWithProviders(recipe, [baseIngredientsProvider]);
+    const match = ingredientNutrition.find(n => n.ingredientName.includes('mais'));
+    expect(match?.source?.provider).toBe('base_ingredients');
+  });
+
+  it('matches fagioli rossi', async () => {
+    const recipe = makeRecipe(['200g fagioli rossi']);
+    const { ingredientNutrition } = await enrichRecipeNutritionWithProviders(recipe, [baseIngredientsProvider]);
+    const match = ingredientNutrition.find(n => n.ingredientName.includes('fagioli'));
+    expect(match?.source?.provider).toBe('base_ingredients');
+  });
+
+  it('matches pomodori pelati', async () => {
+    const recipe = makeRecipe(['100g pomodori pelati']);
+    const { ingredientNutrition } = await enrichRecipeNutritionWithProviders(recipe, [baseIngredientsProvider]);
+    const match = ingredientNutrition.find(n => n.ingredientName.includes('pomodori'));
+    expect(match?.source?.provider).toBe('base_ingredients');
+  });
+
+  it('matches peperone rosso', async () => {
+    const recipe = makeRecipe(['1 peperone rosso']);
+    const { ingredientNutrition } = await enrichRecipeNutritionWithProviders(recipe, [baseIngredientsProvider]);
+    const match = ingredientNutrition.find(n => n.ingredientName.includes('peperone'));
+    expect(match?.source?.provider).toBe('base_ingredients');
+  });
+
+  it('matches brodo vegetale', async () => {
+    const recipe = makeRecipe(['200ml brodo vegetale']);
+    const { ingredientNutrition } = await enrichRecipeNutritionWithProviders(recipe, [baseIngredientsProvider]);
+    const match = ingredientNutrition.find(n => n.ingredientName.includes('brodo'));
+    expect(match?.source?.provider).toBe('base_ingredients');
+  });
+
+  it('matches coriandolo fresco', async () => {
+    const recipe = makeRecipe(['coriandolo fresco']);
+    const { ingredientNutrition } = await enrichRecipeNutritionWithProviders(recipe, [baseIngredientsProvider]);
+    const match = ingredientNutrition.find(n => n.ingredientName.includes('coriandolo'));
+    expect(match?.source?.provider).toBe('base_ingredients');
+  });
+
+  it('full Mexican bowl has at least 10 matched ingredients out of 13', async () => {
+    const recipe = makeRecipe(mexicanBowlIngredients);
+    const { ingredientNutrition } = await enrichRecipeNutritionWithProviders(recipe, [baseIngredientsProvider]);
+    const matched = ingredientNutrition.filter(n => n.source?.provider === 'base_ingredients');
+    expect(matched.length).toBeGreaterThanOrEqual(10);
+  });
+});
+
 // ─── OpenFoodFacts fallback ───────────────────────────────────────────────────
 
 describe('base_ingredients enrichment — OFF fallback behavior', () => {

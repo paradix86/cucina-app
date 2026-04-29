@@ -4372,6 +4372,148 @@ mark {
   background: color-mix(in srgb, var(--red-light) 72%, var(--bg));
 }
 
+/* ─── Planner day nutrition summary ──────────────────────────────────────── */
+
+.planner-day-nutrition {
+  border-top: 1px solid var(--border);
+  margin-top: 12px;
+  padding-top: 2px;
+}
+
+.planner-day-nutrition-toggle {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 0 4px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  color: inherit;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.planner-day-nutrition-toggle:hover .planner-day-nutrition-label {
+  color: var(--text);
+}
+
+.planner-day-nutrition-kcal {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  flex-shrink: 0;
+}
+
+.planner-day-nutrition-unit {
+  font-weight: 400;
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-left: 2px;
+}
+
+.planner-day-nutrition-goal-pct {
+  font-weight: 400;
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-left: 2px;
+}
+
+.planner-day-nutrition-label {
+  font-size: 11px;
+  color: var(--text-muted);
+  flex: 1;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.planner-day-nutrition-chevron {
+  width: 7px;
+  height: 7px;
+  border-right: 1.5px solid var(--text-muted);
+  border-bottom: 1.5px solid var(--text-muted);
+  transform: rotate(45deg);
+  transition: transform 0.18s ease;
+  flex-shrink: 0;
+  margin-bottom: 3px;
+}
+
+.planner-day-nutrition-toggle.is-expanded .planner-day-nutrition-chevron {
+  transform: rotate(-135deg);
+  margin-bottom: -1px;
+}
+
+.planner-day-nutrition-detail {
+  padding: 4px 0 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.planner-day-nutrition-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 18px;
+}
+
+.planner-day-nutrition-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.planner-day-nutrition-row-label {
+  font-size: 11px;
+  color: var(--text-muted);
+  flex: 0 0 58px;
+  white-space: nowrap;
+}
+
+.planner-day-nutrition-row-value {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text);
+  flex-shrink: 0;
+  min-width: 44px;
+  text-align: right;
+}
+
+.planner-day-nutrition-row-unit {
+  font-weight: 400;
+  color: var(--text-muted);
+}
+
+.planner-day-nutrition-bar-track {
+  flex: 1;
+  height: 3px;
+  background: var(--border);
+  border-radius: 2px;
+  overflow: hidden;
+  min-width: 0;
+}
+
+.planner-day-nutrition-bar-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.25s ease;
+  opacity: 0.85;
+}
+
+.planner-day-nutrition-row-pct {
+  font-size: 10px;
+  color: var(--text-muted);
+  flex-shrink: 0;
+  min-width: 30px;
+  text-align: right;
+}
+
+.planner-day-nutrition-row-pct.pct-over {
+  color: var(--red);
+  font-weight: 600;
+}
+
 /* ---- RESPONSIVE ---- */
 @media (max-width: 600px) {
   .app {
@@ -4458,6 +4600,12 @@ mark {
   .planner-day-clear,
   .planner-clear-week {
     width: 100%;
+  }
+  .planner-day-nutrition-toggle {
+    padding: 10px 0 4px;
+  }
+  .planner-day-nutrition-row-label {
+    flex-basis: 52px;
   }
   .sec-label {
     font-size: 11px;

@@ -2,7 +2,7 @@
 import { computed, nextTick, ref, watch } from 'vue';
 import { storeToRefs } from 'pinia';
 import { buildStepsHtml, formatTimerLabel, getPreparationInfo, getSourceDomainLabel, joinMetaParts, scaleIngredients, suggestMealOccasions } from '../lib/recipes';
-import { t } from '../lib/i18n';
+import { t, getLanguage } from '../lib/i18n';
 import { useShoppingListStore } from '../stores/shoppingList';
 import { useRecipeBookStore } from '../stores/recipeBook';
 import { buildShareUrl } from '../lib/recipeShare';
@@ -56,7 +56,7 @@ async function calculateNutrition() {
   if (isCalculatingNutrition.value || !props.recipe.id) return;
   isCalculatingNutrition.value = true;
   try {
-    const result = await enrichRecipeNutritionWithProviders(props.recipe, NUTRITION_PROVIDERS);
+    const result = await enrichRecipeNutritionWithProviders(props.recipe, NUTRITION_PROVIDERS, { language: getLanguage() });
     const fingerprint = computeIngredientsFingerprint(props.recipe.ingredients);
     recipeBookStore.update(props.recipe.id, {
       ingredientNutrition: result.ingredientNutrition,

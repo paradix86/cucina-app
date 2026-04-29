@@ -6,6 +6,7 @@ import { buildNutritionSearchQueries } from './ingredientMatching';
 
 export type NutritionEnrichmentOptions = {
   minConfidence?: number;  // default 0.7
+  language?: string;
 };
 
 const DEFAULT_MIN_CONFIDENCE = 0.7;
@@ -39,6 +40,7 @@ export async function enrichRecipeNutritionWithProviders(
   nutrition: RecipeNutrition;
 }> {
   const minConfidence = options?.minConfidence ?? DEFAULT_MIN_CONFIDENCE;
+  const language = options?.language;
   const ingredientNutrition: IngredientNutrition[] = [];
 
   // Build a lookup of user-edited entries keyed by ingredientName.
@@ -85,6 +87,7 @@ export async function enrichRecipeNutritionWithProviders(
             query:           queryText,
             normalizedQuery: queryText,
             maxResults:      5,
+            ...(language !== undefined && { language }),
           });
         } catch {
           break;  // provider failed entirely; try the next provider

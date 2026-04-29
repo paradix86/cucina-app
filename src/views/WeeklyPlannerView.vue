@@ -8,7 +8,10 @@ import { useToasts } from '../composables/useToasts';
 import { useRecipeBookStore } from '../stores/recipeBook';
 import { useShoppingListStore } from '../stores/shoppingList';
 import { useWeeklyPlannerStore } from '../stores/weeklyPlanner';
-import type { PlannerDayId, PlannerMealSlot, Recipe } from '../types';
+import { useNutritionGoalsStore } from '../stores/nutritionGoalsStore';
+import { buildGoalComparison } from '../lib/nutritionGoals';
+import type { GoalComparisonItem } from '../lib/nutritionGoals';
+import type { PlannerDayId, PlannerMealSlot, Recipe, NutritionPer100g } from '../types';
 
 type PlannerSelection = {
   day: PlannerDayId;
@@ -23,6 +26,9 @@ const { showToast } = useToasts();
 
 const { recipes } = storeToRefs(recipeBook);
 const { plan, plannedMealsCount } = storeToRefs(plannerStore);
+
+const goalsStore = useNutritionGoalsStore();
+const { goals } = storeToRefs(goalsStore);
 
 const searchQuery = ref('');
 const activeSelection = ref<PlannerSelection | null>(null);
@@ -49,6 +55,47 @@ const selectedRecipeId = computed(() => {
 const selectedRecipe = computed(() => {
   return selectedRecipeId.value ? recipeMap.value.get(selectedRecipeId.value) || null : null;
 });
+
+type NutritionMacroKey = 'proteinG' | 'carbsG' | 'fatG' | 'fiberG';
+const MACRO_KEYS: Array<{ key: NutritionMacroKey; unit: string; labelKey: string; cssVar: string }> = [
+  { key: 'proteinG', unit: 'g', labelKey: 'nutrition_goals_protein_label', cssVar: '--nutrition-protein' },
+  { key: 'carbsG',   unit: 'g', labelKey: 'nutrition_goals_carbs_label',   cssVar: '--nutrition-carbs' },
+  { key: 'fatG',     unit: 'g', labelKey: 'nutrition_goals_fat_label',     cssVar: '--nutrition-fat' },
+  { key: 'fiberG',   unit: 'g', labelKey: 'nutrition_goals_fiber_label',   cssVar: '--nutrition-fiber' },
+];
+
+const expandedDays = ref<Set<PlannerDayId>>(new Set());
+
+function toggleDayNutrition(dayId: PlannerDayId) {
+  const next = new Set(expandedDays.value);
+  if (next.has(dayId)) next.delete(dayId);
+  else next.add(dayId);
+  expandedDays.value = next;
+}
+
+function sumDayNutrition(dayRecipes: Recipe[]): NutritionPer100g | undefined {
+  type SumKey = 'kcal' | NutritionMacroKey;
+  const keys: SumKey[] = ['kcal', 'proteinG', 'carbsG', 'fatG', 'fiberG'];
+  const totals: NutritionPer100g = {};
+  let hasAny = false;
+  for (const recipe of dayRecipes) {
+    const n = recipe.nutrition?.perServing;
+    if (!n) continue;
+    for (const k of keys) {
+      const v = n[k];
+      if (v !== undefined) {
+        totals[k] = (totals[k] ?? 0) + v;
+        hasAny = true;
+      }
+    }
+  }
+  return hasAny ? totals : undefined;
+}
+
+function fmt(val: number | undefined): string | number {
+  if (val === undefined) return '—';
+  return Math.round(val * 10) / 10;
+}
 
 const pickerRecipes = computed(() => {
   const query = searchQuery.value.trim().toLowerCase();
@@ -100,6 +147,16 @@ const weekDays = computed(() => {
       };
     });
 
+    const dayNutrition = sumDayNutrition(plannedRecipes);
+    const dayGoalItems = dayNutrition ? buildGoalComparison(dayNutrition, goals.value) : [];
+    const dayGoalsByKey: Record<string, GoalComparisonItem> = Object.fromEntries(
+      dayGoalItems.map(item => [item.key, item])
+    );
+    const kcalGoal = goals.value.kcal;
+    const kcalPct = dayNutrition?.kcal !== undefined && kcalGoal && kcalGoal > 0
+      ? Math.round((dayNutrition.kcal / kcalGoal) * 100)
+      : null;
+
     return {
       id: day,
       label: t(`planner_day_${day}`),
@@ -107,6 +164,9 @@ const weekDays = computed(() => {
       isToday: day === todayPlannerDay,
       plannedRecipes,
       slots,
+      dayNutrition,
+      dayGoalsByKey,
+      kcalPct,
     };
   });
 });
@@ -435,6 +495,55 @@ function suggestedLabel() {
                 </button>
               </div>
             </section>
+          </div>
+
+          <div v-if="day.dayNutrition" class="planner-day-nutrition">
+            <button
+              class="planner-day-nutrition-toggle"
+              :class="{ 'is-expanded': expandedDays.has(day.id) }"
+              :aria-expanded="expandedDays.has(day.id) ? 'true' : 'false'"
+              @click="toggleDayNutrition(day.id)"
+            >
+              <span class="planner-day-nutrition-kcal">
+                {{ Math.round(day.dayNutrition.kcal ?? 0) }}
+                <span class="planner-day-nutrition-unit">kcal</span>
+                <span v-if="day.kcalPct !== null" class="planner-day-nutrition-goal-pct">({{ day.kcalPct }}%)</span>
+              </span>
+              <span class="planner-day-nutrition-label">{{ t('planner_day_nutrition_toggle') }}</span>
+              <span class="planner-day-nutrition-chevron" aria-hidden="true" />
+            </button>
+            <div v-if="expandedDays.has(day.id)" class="planner-day-nutrition-detail">
+              <div
+                v-for="macro in MACRO_KEYS"
+                :key="macro.key"
+                class="planner-day-nutrition-row"
+              >
+                <span
+                  class="planner-day-nutrition-dot"
+                  :style="{ background: `var(${macro.cssVar})` }"
+                  aria-hidden="true"
+                />
+                <span class="planner-day-nutrition-row-label">{{ t(macro.labelKey) }}</span>
+                <span class="planner-day-nutrition-row-value">
+                  {{ fmt(day.dayNutrition[macro.key]) }}<span class="planner-day-nutrition-row-unit"> {{ macro.unit }}</span>
+                </span>
+                <template v-if="day.dayGoalsByKey[macro.key]">
+                  <div class="planner-day-nutrition-bar-track" aria-hidden="true">
+                    <div
+                      class="planner-day-nutrition-bar-fill"
+                      :style="{
+                        width: `${Math.min(day.dayGoalsByKey[macro.key].pct, 100)}%`,
+                        background: `var(${macro.cssVar})`
+                      }"
+                    />
+                  </div>
+                  <span
+                    class="planner-day-nutrition-row-pct"
+                    :class="{ 'pct-over': day.dayGoalsByKey[macro.key].pct > 100 }"
+                  >{{ day.dayGoalsByKey[macro.key].pct }}%</span>
+                </template>
+              </div>
+            </div>
           </div>
         </article>
       </div>

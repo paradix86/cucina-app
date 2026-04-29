@@ -6,6 +6,13 @@ export type ChangelogEntry = {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '0.10.6',
+    date: '2026-04-29',
+    changes: [
+      'Nutrition enrichment now passes the active UI language to each provider for more accurate ingredient matching',
+    ],
+  },
+  {
     version: '0.10.5',
     date: '2026-04-29',
     changes: [

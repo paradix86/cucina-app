@@ -1,5 +1,5 @@
 import type { NutritionProviderClient, NutritionSearchQuery, NutritionSearchResult } from './nutritionProviders';
-import { BASE_INGREDIENTS_DATA, type BaseIngredientNutritionEntry } from './baseIngredientsData';
+import { BASE_INGREDIENTS_DATA, type BaseIngredientNutritionEntry, type MultilingualAliases } from './baseIngredientsData';
 
 // ─── Normalization ────────────────────────────────────────────────────────────
 
@@ -17,8 +17,8 @@ function normalizeText(s: string): string {
 
 // ─── Word-boundary helpers ────────────────────────────────────────────────────
 
-// Italian word characters including accented letters.
-const WORD_CHAR = /[a-zA-Z0-9àáèéìíîòóùúÀÁÈÉÌÍÎÒÓÙÚ]/;
+// Word characters for all supported languages (IT/EN/DE/FR/ES).
+const WORD_CHAR = /[a-zA-Z0-9àáâãäåæçèéêëìíîïñòóôöùúûüÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÒÓÔÖÙÚÛÜœŒß]/;
 
 function isWordBoundaryBefore(text: string, idx: number): boolean {
   if (idx === 0) return true;
@@ -54,26 +54,37 @@ function isSafeSubstringMatch(query: string, alias: string): boolean {
 
 // ─── Scoring ──────────────────────────────────────────────────────────────────
 
-function scoreEntry(entry: BaseIngredientNutritionEntry, rawQuery: string): number {
+const ALL_LANGS: ReadonlyArray<keyof MultilingualAliases> = ['it', 'en', 'de', 'fr', 'es'];
+
+function scoreEntry(entry: BaseIngredientNutritionEntry, rawQuery: string, language?: string): number {
   const q = normalizeText(rawQuery);
   if (!q) return 0;
 
-  const candidates = [
+  const lang = ((language ?? 'it') as keyof MultilingualAliases);
+
+  const preferred: string[] = [
     normalizeText(entry.canonicalName),
-    ...entry.aliases.map(normalizeText),
+    ...(entry.aliases[lang] ?? []).map(normalizeText),
   ].filter(c => c.length > 0);
 
-  // Round 1 — exact match of canonical name or any alias
-  for (const c of candidates) {
-    if (c === q) return 0.95;
-  }
+  const other: string[] = ALL_LANGS
+    .filter(k => k !== lang)
+    .flatMap(k => (entry.aliases[k] ?? []).map(normalizeText))
+    .filter(c => c.length > 0);
 
-  // Round 2 — starts-with / prefix matches (explicit word-boundary)
-  for (const c of candidates) {
+  // Round 1 — exact match in preferred language (canonical name or language alias)
+  for (const c of preferred) { if (c === q) return 0.95; }
+
+  // Round 2 — exact match in any other language
+  for (const c of other) { if (c === q) return 0.90; }
+
+  const all = [...preferred, ...other];
+
+  // Round 3 — starts-with / prefix matches (explicit word-boundary)
+  for (const c of all) {
     if (!c) continue;
 
-    // Query starts with candidate — the candidate is a short base name used in a
-    // longer description ("banana media", "miele 5g opzionale" …)
+    // Query starts with candidate ("banana media", "miele 5g" …)
     if (q.startsWith(c) && (q.length === c.length || q[c.length] === ' ')) {
       const after = q.slice(c.length).trim();
       // Reject "X di Y" compounds (different ingredient family)
@@ -82,17 +93,16 @@ function scoreEntry(entry: BaseIngredientNutritionEntry, rawQuery: string): numb
     }
 
     // Candidate starts with query — user typed a prefix of a longer alias
-    // ("carne macinata" as shorthand for "carne macinata di manzo")
     if (c.startsWith(q) && (c.length === q.length || c[q.length] === ' ')) {
       return 0.80;
     }
   }
 
-  // Round 3 — safe word-boundary substring: alias appears inside the query.
+  // Round 4 — safe word-boundary substring: alias appears inside the query.
   // Direction is intentionally one-way: query contains alias ("fiocchi d'avena" → "avena").
   // The reverse (alias contains query) is NOT checked because it produces false
   // positives (e.g. "acqua" matching "tonno sott'acqua").
-  for (const c of candidates) {
+  for (const c of all) {
     if (c.length <= 4) continue;
     if (isSafeSubstringMatch(q, c)) return 0.75;
   }
@@ -114,7 +124,7 @@ export const baseIngredientsProvider: NutritionProviderClient = {
 
     const scored: { entry: BaseIngredientNutritionEntry; score: number }[] = [];
     for (const entry of BASE_INGREDIENTS_DATA) {
-      const score = scoreEntry(entry, raw);
+      const score = scoreEntry(entry, raw, query.language);
       if (score > 0) scored.push({ entry, score });
     }
 
