@@ -276,3 +276,60 @@ If your change introduces a new functional area, workflow, persistence model, or
 - `AGENTS.md`
 - `CONTRIBUTING.md`
 - `CLAUDE.md` (if a new non-negotiable or pitfall is identified)
+
+---
+
+## Conventional Commits
+
+All commits are enforced via [commitlint](https://commitlint.js.org/) + Husky.
+
+### Format
+
+```
+<type>(<scope>): <subject>
+
+[optional body]
+
+[optional footer]
+```
+
+### Types
+
+| Type | When to use |
+|------|-------------|
+| `feat` | New feature |
+| `fix` | Bug fix |
+| `refactor` | Code change that is neither a fix nor a feature |
+| `perf` | Performance improvement |
+| `test` | Adding or updating tests |
+| `docs` | Documentation only |
+| `chore` | Build process, tooling, dependencies |
+| `ci` | CI/CD configuration |
+| `style` | Formatting, missing semicolons — no logic change |
+
+### Scopes
+
+Allowed scopes (violation is a **warning**, not an error):
+
+`recipe` · `import` · `nutrition` · `cooking` · `timer` · `planner` · `composer` · `pwa` · `i18n` · `storage` · `ui` · `deps` · `release`
+
+### Rules
+
+- **Subject case**: not enforced — use whatever reads naturally
+- **Body line length**: max 200 characters per line
+- **Scope**: optional but encouraged; unknown scopes produce a warning
+
+### Interactive commit helper
+
+```bash
+npm run commit   # launches commitizen prompt
+```
+
+### Examples
+
+```
+feat(nutrition): add per-meal macro breakdown
+fix(timer): prevent double-fire on rapid toggle
+chore(deps): bump vite to 8.0.10
+refactor(import): extract domain normalizer to shared util
+```
