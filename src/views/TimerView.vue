@@ -104,8 +104,14 @@ function submitTimer() {
     </div>
     <div class="add-row">
       <input v-model="name" type="text" :placeholder="t('timer_name_placeholder')" :aria-label="t('timer_label_name')" />
-      <input v-model="minutes" type="number" inputmode="numeric" pattern="[0-9]*" min="0" max="999" :aria-label="t('timer_label_min')" />
-      <input v-model="seconds" type="number" inputmode="numeric" pattern="[0-9]*" min="0" max="59" :aria-label="t('timer_label_sec')" />
+      <div class="timer-num-group">
+        <span class="timer-num-label" aria-hidden="true">{{ t('timer_label_min') }}</span>
+        <input v-model="minutes" type="number" inputmode="numeric" pattern="[0-9]*" min="0" max="999" :aria-label="t('timer_label_min')" />
+      </div>
+      <div class="timer-num-group">
+        <span class="timer-num-label" aria-hidden="true">{{ t('timer_label_sec') }}</span>
+        <input v-model="seconds" type="number" inputmode="numeric" pattern="[0-9]*" min="0" max="59" :aria-label="t('timer_label_sec')" />
+      </div>
       <button class="btn-primary" @click="submitTimer">{{ t('timer_add') }}</button>
     </div>
     <div style="margin-top:1rem">

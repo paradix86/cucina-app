@@ -338,8 +338,8 @@ body {
   gap: 8px;
   margin-top: 14px;
 }
-.timer-alert-snooze,
-.timer-alert-dismiss {
+.timer-alert-actions .timer-alert-snooze,
+.timer-alert-actions .timer-alert-dismiss {
   min-height: 48px;
   width: 100%;
 }
@@ -4063,6 +4063,8 @@ mark {
   margin-bottom: 1rem;
 }
 .add-row input[type="number"] { width: 100%; }
+.timer-num-group { display: contents; }
+.timer-num-label { display: none; }
 .timer-settings-card {
   margin-bottom: 1rem;
 }
@@ -4101,6 +4103,9 @@ mark {
 .timer-sound-controls input[type="range"] {
   width: 100%;
   min-height: 42px;
+}
+.timer-sound-controls input[type="range"] {
+  accent-color: var(--green);
 }
 .timer-toggle-card {
   margin-top: 14px;
@@ -4999,6 +5004,17 @@ mark {
   }
   .add-row input[type="number"] {
     min-height: 42px;
+  }
+  .timer-num-group {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+  .timer-num-label {
+    display: block;
+    font-size: 11px;
+    color: var(--text-muted);
+    text-align: center;
   }
   .add-row .btn-primary {
     grid-column: 1 / -1;
