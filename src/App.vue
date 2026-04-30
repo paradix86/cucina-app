@@ -36,7 +36,7 @@ const recipeBook = useRecipeBookStore();
 const shoppingList = useShoppingListStore();
 const weeklyPlanner = useWeeklyPlannerStore();
 const timers = useTimers();
-const { timerAlert, dismissTimerAlert } = useTimerAlerts();
+const { timerAlert, dismissTimerAlert, snoozeTimerAlert } = useTimerAlerts();
 
 const NAV_ICONS = {
   'recipe-book':   'M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253',
@@ -45,7 +45,8 @@ const NAV_ICONS = {
   'planner':       'M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z',
   'timer':         'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z',
   'guides':        'M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z',
-  'meal-composer': 'M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z',
+  'meal-composer':      'M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z',
+  'nutrition-goals':    'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z',
 };
 
 const MORE_ICON = 'M5 12h.01M12 12h.01M19 12h.01M6 12a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0z';
@@ -57,7 +58,8 @@ const navTabs = computed(() => [
   { path: '/timer',         label: t('nav_timer'),                        icon: NAV_ICONS['timer'],         primary: true  },
   { path: '/import',        label: t('nav_import').replace(/^\+\s*/, ''), icon: NAV_ICONS['import'],        primary: false },
   { path: '/guides',        label: t('nav_guides'),                       icon: NAV_ICONS['guides'],        primary: false },
-  { path: '/meal-composer', label: t('nav_meal_composer'),                icon: NAV_ICONS['meal-composer'], primary: false },
+  { path: '/meal-composer',   label: t('nav_meal_composer'),   icon: NAV_ICONS['meal-composer'],   primary: false },
+  { path: '/nutrition-goals', label: t('nav_nutrition_goals'), icon: NAV_ICONS['nutrition-goals'], primary: false },
 ]);
 
 const primaryTabs = computed(() => navTabs.value.filter(tab => tab.primary));
@@ -294,6 +296,8 @@ watch(() => route.fullPath, () => {
     :title="timerAlert.title"
     :message="timerAlert.message"
     :dismiss-label="t('timer_alarm_dismiss')"
+    :snooze-label="timerAlert.onSnooze ? t('timer_alarm_snooze') : ''"
     @dismiss="dismissTimerAlert"
+    @snooze="snoozeTimerAlert"
   />
 </template>

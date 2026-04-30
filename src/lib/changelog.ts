@@ -6,6 +6,18 @@ export type ChangelogEntry = {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '0.10.10',
+    date: '2026-04-30',
+    changes: [
+      'Obiettivi nutrizionali: nuova sezione dedicata per impostare i tuoi target giornalieri di calorie, proteine, carboidrati, grassi e fibre — raggiungila dal menu "Altro"',
+      'Libro ricette — filtro per tag: seleziona uno o più tag per trovare solo le ricette che ti servono; la selezione è inclusiva (OR) per non perdere nessuna variante',
+      'Libro ricette — ordinamento: ordina per nome, tempo di cottura crescente o visualizzate di recente',
+      'Lista della spesa: aggiungi voci libere manualmente, senza dover aprire una ricetta',
+      'Modalità cottura: il progresso degli step e il segno di spunta degli ingredienti vengono salvati automaticamente — se esci per sbaglio o cambi app ritrovi tutto dove l\'avevi lasciato (persiste 48 ore)',
+      'Timer: nuovo pulsante "+2 min" sugli avvisi dei timer scaduti per prorogare il conto senza riavviare da zero',
+    ],
+  },
+  {
     version: '0.10.9',
     date: '2026-04-29',
     changes: [

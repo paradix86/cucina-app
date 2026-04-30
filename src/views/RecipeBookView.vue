@@ -5,7 +5,7 @@ import { useRoute, useRouter } from 'vue-router';
 import { useDebounce } from '@vueuse/core';
 import RecipeDetailView from '../components/RecipeDetailView.vue';
 import { useRecipeBookStore } from '../stores/recipeBook';
-import { getPreparationInfo, getSourceDomainLabel, getMealOccasionLabel, highlight, recipeMatchesQuery, MEAL_OCCASION_OPTIONS } from '../lib/recipes';
+import { getPreparationInfo, getSourceDomainLabel, getMealOccasionLabel, highlight, recipeMatchesQuery, MEAL_OCCASION_OPTIONS, parseRecipeTime } from '../lib/recipes';
 import { t } from '../lib/i18n';
 
 const emit = defineEmits(['start-recipe-timer', 'start-cooking', 'add-to-shopping', 'toast']);
@@ -27,6 +27,25 @@ const siteFilter = ref('all');
 const mealFilter = ref('all');
 const mobileFiltersOpen = ref(false);
 const brokenCoverImageIds = ref(new Set());
+const sortBy = ref('none');
+const selectedTags = ref([]);
+
+const allTags = computed(() => {
+  const tagSet = new Set();
+  recipes.value.forEach(recipe => {
+    (recipe.tags || []).forEach(tag => tagSet.add(tag));
+  });
+  return [...tagSet].sort((a, b) => a.localeCompare(b));
+});
+
+function toggleTag(tag) {
+  const idx = selectedTags.value.indexOf(tag);
+  if (idx === -1) {
+    selectedTags.value = [...selectedTags.value, tag];
+  } else {
+    selectedTags.value = selectedTags.value.filter(t => t !== tag);
+  }
+}
 
 // Source = where the recipe came from (YouTube / TikTok / Instagram / Web / Manual)
 const sourceOptions = [
@@ -89,9 +108,15 @@ const filteredRecipes = computed(() => {
       || (filterType.value === 'recent' && recipe.lastViewedAt);
     const matchSite = siteFilter.value === 'all' || recipe.sourceDomain === siteFilter.value;
     const matchMeal = mealFilter.value === 'all' || (recipe.mealOccasion || []).includes(mealFilter.value);
-    return matchQuery && matchSource && matchPrep && matchType && matchSite && matchMeal;
+    const matchTags = selectedTags.value.length === 0
+      || selectedTags.value.some(tag => (recipe.tags || []).includes(tag));
+    return matchQuery && matchSource && matchPrep && matchType && matchSite && matchMeal && matchTags;
   });
-  if (filterType.value === 'recent') {
+  if (sortBy.value === 'alpha') {
+    list.sort((a, b) => a.name.localeCompare(b.name));
+  } else if (sortBy.value === 'time') {
+    list.sort((a, b) => parseRecipeTime(a.time) - parseRecipeTime(b.time));
+  } else if (sortBy.value === 'recent' || filterType.value === 'recent') {
     list.sort((a, b) => (b.lastViewedAt || 0) - (a.lastViewedAt || 0));
   }
   return list;
@@ -106,6 +131,8 @@ const activeFilterCount = computed(() => {
   if (filterType.value !== 'all') count += 1;
   if (siteFilter.value !== 'all') count += 1;
   if (mealFilter.value !== 'all') count += 1;
+  if (selectedTags.value.length > 0) count += 1;
+  if (sortBy.value !== 'none') count += 1;
   return count;
 });
 
@@ -341,6 +368,27 @@ defineExpose({
             <div class="filter-row">
               <button class="site-pill" :class="{ active: siteFilter === 'all' }" @click="siteFilter = 'all'">{{ t('filter_all_sites') }} <span class="pill-count">({{ recipes.length }})</span></button>
               <button v-for="domain in sortedDomains" :key="domain" class="site-pill" :class="{ active: siteFilter === domain }" @click="siteFilter = domain">{{ getSourceDomainLabel(domain) }} <span class="pill-count">({{ siteCounts[domain] }})</span></button>
+            </div>
+          </div>
+          <div v-if="allTags.length" class="saved-filter-group filter-group--labeled">
+            <span class="filter-group-label">{{ t('filter_tags') }}</span>
+            <div class="filter-row">
+              <button
+                v-for="tag in allTags"
+                :key="tag"
+                class="tag-pill"
+                :class="{ active: selectedTags.includes(tag) }"
+                @click="toggleTag(tag)"
+              >{{ tag }}</button>
+            </div>
+          </div>
+          <div class="saved-filter-group filter-group--labeled">
+            <span class="filter-group-label">{{ t('filter_sort') }}</span>
+            <div class="filter-row">
+              <button class="type-pill" :class="{ active: sortBy === 'none' }" @click="sortBy = 'none'">{{ t('filter_all') }}</button>
+              <button class="type-pill" :class="{ active: sortBy === 'alpha' }" @click="sortBy = 'alpha'">{{ t('filter_sort_alpha') }}</button>
+              <button class="type-pill" :class="{ active: sortBy === 'time' }" @click="sortBy = 'time'">{{ t('filter_sort_time') }}</button>
+              <button class="type-pill" :class="{ active: sortBy === 'recent' }" @click="sortBy = 'recent'">{{ t('filter_sort_recent') }}</button>
             </div>
           </div>
         </div>

@@ -47,7 +47,8 @@ export const useShoppingListStore = defineStore('shoppingList', () => {
     return hydratePromise;
   }
 
-  function refresh(): Promise<void> {
+  async function refresh(): Promise<void> {
+    await persistQueue;
     return hydrate(true);
   }
 
@@ -146,6 +147,20 @@ export const useShoppingListStore = defineStore('shoppingList', () => {
     return true;
   }
 
+  function addManualItem(text: string): boolean {
+    const trimmed = text.trim();
+    if (!trimmed) return false;
+    const newItem: ShoppingItem = {
+      id: `manual-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      text: trimmed,
+      checked: false,
+      createdAt: Date.now(),
+    };
+    items.value = [...items.value, newItem];
+    persist(items.value);
+    return true;
+  }
+
   function clearAll(): void {
     items.value = [];
     persist([]);
@@ -183,6 +198,7 @@ export const useShoppingListStore = defineStore('shoppingList', () => {
     addRecipeIngredients,
     removeRecipeIngredients,
     hasRecipeItems,
+    addManualItem,
     toggleItem,
     removeItem,
     toggleGroup,

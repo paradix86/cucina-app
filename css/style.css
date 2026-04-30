@@ -332,10 +332,16 @@ body {
   font-size: 14px;
   line-height: 1.5;
 }
-.timer-alert-dismiss {
-  min-height: 44px;
+.timer-alert-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
   margin-top: 14px;
-  min-width: 120px;
+}
+.timer-alert-snooze,
+.timer-alert-dismiss {
+  min-height: 48px;
+  width: 100%;
 }
 @media (max-width: 560px) {
   .confirm-dialog {
@@ -351,9 +357,6 @@ body {
   .timer-alert-modal {
     width: 100%;
     border-radius: var(--radius-lg);
-  }
-  .timer-alert-dismiss {
-    width: 100%;
   }
 }
 
@@ -994,6 +997,32 @@ input[type="number"] {
   transition: all .15s;
 }
 .site-pill.active { background: #2563eb; color: #fff; border-color: #2563eb; }
+
+.tag-pill {
+  min-height: 36px;
+  padding: 7px 12px;
+  border-radius: 20px;
+  border: 1.5px solid var(--border);
+  background: var(--bg-secondary);
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all .15s;
+}
+.tag-pill.active { background: var(--orange); color: #fff; border-color: var(--orange); }
+.saved-filter-panel .tag-pill {
+  min-height: 36px;
+  padding: 5px 10px;
+  background: color-mix(in srgb, var(--bg) 82%, var(--bg-secondary) 18%);
+}
+.saved-filter-panel .tag-pill.active {
+  background: var(--bg);
+  color: var(--text);
+  border-color: var(--text);
+  font-weight: 640;
+}
 
 /* ---- STATUS MESSAGES ---- */
 .status-msg {
@@ -2684,6 +2713,30 @@ input[type="number"] {
   border-color: color-mix(in srgb, var(--green) 32%, var(--border) 68%);
   color: var(--green-text);
   font-weight: 640;
+}
+.shopping-manual-add {
+  display: flex;
+  gap: 8px;
+  margin: 10px 0 14px;
+}
+.shopping-manual-input {
+  flex: 1;
+  min-width: 0;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 14px;
+  line-height: 1.4;
+}
+.shopping-manual-input:focus {
+  outline: none;
+  border-color: var(--orange);
+}
+.shopping-manual-btn {
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 .shopping-toolbar {
   display: flex;
@@ -5561,4 +5614,68 @@ mark {
     letter-spacing: 0.01em;
   }
   .bimby-action-icon { display: none !important; }
+}
+
+/* ---- NUTRITION GOALS VIEW ---- */
+.nutrition-goals-view {
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 1.5rem 1rem;
+}
+.nutrition-goals-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1.25rem;
+}
+.nutrition-goals-field {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.nutrition-goals-label {
+  flex: 1 1 0;
+  font-weight: 500;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.nutrition-goals-unit {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-weight: 400;
+}
+.nutrition-goals-input {
+  width: 100px;
+  text-align: right;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg);
+  color: var(--text);
+  font-size: 15px;
+}
+.nutrition-goals-input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+.nutrition-goals-save {
+  margin-top: 4px;
+  min-height: 44px;
+  align-self: flex-end;
+  min-width: 160px;
+}
+@media (max-width: 560px) {
+  .nutrition-goals-field {
+    flex-wrap: wrap;
+  }
+  .nutrition-goals-input {
+    width: 100%;
+    text-align: left;
+  }
+  .nutrition-goals-save {
+    width: 100%;
+    align-self: stretch;
+  }
 }

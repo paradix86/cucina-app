@@ -4,6 +4,7 @@ import { useWakeLock } from '@vueuse/core';
 import { extractStepSeconds, formatClock, getPreparationInfo } from '../lib/recipes';
 import { detectBimbyAction } from '../lib/bimbyIcons';
 import { t } from '../lib/i18n';
+import { parseCookingProgress } from '../lib/cookingPersistence';
 import { useToasts } from '../composables/useToasts';
 import { useTimerAlerts } from '../composables/useTimerAlerts';
 import { useCookingPreferences } from '../composables/useCookingPreferences';
@@ -25,6 +26,44 @@ const editMin = ref(0);
 const editSec = ref(0);
 const { showToast } = useToasts();
 const { triggerTimerAlert } = useTimerAlerts();
+
+const COOKING_PERSIST_KEY = computed(() => `cucina_cooking_${props.recipe.id || props.recipe.name || 'default'}`);
+
+function saveCookingProgress() {
+  if (!props.recipe.id) return;
+  try {
+    localStorage.setItem(COOKING_PERSIST_KEY.value, JSON.stringify({
+      stepIndex: stepIndex.value,
+      checklist: ingredientChecklist.value,
+      updatedAt: Date.now(),
+    }));
+  } catch (_) {}
+}
+
+function loadCookingProgress() {
+  if (!props.recipe.id) return;
+  try {
+    const raw = localStorage.getItem(COOKING_PERSIST_KEY.value);
+    const data = parseCookingProgress(raw, props.recipe.steps?.length || 0);
+    if (!data) {
+      clearCookingProgress();
+      return;
+    }
+    if (data.stepIndex !== undefined) stepIndex.value = data.stepIndex;
+    if (data.checklist !== undefined) ingredientChecklist.value = data.checklist;
+  } catch (_) {}
+}
+
+function clearCookingProgress() {
+  try { localStorage.removeItem(COOKING_PERSIST_KEY.value); } catch (_) {}
+}
+
+function snoozeStepTimer() {
+  timerRemaining.value += 120;
+  timerTotal.value = Math.max(timerTotal.value, timerRemaining.value);
+  timerRunning.value = true;
+  ensureTimer();
+}
 const { keepScreenAwake } = useCookingPreferences();
 const { request: requestWakeLock, release: releaseWakeLock, isSupported: wakeLockSupported } = useWakeLock();
 
@@ -132,7 +171,7 @@ function ensureTimer() {
       window.clearInterval(timerInterval);
       timerInterval = null;
       const message = t('toast_cooking_timer_done');
-      triggerTimerAlert(message);
+      triggerTimerAlert(message, undefined, snoozeStepTimer);
     }
   }, 1000);
 }
@@ -155,21 +194,25 @@ function prevStep() {
   isComplete.value = false;
   stepIndex.value -= 1;
   setupStepTimer();
+  saveCookingProgress();
 }
 
 function nextStep() {
   if (stepIndex.value >= (props.recipe.steps?.length || 0) - 1) {
     isComplete.value = true;
     clearTimer();
+    clearCookingProgress();
     return;
   }
   stepIndex.value += 1;
   isComplete.value = false;
   setupStepTimer();
+  saveCookingProgress();
 }
 
 function exitMode() {
   clearTimer();
+  clearCookingProgress();
   resetIngredientChecklist();
   releaseCookingWakeLock();
   emit('exit');
@@ -205,7 +248,6 @@ function handleVisibilityChange() {
   releaseCookingWakeLock();
 }
 
-setupStepTimer();
 onMounted(() => {
   window.scrollTo({ top: 0, behavior: 'instant' });
   document.addEventListener('visibilitychange', handleVisibilityChange);
@@ -221,6 +263,8 @@ watch(keepScreenAwake, enabled => {
 watch(ingredientResetKey, () => {
   resetIngredientChecklist();
 }, { immediate: true });
+loadCookingProgress();
+setupStepTimer();
 onBeforeUnmount(() => {
   clearTimer();
   resetIngredientChecklist();

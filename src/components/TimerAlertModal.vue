@@ -4,9 +4,10 @@ const props = defineProps({
   title: { type: String, default: '' },
   message: { type: String, default: '' },
   dismissLabel: { type: String, default: 'OK' },
+  snoozeLabel: { type: String, default: '' },
 });
 
-const emit = defineEmits(['dismiss']);
+const emit = defineEmits(['dismiss', 'snooze']);
 
 function onBackdropClick(event) {
   if (event.target === event.currentTarget) emit('dismiss');
@@ -27,7 +28,10 @@ function onBackdropClick(event) {
       <div class="timer-alert-icon" aria-hidden="true">⏰</div>
       <h3 id="timer-alert-title" class="timer-alert-title">{{ props.title }}</h3>
       <p id="timer-alert-message" class="timer-alert-message">{{ props.message }}</p>
-      <button class="btn-primary timer-alert-dismiss" @click="emit('dismiss')">{{ props.dismissLabel }}</button>
+      <div class="timer-alert-actions">
+        <button v-if="props.snoozeLabel" class="btn-primary timer-alert-snooze" @click="emit('snooze')">{{ props.snoozeLabel }}</button>
+        <button class="timer-alert-dismiss" :class="props.snoozeLabel ? '' : 'btn-primary'" @click="emit('dismiss')">{{ props.dismissLabel }}</button>
+      </div>
     </div>
   </div>
 </template>

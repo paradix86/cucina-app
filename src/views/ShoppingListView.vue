@@ -11,10 +11,17 @@ const router = useRouter();
 
 const store = useShoppingListStore();
 const { items, groupedSections } = storeToRefs(store);
-const { toggleItem, removeItem, toggleGroup, removeMany, clearAll } = store;
+const { addManualItem, toggleItem, removeItem, toggleGroup, removeMany, clearAll } = store;
 const expandedGroups = ref({});
 const hideCompleted = ref(false);
 const compactExport = ref(false);
+const manualItemText = ref('');
+
+function submitManualItem() {
+  if (!manualItemText.value.trim()) return;
+  addManualItem(manualItemText.value);
+  manualItemText.value = '';
+}
 const requestConfirm = inject('requestConfirm', null);
 
 const shareSupported = typeof navigator !== 'undefined' && typeof navigator.share === 'function';
@@ -280,6 +287,17 @@ async function shareExportText() {
         </div>
         <button v-if="items.length" class="btn-ghost" id="shopping-clear-btn" @click="clearList">{{ t('shopping_clear') }}</button>
       </div>
+
+      <form class="shopping-manual-add" @submit.prevent="submitManualItem">
+        <input
+          v-model="manualItemText"
+          class="shopping-manual-input"
+          type="text"
+          :placeholder="t('shopping_manual_placeholder')"
+          autocomplete="off"
+        />
+        <button class="btn-primary shopping-manual-btn" type="submit">{{ t('shopping_manual_add') }}</button>
+      </form>
 
       <div v-if="!items.length" id="shopping-list">
         <div class="empty-state-shell shopping-empty-state">

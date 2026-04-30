@@ -17,10 +17,18 @@ let visibilityHandler: (() => void) | null = null;
 let activeConsumers = 0;
 let hiddenAt = 0;
 let showToastRef: ((message: string, type?: string) => void) | null = null;
-let triggerTimerAlertRef: ((message: string, title?: string) => void) | null = null;
+let triggerTimerAlertRef: ((message: string, title?: string, onSnooze?: (() => void) | null) => void) | null = null;
 
 function hasRunningTimers(): boolean {
   return Object.values(timers.value).some(timer => timer.running && timer.remaining > 0);
+}
+
+function extendTimer(id: string, seconds: number): void {
+  if (!timers.value[id]) return;
+  timers.value[id].remaining = (timers.value[id].remaining || 0) + seconds;
+  timers.value[id].running = true;
+  timers.value = { ...timers.value };
+  syncTimerInterval();
 }
 
 function clearTimerInterval(): void {
@@ -45,7 +53,8 @@ function applyTimerTick(elapsedSeconds = 1): void {
       timer.running = false;
       changed = true;
       const message = t('toast_timer_done', { name: timer.name });
-      triggerTimerAlertRef?.(message);
+      const timerId = id;
+      triggerTimerAlertRef?.(message, undefined, () => extendTimer(timerId, 120));
     }
   });
 
@@ -192,6 +201,7 @@ export function useTimers() {
     toggleTimer,
     resetTimer,
     deleteTimer,
+    extendTimer,
   };
 }
 

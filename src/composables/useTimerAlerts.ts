@@ -6,6 +6,7 @@ interface TimerAlert {
   open: boolean;
   title: string;
   message: string;
+  onSnooze: (() => void) | null;
 }
 
 interface OscillatorStepOptions {
@@ -21,6 +22,7 @@ const timerAlert = ref<TimerAlert>({
   open: false,
   title: '',
   message: '',
+  onSnooze: null,
 });
 
 const TIMER_SOUND_STORAGE_KEY = 'cucina_timer_sound';
@@ -330,16 +332,24 @@ export function useTimerAlerts() {
       open: false,
       title: '',
       message: '',
+      onSnooze: null,
     };
   }
 
-  function triggerTimerAlert(message: string, title = t('timer_alarm_title')): void {
+  function snoozeTimerAlert(): void {
+    const cb = timerAlert.value.onSnooze;
+    dismissTimerAlert();
+    cb?.();
+  }
+
+  function triggerTimerAlert(message: string, title = t('timer_alarm_title'), onSnooze: (() => void) | null = null): void {
     playSelectedTimerSound(timerSound.value, timerVolume.value / 100, timerDuration.value);
     vibrateIfAvailable();
     timerAlert.value = {
       open: true,
       title,
       message,
+      onSnooze,
     };
     if (closeTimeout) window.clearTimeout(closeTimeout);
     closeTimeout = window.setTimeout(() => {
@@ -374,6 +384,7 @@ export function useTimerAlerts() {
     timerDurationOptions: VALID_TIMER_DURATIONS,
     triggerTimerAlert,
     dismissTimerAlert,
+    snoozeTimerAlert,
     setTimerSound,
     setTimerVolume,
     setTimerDuration,
