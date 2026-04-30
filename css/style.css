@@ -547,6 +547,9 @@ body {
   .app {
     padding-bottom: calc(4rem + 60px + env(safe-area-inset-bottom, 0px));
   }
+  .app-footer {
+    padding-bottom: calc(22px + 60px + env(safe-area-inset-bottom, 0px));
+  }
 }
 
 /* ---- MORE OVERLAY (mobile) ---- */

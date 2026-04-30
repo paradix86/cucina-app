@@ -72,7 +72,7 @@ async function seedState(page: Page, state: SeedState): Promise<void> {
 }
 
 async function createManualRecipe(page: Page, name: string): Promise<void> {
-  await page.locator('#tab-import').click();
+  await gotoRoute(page, 'import');
   await expect(page.locator('#import-link-card')).toBeVisible();
   await page.locator('#manual-open').click();
   await expect(page.locator('#manual-name')).toBeVisible();
@@ -80,7 +80,7 @@ async function createManualRecipe(page: Page, name: string): Promise<void> {
   await page.locator('.edit-ingredients .manual-list-item input').first().fill('2 eggs');
   await page.locator('.edit-steps .manual-list-item textarea').first().fill('Whisk and cook.');
   await page.locator('#manual-save').click();
-  await page.locator('#tab-recipe-book').click();
+  await gotoRoute(page, 'recipe-book');
   await expect(page.locator('.card-name').filter({ hasText: name })).toBeVisible();
 }
 
