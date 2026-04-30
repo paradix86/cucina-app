@@ -1,15 +1,29 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, type Page } from '@playwright/test';
+
+const APP_ROOT = 'http://127.0.0.1:4173/cucina-app/';
+const STORAGE_KEY = 'cucina_recipebook_v3';
+
+// Seed recipes so the Pinia store hydrates from them on the next render.
+// The pattern mirrors `seedState` in rc-critical-flows.spec.ts: a first load
+// lets the Dexie adapter bootstrap from empty localStorage and set its
+// migration flag; we then write seed data into localStorage; a second load
+// re-hydrates the store via Dexie's localStorage fallback.
+async function seedRecipes(page: Page, recipes: unknown[]): Promise<void> {
+  await page.goto(APP_ROOT);
+  await expect(page.locator('main.app')).toBeVisible();
+  await expect(page.locator('main.app .panel.active').first()).toBeVisible();
+
+  await page.evaluate(({ key, data }) => {
+    localStorage.setItem(key, JSON.stringify(data));
+  }, { key: STORAGE_KEY, data: recipes });
+
+  await page.goto(APP_ROOT);
+  await expect(page.locator('main.app')).toBeVisible();
+  await expect(page.locator('main.app .panel.active').first()).toBeVisible();
+}
 
 test.describe('Meal Composer Flow', () => {
-  test.beforeEach(async ({ page }) => {
-    // Navigate to the app
-    await page.goto('http://localhost:4173/cucina-app/');
-    // Wait for app to load
-    await page.waitForLoadState('networkidle');
-  });
-
   test('shows recipe in composer even without nutrition, with missing-nutrition badge', async ({ page }) => {
-    // Seed a recipe without nutrition via localStorage
     const recipe = {
       id: 'test-no-nutrition',
       name: 'Test Recipe No Nutrition',
@@ -22,38 +36,28 @@ test.describe('Meal Composer Flow', () => {
       favorite: false,
     };
 
-    await page.evaluate((recipeData) => {
-      const recipes = JSON.parse(localStorage.getItem('cucina_recipebook_v3') || '[]');
-      recipes.push(recipeData);
-      localStorage.setItem('cucina_recipebook_v3', JSON.stringify(recipes));
-    }, recipe);
+    await seedRecipes(page, [recipe]);
 
-    // Navigate to recipe book
-    await page.goto('http://localhost:4173/cucina-app/#/recipe-book');
-    await page.waitForLoadState('networkidle');
+    await page.goto(APP_ROOT + '#/recipe-book');
+    await expect(page.locator('main.app .panel.active').first()).toBeVisible();
 
-    // Wait for recipe to appear and click it
+    // Open the recipe detail by clicking its card
     await page.locator('text=' + recipe.name).first().click();
-    await page.waitForLoadState('networkidle');
+    await expect(page).toHaveURL(/#\/recipe-book\/test-no-nutrition$/);
 
-    // Click "Aggiungi al pasto" button
-    const addToMealButton = page.locator('button:has-text("Aggiungi al pasto"), button:has-text("Add to meal")');
-    await addToMealButton.click();
-    await page.waitForLoadState('networkidle');
+    // Click "Add to meal" on the detail view (i18n-agnostic class)
+    await page.locator('.detail-action-meal').click();
+    await expect(page).toHaveURL(/#\/meal-composer/);
 
-    // Should land on /meal-composer
-    expect(page.url()).toContain('meal-composer');
-
-    // Recipe should be visible by name in the dashboard/chips section
-    await expect(page.locator('text=' + recipe.name)).toBeVisible();
+    // Recipe should be visible by name in the dashboard chips
+    await expect(page.locator('.mc-chip-name', { hasText: recipe.name })).toBeVisible();
 
     // Should see a badge or note about missing nutrition
-    const missingNutritionText = await page.locator('text=/Valori nutrizionali mancanti|Nutrition data missing|Nährwertdaten fehlen|Données nutritionnelles manquantes|Faltan datos nutricionales/').isVisible();
-    expect(missingNutritionText).toBeTruthy();
+    const missingNutritionText = page.locator('text=/Valori nutrizionali mancanti|Nutrition data missing|Nährwertdaten fehlen|Données nutritionnelles manquantes|Faltan datos nutricionales/');
+    await expect(missingNutritionText).toBeVisible();
   });
 
   test('persists composer selection across navigation', async ({ page }) => {
-    // Seed a recipe
     const recipe = {
       id: 'test-persist-1',
       name: 'Persist Test Recipe',
@@ -71,37 +75,26 @@ test.describe('Meal Composer Flow', () => {
       favorite: false,
     };
 
-    await page.evaluate((recipeData) => {
-      const recipes = JSON.parse(localStorage.getItem('cucina_recipebook_v3') || '[]');
-      recipes.push(recipeData);
-      localStorage.setItem('cucina_recipebook_v3', JSON.stringify(recipes));
-    }, recipe);
+    await seedRecipes(page, [recipe]);
 
-    // Go to meal composer
-    await page.goto('http://localhost:4173/cucina-app/#/meal-composer');
-    await page.waitForLoadState('networkidle');
+    await page.goto(APP_ROOT + '#/meal-composer');
+    await expect(page.locator('.mc-recipe-card', { hasText: recipe.name })).toBeVisible();
 
-    // Add recipe by clicking its checkbox in the picker
-    await page.locator('button:has-text("' + recipe.name + '")').click();
-    await page.waitForLoadState('networkidle');
+    // Add recipe by clicking its picker card
+    await page.locator('.mc-recipe-card', { hasText: recipe.name }).click();
+    await expect(page.locator('.mc-chip-name', { hasText: recipe.name })).toBeVisible();
 
-    // Recipe should appear in dashboard
-    await expect(page.locator('text=' + recipe.name)).toBeVisible();
+    // Navigate to planner and back
+    await page.goto(APP_ROOT + '#/planner');
+    await expect(page).toHaveURL(/#\/planner/);
+    await page.goto(APP_ROOT + '#/meal-composer');
+    await expect(page).toHaveURL(/#\/meal-composer/);
 
-    // Navigate to planner
-    await page.goto('http://localhost:4173/cucina-app/#/planner');
-    await page.waitForLoadState('networkidle');
-
-    // Navigate back to meal composer
-    await page.goto('http://localhost:4173/cucina-app/#/meal-composer');
-    await page.waitForLoadState('networkidle');
-
-    // Recipe should still be visible
-    await expect(page.locator('text=' + recipe.name)).toBeVisible();
+    // Recipe should still be selected (chip visible)
+    await expect(page.locator('.mc-chip-name', { hasText: recipe.name })).toBeVisible();
   });
 
   test('persists composer selection across hard reload', async ({ page }) => {
-    // Seed a recipe
     const recipe = {
       id: 'test-reload',
       name: 'Reload Test Recipe',
@@ -119,33 +112,21 @@ test.describe('Meal Composer Flow', () => {
       favorite: false,
     };
 
-    await page.evaluate((recipeData) => {
-      const recipes = JSON.parse(localStorage.getItem('cucina_recipebook_v3') || '[]');
-      recipes.push(recipeData);
-      localStorage.setItem('cucina_recipebook_v3', JSON.stringify(recipes));
-    }, recipe);
+    await seedRecipes(page, [recipe]);
 
-    // Go to meal composer
-    await page.goto('http://localhost:4173/cucina-app/#/meal-composer');
-    await page.waitForLoadState('networkidle');
+    await page.goto(APP_ROOT + '#/meal-composer');
+    await expect(page.locator('.mc-recipe-card', { hasText: recipe.name })).toBeVisible();
 
     // Add recipe
-    await page.locator('button:has-text("' + recipe.name + '")').click();
-    await page.waitForLoadState('networkidle');
-
-    // Recipe should be visible
-    await expect(page.locator('text=' + recipe.name)).toBeVisible();
+    await page.locator('.mc-recipe-card', { hasText: recipe.name }).click();
+    await expect(page.locator('.mc-chip-name', { hasText: recipe.name })).toBeVisible();
 
     // Hard reload
     await page.reload();
-    await page.waitForLoadState('networkidle');
-
-    // Recipe should still be visible after reload
-    await expect(page.locator('text=' + recipe.name)).toBeVisible();
+    await expect(page.locator('.mc-chip-name', { hasText: recipe.name })).toBeVisible();
   });
 
   test('totals include only recipes with nutrition', async ({ page }) => {
-    // Seed two recipes: one with nutrition, one without
     const recipeWithNutrition = {
       id: 'test-with-nutrition',
       name: 'Recipe With Nutrition',
@@ -175,40 +156,29 @@ test.describe('Meal Composer Flow', () => {
       favorite: false,
     };
 
-    await page.evaluate((recipesData) => {
-      const recipes = JSON.parse(localStorage.getItem('cucina_recipebook_v3') || '[]');
-      recipes.push(...recipesData);
-      localStorage.setItem('cucina_recipebook_v3', JSON.stringify(recipes));
-    }, [recipeWithNutrition, recipeWithoutNutrition]);
+    await seedRecipes(page, [recipeWithNutrition, recipeWithoutNutrition]);
 
-    // Go to meal composer
-    await page.goto('http://localhost:4173/cucina-app/#/meal-composer');
-    await page.waitForLoadState('networkidle');
+    // Add the recipe with nutrition via the meal-composer picker
+    await page.goto(APP_ROOT + '#/meal-composer');
+    await expect(page.locator('.mc-recipe-card', { hasText: recipeWithNutrition.name })).toBeVisible();
+    await page.locator('.mc-recipe-card', { hasText: recipeWithNutrition.name }).click();
+    await expect(page.locator('.mc-chip-name', { hasText: recipeWithNutrition.name })).toBeVisible();
 
-    // Add both recipes
-    await page.locator('button:has-text("' + recipeWithNutrition.name + '")').click();
-    await page.waitForLoadState('networkidle');
-
-    // The one without nutrition should be in the empty state list or in the picker, click it
-    // We need to click the "Add to meal" from recipe detail, so navigate there
+    // The recipe without nutrition is filtered out of the picker — reach it via
+    // recipe book → detail → "Add to meal" instead.
+    await page.goto(APP_ROOT + '#/recipe-book');
     await page.locator('text=' + recipeWithoutNutrition.name).first().click();
-    await page.waitForLoadState('networkidle');
-
-    // Wait for the recipe detail to load and click add to meal
-    const addToMealButton = page.locator('button:has-text("Aggiungi al pasto"), button:has-text("Add to meal")').first();
-    await addToMealButton.click();
-    await page.waitForLoadState('networkidle');
-
-    // Should be on meal composer
-    expect(page.url()).toContain('meal-composer');
+    await expect(page).toHaveURL(/#\/recipe-book\/test-without-nutrition$/);
+    await page.locator('.detail-action-meal').click();
+    await expect(page).toHaveURL(/#\/meal-composer/);
 
     // Both recipes should be visible in the chips
-    await expect(page.locator('text=' + recipeWithNutrition.name)).toBeVisible();
-    await expect(page.locator('text=' + recipeWithoutNutrition.name)).toBeVisible();
+    await expect(page.locator('.mc-chip-name', { hasText: recipeWithNutrition.name })).toBeVisible();
+    await expect(page.locator('.mc-chip-name', { hasText: recipeWithoutNutrition.name })).toBeVisible();
 
-    // Totals should show 500 (from recipe with nutrition only)
-    const totalsText = await page.locator('.mc-kcal-number').textContent();
-    expect(totalsText).toContain('500');
+    // Totals should show 500 (from recipe with nutrition only). The kcal display
+    // animates up to its final value, so poll until it settles instead of reading once.
+    await expect(page.locator('.mc-kcal-number')).toContainText('500');
 
     // Should see the excluding note
     const excludingNote = page.locator('text=/Alcune ricette non hanno|Some recipes don|Einige Rezepte haben|Certaines recettes n|Algunas recetas no/');
