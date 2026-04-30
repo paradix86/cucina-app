@@ -6,6 +6,16 @@ export type ChangelogEntry = {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '0.10.11',
+    date: '2026-04-30',
+    changes: [
+      'Timer slider accent color now uses the app green for a consistent look across browsers',
+      'Cooking mode timer: Min/Sec labels visible on mobile for easier time entry',
+      'Meal Composer hidden-recipes link is now actionable copy in all 5 languages',
+      'Dev toolchain: commitlint + husky enforce Conventional Commits on every commit; npm run commit launches an interactive helper',
+    ],
+  },
+  {
     version: '0.10.10',
     date: '2026-04-30',
     changes: [
