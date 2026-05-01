@@ -60,3 +60,23 @@ Use `getCookingProgressKey(recipe)` from `src/lib/storageKeys.ts` to build this 
 5. **Document legacy keys.** If you retire a key, keep it in the table marked `(legacy)` until you are sure no existing client holds data in it.
 6. **Keep migration logic in `storage.ts` or the relevant store.** Do not scatter migration reads across views.
 7. **Changing a key string is a breaking change.** Old clients will lose their stored data. Prefer adding a new versioned key and migrating on load.
+
+---
+
+## PWA manifest completion
+
+Date: 2026-05-01
+
+Added recommended W3C manifest fields to `public/manifest.webmanifest`:
+- `id` — stable PWA identity, prevents duplicate-install issues across browsers
+- `orientation` — `"any"` for kitchen tablet usage (landscape and portrait)
+- `display_override` — graceful fallback chain `["standalone", "minimal-ui"]`
+- `shortcuts` — 3 entries: Shopping List, Weekly Planner, My Recipes
+
+Shortcut URLs use hash routing format (`/cucina-app/#/path`) because the app
+uses `createWebHashHistory`. Without the `#`, shortcuts open at `start_url`
+regardless of intent.
+
+Deferred:
+- `screenshots` — required for app store submission, needs PNG assets
+- shortcut `icons` — needs 96×96 PNGs in `public/icons/shortcuts/`

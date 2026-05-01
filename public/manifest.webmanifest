@@ -4,9 +4,12 @@
   "description": "Recipes, meal planner, shopping list and cooking mode. Works offline.",
   "lang": "en",
   "categories": ["food", "lifestyle"],
+  "id": "/cucina-app/",
   "start_url": "/cucina-app/",
   "scope": "/cucina-app/",
   "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
+  "orientation": "any",
   "background_color": "#f5f3ef",
   "theme_color": "#43A047",
   "icons": [
@@ -27,6 +30,26 @@
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Shopping List",
+      "short_name": "Shopping",
+      "description": "Open the shopping list",
+      "url": "/cucina-app/#/shopping-list"
+    },
+    {
+      "name": "Weekly Planner",
+      "short_name": "Planner",
+      "description": "Plan this week's meals",
+      "url": "/cucina-app/#/planner"
+    },
+    {
+      "name": "My Recipes",
+      "short_name": "Recipes",
+      "description": "Open your recipe book",
+      "url": "/cucina-app/#/recipe-book"
     }
   ]
 }
