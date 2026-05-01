@@ -3,6 +3,7 @@ const CACHE_NAME = 'cucina-vue-v20';
 // Use relative URLs so paths resolve correctly regardless of subpath deployment
 // (e.g. GitHub Pages under /cucina-app/)
 const STATIC_ASSETS = [
+  // PRECACHE_BUNDLES_INJECTED_HERE — do not edit this marker
   './',
   './manifest.webmanifest',
   './icons/favicon-16.png',
@@ -14,7 +15,21 @@ const STATIC_ASSETS = [
 ];
 
 self.addEventListener('install', event => {
-  event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(STATIC_ASSETS)));
+  event.waitUntil((async () => {
+    const cache = await caches.open(CACHE_NAME);
+    const results = await Promise.allSettled(
+      STATIC_ASSETS.map(url => cache.add(url))
+    );
+    const failures = results
+      .map((r, i) => ({ r, url: STATIC_ASSETS[i] }))
+      .filter(({ r }) => r.status === 'rejected');
+    if (failures.length > 0) {
+      console.warn('[sw] Precache: ' + failures.length + ' of ' + STATIC_ASSETS.length + ' assets failed');
+      failures.forEach(({ r, url }) => console.warn('[sw]   FAIL', url, r.reason?.message || r.reason));
+    } else {
+      console.log('[sw] Precache: all ' + STATIC_ASSETS.length + ' assets cached');
+    }
+  })());
 });
 
 self.addEventListener('activate', event => {

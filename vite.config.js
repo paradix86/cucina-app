@@ -22,8 +22,38 @@ const swSource = readFileSync(new URL('./public/sw.js', import.meta.url), 'utf-8
 const cacheNameMatch = swSource.match(/const CACHE_NAME\s*=\s*['"]([^'"]+)['"]/);
 const swCacheName = cacheNameMatch ? cacheNameMatch[1] : 'cucina-vue-unknown';
 
+/** Injects hashed JS/CSS bundle filenames into dist/sw.js at build time. */
+function precacheManifestPlugin() {
+  let base = '/';
+  return {
+    name: 'precache-manifest',
+    apply: 'build',
+    configResolved(config) {
+      base = config.base;
+    },
+    generateBundle(_options, bundle) {
+      const entries = Object.keys(bundle)
+        .filter(name => /^assets\/.+\.(js|css)$/.test(name) && !name.endsWith('.map'))
+        .map(name => base + name);
+
+      console.log('[precache-plugin] Injecting ' + entries.length + ' entries into sw.js');
+      console.log('[precache-plugin] Sample:', entries.slice(0, 3));
+
+      const lines = entries.map(e => `  '${e}',`).join('\n');
+      const swSource = readFileSync(new URL('./public/sw.js', import.meta.url), 'utf-8');
+      const marker = '// PRECACHE_BUNDLES_INJECTED_HERE — do not edit this marker';
+      if (!swSource.includes(marker)) {
+        throw new Error(`precache-manifest: marker not found in public/sw.js — add "${marker}" inside STATIC_ASSETS`);
+      }
+
+      const modified = swSource.replace(`  ${marker}`, `${lines}\n  ${marker}`);
+      this.emitFile({ type: 'asset', fileName: 'sw.js', source: modified });
+    },
+  };
+}
+
 export default defineConfig({
-  plugins: [vue()],
+  plugins: [vue(), precacheManifestPlugin()],
   define: {
     __APP_VERSION__: JSON.stringify(appVersion),
     __APP_COMMIT__: JSON.stringify(appCommit),
