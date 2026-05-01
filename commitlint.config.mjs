@@ -2,7 +2,7 @@ export default {
   extends: ['@commitlint/config-conventional'],
   rules: {
     'scope-enum': [
-      1,
+      2,
       'always',
       [
         'recipe',
@@ -18,6 +18,8 @@ export default {
         'ui',
         'deps',
         'release',
+        'build',
+        'e2e',
       ],
     ],
     'subject-case': [0],
