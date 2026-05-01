@@ -6,6 +6,18 @@ export type ChangelogEntry = {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '0.10.12',
+    date: '2026-05-01',
+    changes: [
+      'Show a banner when the app goes offline, so you always know your connection status',
+      'Disable import and nutrition buttons while offline, with an explanation tooltip',
+      'App shortcuts added to the home screen icon (Shopping List, Weekly Planner, My Recipes)',
+      'PWA manifest updated with W3C fields for better installability on Android and desktop',
+      'Disabled buttons are now visually dimmer for clearer affordance',
+      'Service worker now automatically precaches all hashed JS/CSS bundles at install time',
+    ],
+  },
+  {
     version: '0.10.11',
     date: '2026-04-30',
     changes: [
