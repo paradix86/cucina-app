@@ -16,6 +16,8 @@
     "test:e2e:ui": "playwright test --ui",
     "prepare": "husky",
     "commit": "cz",
+    "typecheck": "vue-tsc --noEmit",
+    "check-all": "node scripts/check-all.mjs",
     "lint": "eslint src"
   },
   "config": {
