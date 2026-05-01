@@ -8,7 +8,7 @@ import { useNutritionGoalsStore } from '../stores/nutritionGoalsStore';
 import { useWeeklyPlannerStore } from '../stores/weeklyPlanner';
 import { useToasts } from '../composables/useToasts';
 import { buildGoalComparison } from '../lib/nutritionGoals';
-import { MEAL_COMPOSER_DRAFT_KEY } from '../lib/storage';
+import { MEAL_COMPOSER_DRAFT_KEY, MEAL_COMPOSER_LEGACY_DRAFT_KEY } from '../lib/storageKeys';
 
 const route = useRoute();
 const router = useRouter();
@@ -21,7 +21,7 @@ const search = ref('');
 const selectedIds = ref(new Set());
 
 const DRAFT_KEY = MEAL_COMPOSER_DRAFT_KEY;
-const LEGACY_DRAFT_KEY = 'cucina_meal_composer_draft';
+const LEGACY_DRAFT_KEY = MEAL_COMPOSER_LEGACY_DRAFT_KEY;
 
 const recipesWithNutrition = computed(() =>
   recipes.value.filter(r => r.nutrition?.perServing),

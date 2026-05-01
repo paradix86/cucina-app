@@ -38,11 +38,19 @@ import {
   normalizeRecipeNutrition,
 } from './nutrition';
 
-export const STORAGE_KEY = 'cucina_recipebook_v3';
-export const STORAGE_KEY_V2 = 'cucina_ricettario_v2';
-export const SHOPPING_LIST_KEY = 'cucina_shopping_list_v1';
-export const WEEKLY_PLANNER_KEY = 'cucina_weekly_planner_v1';
-export const MEAL_COMPOSER_DRAFT_KEY = 'cucina_meal_composer_draft_v1';
+export {
+  STORAGE_KEY,
+  STORAGE_KEY_V2,
+  SHOPPING_LIST_KEY,
+  WEEKLY_PLANNER_KEY,
+  MEAL_COMPOSER_DRAFT_KEY,
+} from './storageKeys';
+import {
+  STORAGE_KEY,
+  STORAGE_KEY_V2,
+  SHOPPING_LIST_KEY,
+  WEEKLY_PLANNER_KEY,
+} from './storageKeys';
 
 type LegacyV2Recipe = {
   id?: string;
