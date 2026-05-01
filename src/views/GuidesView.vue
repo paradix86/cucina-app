@@ -3,8 +3,7 @@ import { computed, onMounted, ref } from 'vue';
 import MarkdownIt from 'markdown-it';
 import mealPrepGuideRaw from '../content/duemme/meal_prep_guide.md?raw';
 import { t } from '../lib/i18n';
-
-const GUIDE_CHECKS_STORAGE_KEY = 'cucina_guide_checks_v1';
+import { GUIDE_CHECKS_KEY } from '../lib/storageKeys';
 const guideContentRef = ref<HTMLElement | null>(null);
 const checklistState = ref<Record<string, boolean>>({});
 
@@ -29,7 +28,7 @@ function stripHtml(text: string): string {
 
 function loadChecklistState(): void {
   try {
-    const raw = localStorage.getItem(GUIDE_CHECKS_STORAGE_KEY);
+    const raw = localStorage.getItem(GUIDE_CHECKS_KEY);
     if (!raw) return;
     const parsed = JSON.parse(raw);
     if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
@@ -41,7 +40,7 @@ function loadChecklistState(): void {
 }
 
 function saveChecklistState(): void {
-  localStorage.setItem(GUIDE_CHECKS_STORAGE_KEY, JSON.stringify(checklistState.value));
+  localStorage.setItem(GUIDE_CHECKS_KEY, JSON.stringify(checklistState.value));
 }
 
 function renderGuideHtml(): string {

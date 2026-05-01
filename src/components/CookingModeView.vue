@@ -5,6 +5,7 @@ import { extractStepSeconds, formatClock, getPreparationInfo } from '../lib/reci
 import { detectBimbyAction } from '../lib/bimbyIcons';
 import { t } from '../lib/i18n';
 import { parseCookingProgress } from '../lib/cookingPersistence';
+import { getCookingProgressKey } from '../lib/storageKeys';
 import { useToasts } from '../composables/useToasts';
 import { useTimerAlerts } from '../composables/useTimerAlerts';
 import { useCookingPreferences } from '../composables/useCookingPreferences';
@@ -27,12 +28,10 @@ const editSec = ref(0);
 const { showToast } = useToasts();
 const { triggerTimerAlert } = useTimerAlerts();
 
-const COOKING_PERSIST_KEY = computed(() => `cucina_cooking_${props.recipe.id || props.recipe.name || 'default'}`);
-
 function saveCookingProgress() {
   if (!props.recipe.id) return;
   try {
-    localStorage.setItem(COOKING_PERSIST_KEY.value, JSON.stringify({
+    localStorage.setItem(getCookingProgressKey(props.recipe), JSON.stringify({
       stepIndex: stepIndex.value,
       checklist: ingredientChecklist.value,
       updatedAt: Date.now(),
@@ -43,7 +42,7 @@ function saveCookingProgress() {
 function loadCookingProgress() {
   if (!props.recipe.id) return;
   try {
-    const raw = localStorage.getItem(COOKING_PERSIST_KEY.value);
+    const raw = localStorage.getItem(getCookingProgressKey(props.recipe));
     const data = parseCookingProgress(raw, props.recipe.steps?.length || 0);
     if (!data) {
       clearCookingProgress();
@@ -55,7 +54,7 @@ function loadCookingProgress() {
 }
 
 function clearCookingProgress() {
-  try { localStorage.removeItem(COOKING_PERSIST_KEY.value); } catch (_) {}
+  try { localStorage.removeItem(getCookingProgressKey(props.recipe)); } catch (_) {}
 }
 
 function snoozeStepTimer() {

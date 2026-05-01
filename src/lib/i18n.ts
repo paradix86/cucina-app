@@ -1,11 +1,11 @@
 import { ref } from 'vue';
 import { SUPPORTED_LANGUAGES, TRANSLATIONS } from './i18nData';
+import { LANG_KEY } from './storageKeys';
 
 type Language = 'it' | 'en' | 'de' | 'fr' | 'es';
 
-const LANG_STORAGE_KEY = 'cucina_lang';
 const browserLang = (typeof navigator !== 'undefined' ? navigator.language : 'it').slice(0, 2);
-const storedLang = typeof localStorage !== 'undefined' ? localStorage.getItem(LANG_STORAGE_KEY) : null;
+const storedLang = typeof localStorage !== 'undefined' ? localStorage.getItem(LANG_KEY) : null;
 
 function isSupportedLanguage(language: string | null): language is Language {
   return Boolean(language && SUPPORTED_LANGUAGES.includes(language));
@@ -20,7 +20,7 @@ export const currentLang = ref(initialLang);
 export function setLanguage(lang: Language): void {
   if (!isSupportedLanguage(lang)) return;
   currentLang.value = lang;
-  localStorage.setItem(LANG_STORAGE_KEY, lang);
+  localStorage.setItem(LANG_KEY, lang);
   document.documentElement.setAttribute('lang', lang);
 }
 

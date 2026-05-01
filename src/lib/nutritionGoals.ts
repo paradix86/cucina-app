@@ -1,6 +1,7 @@
 import type { NutritionGoals, NutritionPer100g } from '../types';
+import { NUTRITION_GOALS_KEY } from './storageKeys';
 
-export const NUTRITION_GOALS_KEY = 'cucina_nutrition_goals_v1';
+export { NUTRITION_GOALS_KEY };
 
 export function loadNutritionGoals(): NutritionGoals {
   try {
