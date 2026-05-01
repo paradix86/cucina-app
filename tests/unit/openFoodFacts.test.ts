@@ -43,7 +43,7 @@ let fetchMock: ReturnType<typeof vi.fn>;
 beforeEach(() => {
   fetchMock = vi.fn();
   vi.stubGlobal('fetch', fetchMock);
-  Object.defineProperty(navigator, 'onLine', { get: () => true, configurable: true });
+  vi.stubGlobal('navigator', { onLine: true });
 });
 
 afterEach(() => {
