@@ -765,7 +765,7 @@ h3 { font-size: 15px; font-weight: 600; margin-bottom: 4px; }
   transition: background .15s, transform .15s, box-shadow .15s, opacity .15s;
 }
 .btn-primary:hover   { background: var(--green-dark); }
-.btn-primary:disabled { background: #9FE1CB; cursor: not-allowed; }
+.btn-primary:disabled { background: #9FE1CB; opacity: .5; cursor: not-allowed; }
 .btn-primary:active { transform: translateY(1px); }
 .btn-ghost {
   min-height: 44px;
