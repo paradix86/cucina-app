@@ -5,12 +5,14 @@ import { useRoute } from 'vue-router';
 import { useImportFlow } from '../composables/useImportFlow';
 import { getSourceDomainLabel, joinMetaParts, suggestMealOccasions, MEAL_OCCASION_OPTIONS } from '../lib/recipes';
 import { t } from '../lib/i18n';
+import { useOnline } from '../composables/useOnline';
 import { useRecipeBookStore } from '../stores/recipeBook';
 import { DUEMME_VETTED_RECIPE_PACK } from '../lib/duemmeVettedPack';
 import { getNinjaVettedPack } from '../lib/ninjaVettedPack';
 
 const emit = defineEmits(['toast', 'go-home']);
 const route = useRoute();
+const isOnline = useOnline();
 const { url, loading, status, diagnostic, previewRecipe, importRecipeFromUrl, updatePreparationType, togglePreviewMealOccasion, savePreviewedRecipe, discardPreview, removeTag, addTag, addTagValue, socialImportAvailable } = useImportFlow();
 const recipeBookStore = useRecipeBookStore();
 const { recipes: savedRecipes } = storeToRefs(recipeBookStore);
@@ -484,7 +486,7 @@ function savePreview() {
           <p v-if="!socialImportAvailable" class="muted-label import-help-line">{{ t('import_social_unavailable_hint') }}</p>
           <div class="url-row">
             <input ref="urlInputRef" v-model="url" type="url" :placeholder="t('import_placeholder')" :disabled="loading" />
-            <button class="btn-primary" id="btn-import-go" :disabled="loading" :aria-busy="loading ? 'true' : 'false'" @click="submit">
+            <button class="btn-primary" id="btn-import-go" :disabled="loading || !isOnline" :title="!isOnline ? t('offline_button_disabled_hint') : undefined" :aria-busy="loading ? 'true' : 'false'" @click="submit">
               {{ loading ? t('import_btn_loading') : t('import_btn') }}
             </button>
           </div>

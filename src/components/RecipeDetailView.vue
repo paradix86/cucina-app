@@ -3,6 +3,8 @@ import { computed, nextTick, ref, watch } from 'vue';
 import { storeToRefs } from 'pinia';
 import { buildStepsHtml, formatTimerLabel, getPreparationInfo, getSourceDomainLabel, joinMetaParts, scaleIngredients, suggestMealOccasions } from '../lib/recipes';
 import { t, getLanguage } from '../lib/i18n';
+import { useOnline } from '../composables/useOnline';
+import { isOfflineError } from '../lib/errors';
 import { useShoppingListStore } from '../stores/shoppingList';
 import { useRecipeBookStore } from '../stores/recipeBook';
 import { buildShareUrl } from '../lib/recipeShare';
@@ -54,6 +56,8 @@ const nutritionContext = computed(() => {
   return null;
 });
 
+const isOnline = useOnline();
+
 async function calculateNutrition() {
   if (isCalculatingNutrition.value || !props.recipe.id) return;
   isCalculatingNutrition.value = true;
@@ -64,6 +68,12 @@ async function calculateNutrition() {
       ingredientNutrition: result.ingredientNutrition,
       nutrition: { ...result.nutrition, ingredientsFingerprint: fingerprint },
     });
+  } catch (err) {
+    if (isOfflineError(err)) {
+      emit('toast', t('offline_feature_unavailable'), 'error');
+    } else {
+      throw err;
+    }
   } finally {
     isCalculatingNutrition.value = false;
   }
@@ -436,6 +446,7 @@ function closeQr() {
               :recipe="recipe"
               :is-calculating="isCalculatingNutrition"
               :nutrition-context="nutritionContext"
+              :calculate-disabled="!isOnline"
               @calculate="calculateNutrition"
               @toast="(msg, type) => emit('toast', msg, type)"
             />

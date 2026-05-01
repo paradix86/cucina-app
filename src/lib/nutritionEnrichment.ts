@@ -3,6 +3,7 @@ import { parseIngredientAmount, calculateRecipeNutrition, estimateGrams } from '
 import { buildIngredientNutritionMatch } from './nutritionProviders';
 import type { NutritionProviderClient, NutritionSearchResult } from './nutritionProviders';
 import { buildNutritionSearchQueries } from './ingredientMatching';
+import { OfflineError } from './errors';
 
 export type NutritionEnrichmentOptions = {
   minConfidence?: number;  // default 0.7
@@ -89,7 +90,8 @@ export async function enrichRecipeNutritionWithProviders(
             maxResults:      5,
             ...(language !== undefined && { language }),
           });
-        } catch {
+        } catch (err) {
+          if (err instanceof OfflineError) throw err;
           break;  // provider failed entirely; try the next provider
         }
 

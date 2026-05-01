@@ -5,6 +5,7 @@ import type {
   ParsedIngredientAmount,
 } from '../types';
 import { baseIngredientsProvider } from './baseIngredientsProvider';
+import { OfflineError } from './errors';
 
 // ─── Public types ─────────────────────────────────────────────────────────────
 
@@ -281,6 +282,7 @@ export const openFoodFactsProvider: NutritionProviderClient = {
     url.searchParams.set('page_size',    String(maxResults));
     url.searchParams.set('lc',           lang);
 
+    if (!navigator.onLine) throw new OfflineError();
     let data: unknown;
     try {
       const response = await fetch(url.toString());

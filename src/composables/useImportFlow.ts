@@ -18,6 +18,7 @@ import {
 } from '../lib/import/adapters';
 import { normalizePreparationTypeValue } from '../lib/ingredientUtils';
 import { t } from '../lib/i18n';
+import { OfflineError, isOfflineError } from '../lib/errors';
 import type { ImportDiagnostic, ImportPreviewRecipe, ImportSource, PreparationType, StatusState } from '../types';
 
 const sourceMap: Record<ImportSource, string> = {
@@ -171,6 +172,7 @@ Rispondi SOLO con un oggetto JSON valido, senza backtick, senza testo aggiuntivo
         headers[ 'anthropic-version' ] = '2023-06-01';
       }
 
+      if (!navigator.onLine) throw new OfflineError();
       const response = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
         headers,
@@ -204,6 +206,11 @@ Rispondi SOLO con un oggetto JSON valido, senza backtick, senza testo aggiuntivo
       setStatus(t('import_success'), 'ok');
       return true;
     } catch (error: unknown) {
+      if (isOfflineError(error)) {
+        setStatus(t('offline_feature_unavailable'), 'err');
+        loading.value = false;
+        return false;
+      }
       const rawError = String((error as Error)?.message || error).trim();
       const isDeadPage = source === 'web'
         && (rawError.includes('GZ_PAGE_NOT_FOUND') || rawError.includes('WEB_FETCH_404'));

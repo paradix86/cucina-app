@@ -559,6 +559,9 @@ export const TRANSLATIONS: Record<string, Record<string, string>> = {
     difficulty_easy:    'Facile',
     difficulty_medium:  'Media',
     difficulty_hard:    'Difficile',
+    offline_banner_message:       'Sei offline. Le ricette salvate funzionano normalmente.',
+    offline_feature_unavailable:  'Funzione non disponibile offline.',
+    offline_button_disabled_hint: 'Non disponibile offline',
   },
 
   en: {
@@ -1107,6 +1110,9 @@ export const TRANSLATIONS: Record<string, Record<string, string>> = {
     difficulty_easy:    'Easy',
     difficulty_medium:  'Medium',
     difficulty_hard:    'Hard',
+    offline_banner_message:       'You\'re offline. Saved recipes work normally.',
+    offline_feature_unavailable:  'Feature unavailable offline.',
+    offline_button_disabled_hint: 'Not available offline',
   },
 
   de: {
@@ -1655,6 +1661,9 @@ export const TRANSLATIONS: Record<string, Record<string, string>> = {
     difficulty_easy:    'Leicht',
     difficulty_medium:  'Mittel',
     difficulty_hard:    'Schwer',
+    offline_banner_message:       'Du bist offline. Gespeicherte Rezepte funktionieren weiterhin.',
+    offline_feature_unavailable:  'Funktion offline nicht verfügbar.',
+    offline_button_disabled_hint: 'Offline nicht verfügbar',
   },
 
   fr: {
@@ -2203,6 +2212,9 @@ export const TRANSLATIONS: Record<string, Record<string, string>> = {
     difficulty_easy:    'Facile',
     difficulty_medium:  'Moyen',
     difficulty_hard:    'Difficile',
+    offline_banner_message:       'Vous êtes hors ligne. Les recettes enregistrées fonctionnent normalement.',
+    offline_feature_unavailable:  'Fonction non disponible hors ligne.',
+    offline_button_disabled_hint: 'Non disponible hors ligne',
   },
 
   es: {
@@ -2751,6 +2763,9 @@ export const TRANSLATIONS: Record<string, Record<string, string>> = {
     difficulty_easy:    'Fácil',
     difficulty_medium:  'Media',
     difficulty_hard:    'Difícil',
+    offline_banner_message:       'Estás sin conexión. Las recetas guardadas funcionan con normalidad.',
+    offline_feature_unavailable:  'Función no disponible sin conexión.',
+    offline_button_disabled_hint: 'No disponible sin conexión',
   },
 };
 

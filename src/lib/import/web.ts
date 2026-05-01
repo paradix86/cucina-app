@@ -1,4 +1,5 @@
 import type { ImportFailureStage } from '../../types';
+import { OfflineError } from '../errors';
 
 export class ImportTimeoutError extends Error {
   name = 'ImportTimeoutError';
@@ -14,6 +15,7 @@ export class ImportFetchError extends Error {
 const IMPORT_FETCH_TIMEOUT_MS = 12000;
 
 async function fetchWithTimeout(input: string, init: RequestInit = {}): Promise<Response> {
+  if (!navigator.onLine) throw new OfflineError();
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), IMPORT_FETCH_TIMEOUT_MS);
   try {

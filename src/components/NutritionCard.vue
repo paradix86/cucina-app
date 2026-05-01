@@ -9,9 +9,10 @@ import { useNutritionGoalsStore } from '../stores/nutritionGoalsStore';
 import { buildGoalComparison, parseGoalInput } from '../lib/nutritionGoals';
 
 const props = defineProps({
-  recipe:           { type: Object,  required: true },
-  isCalculating:    { type: Boolean, default: false },
-  nutritionContext: { type: Object,  default: null },
+  recipe:            { type: Object,  required: true },
+  isCalculating:     { type: Boolean, default: false },
+  nutritionContext:   { type: Object,  default: null },
+  calculateDisabled: { type: Boolean, default: false },
 });
 
 const emit = defineEmits(['calculate', 'save', 'toast']);
@@ -542,7 +543,7 @@ function saveEditor() {
     <div class="nutrition-footer">
       <button
         class="btn-secondary"
-        :disabled="isCalculating"
+        :disabled="isCalculating || calculateDisabled"
         type="button"
         @click="emit('calculate')"
       >

@@ -3,6 +3,8 @@ import { computed, onMounted, provide, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import AppHeader from './components/AppHeader.vue';
 import AppFooter from './components/AppFooter.vue';
+import OfflineBanner from './components/OfflineBanner.vue';
+import { useOnline } from './composables/useOnline';
 import ToastStack from './components/ToastStack.vue';
 import CookingModeView from './components/CookingModeView.vue';
 import ConfirmDialog from './components/ConfirmDialog.vue';
@@ -166,6 +168,8 @@ function handleToast(message, type = 'info') {
   showToast(message, type);
 }
 
+const isOnline = useOnline();
+
 onMounted(() => {
   initServiceWorkerUpdates(showToast);
 });
@@ -179,7 +183,10 @@ watch(() => route.fullPath, () => {
 </script>
 
 <template>
-  <AppHeader :on-home="goHome" />
+  <div class="app-top-stack">
+    <AppHeader :on-home="goHome" />
+    <OfflineBanner v-if="!isOnline" />
+  </div>
 
   <div class="app-shell">
     <nav v-if="!cookingRecipe" class="app-sidenav" aria-label="Navigazione principale">
