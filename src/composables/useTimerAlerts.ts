@@ -324,6 +324,7 @@ export function useTimerAlerts() {
   ));
 
   function dismissTimerAlert(): void {
+    stopAllScheduledSounds();
     if (closeTimeout) {
       window.clearTimeout(closeTimeout);
       closeTimeout = null;
