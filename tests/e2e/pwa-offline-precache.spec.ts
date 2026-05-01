@@ -13,6 +13,11 @@ const m = swSource.match(/const CACHE_NAME\s*=\s*['"]([^'"]+)['"]/);
 if (!m) throw new Error('CACHE_NAME not found in public/sw.js');
 const CACHE_NAME = m[1];
 
+// Derive expected precache count from the built SW (version-proof)
+const distSwSource = readFileSync(path.join(process.cwd(), 'dist/sw.js'), 'utf-8');
+const BUNDLE_ENTRIES = (distSwSource.match(/'\/cucina-app\/assets\/[^']+'/g) ?? []).length;
+const STATIC_ASSETS_COUNT = 8;
+
 // The lazy-loaded view chunks that were missing before the precache fix
 const VIEW_CHUNKS = [
   '/BuiltinRecipesView-',
@@ -46,8 +51,10 @@ async function navigateAndWaitForSW(page: Page): Promise<void> {
     undefined,
     { timeout: 30_000 }
   );
-  // One final domcontentloaded to ensure the post-reload page is fully parsed
-  await page.waitForLoadState('domcontentloaded');
+  // Wait for Vue to fully mount on the post-SW-reload page.
+  // waitForLoadState('domcontentloaded') can return immediately if the pre-reload
+  // page was already past that state, causing a race with the SW-triggered reload.
+  await page.waitForSelector('main.app', { state: 'visible', timeout: 30_000 });
 }
 
 test('service worker installs and reports precache success', async ({ page }) => {
@@ -71,10 +78,11 @@ test('service worker installs and reports precache success', async ({ page }) =>
     return (await cache.keys()).length;
   }, CACHE_NAME);
 
+  const expectedMin = BUNDLE_ENTRIES + STATIC_ASSETS_COUNT - 2;
   expect(
     cachedCount,
-    `Cache '${CACHE_NAME}' has ${cachedCount} entries; expected ≥40 (32 JS/CSS bundles + 8 static assets). Precache likely failed.`
-  ).toBeGreaterThanOrEqual(40);
+    `Cache '${CACHE_NAME}' has ${cachedCount} entries; expected ~${BUNDLE_ENTRIES + STATIC_ASSETS_COUNT} (${BUNDLE_ENTRIES} bundles + ${STATIC_ASSETS_COUNT} static). Precache likely failed.`
+  ).toBeGreaterThanOrEqual(expectedMin);
 
   const successLog = swLogs.find(l => /\[sw\] Precache: all \d+ assets cached/.test(l));
   if (successLog) {
@@ -105,10 +113,14 @@ test('app loads fully offline after fresh install', async ({ page, context }) =>
   await navigateAndWaitForSW(page);
 
   const errors: string[] = [];
+  const failedRequests: string[] = [];
   page.on('console', msg => {
     if (msg.type() === 'error') errors.push(msg.text());
   });
   page.on('pageerror', err => errors.push(err.message));
+  page.on('requestfailed', request => {
+    failedRequests.push(`${request.method()} ${request.url()} — ${request.failure()?.errorText ?? 'unknown'}`);
+  });
 
   await context.setOffline(true);
 
@@ -128,7 +140,7 @@ test('app loads fully offline after fresh install', async ({ page, context }) =>
     const netErrors = errors.filter(e => e.includes('net::ERR_'));
     expect(
       netErrors,
-      `Network errors while offline (SW should serve everything from cache):\n${netErrors.join('\n')}`
+      `Network errors while offline:\n${netErrors.join('\n')}\n\nFailed requests:\n${failedRequests.join('\n')}`
     ).toHaveLength(0);
   } finally {
     await context.setOffline(false);
