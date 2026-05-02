@@ -172,7 +172,7 @@ Rispondi SOLO con un oggetto JSON valido, senza backtick, senza testo aggiuntivo
         headers[ 'anthropic-version' ] = '2023-06-01';
       }
 
-      if (!navigator.onLine) throw new OfflineError();
+      if (typeof navigator !== 'undefined' && navigator.onLine === false) throw new OfflineError();
       const response = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
         headers,

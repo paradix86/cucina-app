@@ -1,5 +1,6 @@
-import { describe, it, expect } from 'vitest';
-import { inferImportFailureStage, ImportTimeoutError, ImportFetchError } from '../../src/lib/import/web';
+import { describe, it, expect, vi, afterEach } from 'vitest';
+import { inferImportFailureStage, ImportTimeoutError, ImportFetchError, fetchReadableImportPage } from '../../src/lib/import/web';
+import { isOfflineError } from '../../src/lib/errors';
 
 describe('inferImportFailureStage', () => {
   it('maps WEB_TIMEOUT error to fetch-readable-page stage', () => {
@@ -70,8 +71,35 @@ describe('inferImportFailureStage', () => {
   it('ImportFetchError includes status code in message', () => {
     const fetchError = new ImportFetchError(500);
     expect(fetchError.message).toBe('HTTP 500');
-    
+
     const fetchErrorWithText = new ImportFetchError(404, 'Not Found');
     expect(fetchErrorWithText.message).toBe('HTTP 404 Not Found');
+  });
+});
+
+describe('fetchReadableImportPage — offline guard', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('does not throw OfflineError when navigator is undefined (Node environment)', async () => {
+    vi.stubGlobal('navigator', undefined);
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, text: async () => 'ok' }));
+
+    await expect(fetchReadableImportPage('https://example.com')).resolves.toBe('ok');
+  });
+
+  it('throws OfflineError when navigator.onLine is false', async () => {
+    vi.stubGlobal('navigator', { onLine: false });
+
+    const err = await fetchReadableImportPage('https://example.com').catch(e => e);
+    expect(isOfflineError(err)).toBe(true);
+  });
+
+  it('does not throw OfflineError when navigator.onLine is true', async () => {
+    vi.stubGlobal('navigator', { onLine: true });
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, text: async () => 'ok' }));
+
+    await expect(fetchReadableImportPage('https://example.com')).resolves.toBe('ok');
   });
 });

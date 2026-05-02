@@ -282,7 +282,7 @@ export const openFoodFactsProvider: NutritionProviderClient = {
     url.searchParams.set('page_size',    String(maxResults));
     url.searchParams.set('lc',           lang);
 
-    if (!navigator.onLine) throw new OfflineError();
+    if (typeof navigator !== 'undefined' && navigator.onLine === false) throw new OfflineError();
     let data: unknown;
     try {
       const response = await fetch(url.toString());

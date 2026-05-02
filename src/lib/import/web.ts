@@ -15,7 +15,10 @@ export class ImportFetchError extends Error {
 const IMPORT_FETCH_TIMEOUT_MS = 12000;
 
 async function fetchWithTimeout(input: string, init: RequestInit = {}): Promise<Response> {
-  if (!navigator.onLine) throw new OfflineError();
+  // Fire only when navigator explicitly reports offline. In Node and other
+  // non-browser environments navigator.onLine is undefined, which we treat
+  // as "unknown" and let the request proceed.
+  if (typeof navigator !== 'undefined' && navigator.onLine === false) throw new OfflineError();
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), IMPORT_FETCH_TIMEOUT_MS);
   try {
