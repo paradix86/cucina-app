@@ -209,7 +209,8 @@ function extractJsonLdInstructionSteps(raw: unknown): string[] {
     // HowToStep, or plain object with text/name
     const text = String(obj.text || obj.name || '').trim();
     const s = normalizeImportText(text);
-    if (s) steps.push(s);
+    // Skip placeholder/empty steps (some sites emit '-' or '...' as placeholder content in JSON-LD)
+    if (s && /[a-zA-ZÀ-ÿ\d]/.test(s)) steps.push(s);
   }
   return steps;
 }

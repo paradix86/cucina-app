@@ -232,6 +232,25 @@ describe('parseJsonLdRecipeFromHtml — valid Recipe', () => {
     expect(result).not.toBeNull();
     expect(result!.coverImageUrl).toBe('https://example.com/media/piadina-cover.jpg');
   });
+
+  it('skips placeholder "-" steps emitted by some blog CMSes', () => {
+    const recipe = JSON.stringify({
+      '@type': 'Recipe',
+      name: 'Pasta con tonno in bianco',
+      recipeIngredient: ['320 g pasta', '160 g tonno', '2 spicchi aglio'],
+      recipeInstructions: [
+        { '@type': 'HowToStep', text: '-' },
+        { '@type': 'HowToStep', text: 'Lessare la pasta in abbondante acqua salata.' },
+        { '@type': 'HowToStep', text: 'Scolare la pasta e condire con il tonno.' },
+        { '@type': 'HowToStep', text: 'Servire caldo con prezzemolo fresco.' },
+      ],
+    });
+    const result = parseJsonLdRecipeFromHtml(wrapJsonLd(recipe), TEST_URL);
+    expect(result).not.toBeNull();
+    expect(result!.steps).toHaveLength(3);
+    expect(result!.steps).not.toContain('-');
+    expect(result!.steps[0]).toContain('pasta');
+  });
 });
 
 // ─── JSON-LD: @graph structure ─────────────────────────────────────────────────
