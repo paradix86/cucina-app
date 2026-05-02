@@ -7,6 +7,10 @@ import {
   stripImportLinksAndImages,
   stripImportMarkdownNoise,
 } from '../../src/lib/import/adapters';
+import {
+  AdapterDomainMismatchError,
+  isAdapterDomainMismatchError,
+} from '../../src/lib/import/adapters/adapterErrors';
 
 describe('normalizeImportText', () => {
   it('should normalize carriage returns', () => {
@@ -418,6 +422,29 @@ I pancake allo yogurt bimby sono pronti per essere serviti.
 ### Note
 
 Fine.`;
+
+describe('GialloZafferano adapter — domain guard', () => {
+  const adapter = getImportAdapterForDomain('giallozafferano.it')!;
+
+  it('throws AdapterDomainMismatchError for blog.giallozafferano.it URLs', () => {
+    expect(() =>
+      adapter.parse('', 'https://blog.giallozafferano.it/letortediziadebby/some-post/'),
+    ).toThrow(AdapterDomainMismatchError);
+  });
+
+  it('parses successfully for canonical ricette.giallozafferano.it URL', () => {
+    expect(() =>
+      adapter.parse(GZ_MARKDOWN_WITH_AGGIUNGI, 'https://ricette.giallozafferano.it/test.html'),
+    ).not.toThrow(AdapterDomainMismatchError);
+  });
+
+  it('isAdapterDomainMismatchError correctly identifies the error class', () => {
+    const err = new AdapterDomainMismatchError('giallozafferano', 'blog.giallozafferano.it');
+    expect(isAdapterDomainMismatchError(err)).toBe(true);
+    expect(isAdapterDomainMismatchError(new Error('other'))).toBe(false);
+    expect(isAdapterDomainMismatchError('string')).toBe(false);
+  });
+});
 
 describe('GialloZafferano adapter — ingredient parsing', () => {
   const adapter = getImportAdapterForDomain('giallozafferano.it')!;

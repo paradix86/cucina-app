@@ -1,5 +1,6 @@
 import type { ImportedRecipeTip, ImportPreviewRecipe, WebsiteImportAdapter } from '../../../types';
 import { normalizeSourceDomain } from '../core';
+import { AdapterDomainMismatchError } from './adapterErrors';
 import {
   normalizeImportText,
   stripImportMarkdownNoise,
@@ -13,6 +14,12 @@ import {
   suggestImportTags,
   buildImportedRecipe,
 } from './utils';
+
+const SUPPORTED_HOSTNAMES = new Set([
+  'ricette.giallozafferano.it',
+  'www.giallozafferano.it',
+  'giallozafferano.it',
+]);
 
 function cleanGialloZafferanoTitle(title: string): string {
   return stripImportMarkdownNoise(title)
@@ -171,6 +178,10 @@ function cleanGialloZafferanoStep(step: string): string {
 }
 
 function parseGialloZafferanoAdapter(markdown: string, url: string): ImportPreviewRecipe {
+  const hostname = new URL(url).hostname.toLowerCase();
+  if (!SUPPORTED_HOSTNAMES.has(hostname)) {
+    throw new AdapterDomainMismatchError('giallozafferano', hostname);
+  }
   const md = normalizeImportText(markdown);
   if (isGialloZafferanoDeadPage(md)) throw new Error('GZ_PAGE_NOT_FOUND');
   const titleMatch = md.match(/^#\s+(.+)$/m) || md.match(/^Title:\s*(.+)$/m);

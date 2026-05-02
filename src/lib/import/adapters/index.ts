@@ -13,6 +13,7 @@
  *   6. Throw UNSUPPORTED_WEB_IMPORT
  */
 import { normalizeSourceDomain } from '../core';
+import { isAdapterDomainMismatchError } from './adapterErrors';
 import { fetchHtmlForJsonLd } from '../web';
 import type { ImportPreviewRecipe, WebsiteImportAdapter } from '../../../types';
 
@@ -114,8 +115,16 @@ async function enrichCoverImageIfMissing(recipe: ImportPreviewRecipe, pageUrl: s
 export async function importWebsiteRecipeWithFallbacks(markdown: string, url: string): Promise<ImportPreviewRecipe> {
   const adapter = getImportAdapterForUrl(url);
   if (adapter) {
-    const parsed = adapter.parse(markdown, url);
-    return enrichCoverImageIfMissing(parsed, url);
+    try {
+      const parsed = adapter.parse(markdown, url);
+      return enrichCoverImageIfMissing(parsed, url);
+    } catch (err) {
+      if (isAdapterDomainMismatchError(err)) {
+        console.warn('[import] adapter declined URL, falling through:', err.message);
+      } else {
+        throw err;
+      }
+    }
   }
 
   const genericRecipe = parseGenericReadableRecipe(markdown, url);
