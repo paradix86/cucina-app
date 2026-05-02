@@ -6,6 +6,14 @@ export type ChangelogEntry = {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '0.10.13',
+    date: '2026-05-02',
+    changes: [
+      'Recipe import from GialloZafferano blog posts now works correctly (e.g. blog.giallozafferano.it/<author>/...)',
+      'Empty placeholder steps are now filtered out from imported recipes',
+    ],
+  },
+  {
     version: '0.10.12',
     date: '2026-05-01',
     changes: [
