@@ -300,3 +300,42 @@ describe('giallozafferano.it — named adapter', () => {
     expect(result.sourceDomain).toBe('giallozafferano.it');
   });
 });
+
+// ─── blog.giallozafferano.it ──────────────────────────────────────────────────
+// Regression guard for v0.10.13 (df9b836 + 7eb5095).
+// The blog subdomain is rejected by the GZ named adapter's hostname whitelist
+// and falls through to the generic JSON-LD fallback.
+// 7eb5095 ensures placeholder steps ('-', punctuation-only) are filtered out
+// before the recipe is returned.
+// normalizeSourceDomain strips 'blog.' so sourceDomain resolves to giallozafferano.it.
+
+describe('blog.giallozafferano.it — JSON-LD fallback (v0.10.13 regression guard)', () => {
+  it('imports a real recipe with title, ≥5 ingredients, ≥3 steps, no placeholder steps', async () => {
+    const url = 'https://blog.giallozafferano.it/letortediziadebby/ricetta-pasta-con-il-tonno-in-bianco/';
+    let result;
+    try {
+      result = await runImport(url);
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : String(e);
+      throw new Error(
+        `Import pipeline threw: ${msg}\nURL: ${url}\n` +
+        `(hint: if GZ_*_NOT_FOUND — blog URL was not rejected by GZ adapter whitelist; ` +
+        `if JSONLD_NO_INGREDIENTS or JSONLD_NO_STEPS — blog JSON-LD structure may have changed)`,
+      );
+    }
+
+    logResult(url, result.name, result.ingredients.length, result.steps.length, result.time ?? 'n.d.', result.preparationType);
+
+    expect(result.name.length, 'title should be non-empty').toBeGreaterThan(2);
+    expect(result.ingredients.length, 'should extract at least 5 ingredients').toBeGreaterThanOrEqual(5);
+    expect(result.steps.length, 'should extract at least 3 steps').toBeGreaterThanOrEqual(3);
+
+    // Regression guard for 7eb5095: no placeholder or whitespace-only steps
+    for (const step of result.steps) {
+      expect(step.trim(), `step should not be a placeholder: "${step}"`).toMatch(/[a-zA-ZÀ-ÿ\d]/);
+    }
+
+    expect(result.source).toBe('web');
+    expect(result.sourceDomain, 'blog. prefix should be stripped to giallozafferano.it').toBe('giallozafferano.it');
+  }, 45_000);
+});
