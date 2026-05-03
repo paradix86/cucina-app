@@ -11,6 +11,7 @@ import {
   assignSection,
   getSectionI18nKey,
   groupShoppingItems,
+  normalizeIngredientName,
   parseIngredient,
   SHOPPING_SECTIONS,
   scaleShoppingIngredientText,
@@ -21,6 +22,51 @@ type SectionBucket = {
   grouped: ShoppingGroup[];
   ungrouped: ShoppingItem[];
 };
+
+function shoppingItemDedupKey(item: { text: string; sourceRecipeId?: string | null }): string {
+  const parsed = parseIngredient(item.text);
+  let nameKey: string;
+  if (parsed.parsedName) {
+    nameKey = parsed.parsedName;
+  } else {
+    // Low-confidence: strip trailing number to get a stable name key
+    const withoutTrailing = item.text.replace(/\s*\d+(?:[.,]\d+)?\s*$/, '').trim();
+    nameKey = normalizeIngredientName(withoutTrailing) || normalizeIngredientName(item.text);
+  }
+  return `${nameKey}::${item.sourceRecipeId ?? ''}`;
+}
+
+function mergeIngredientTexts(existingText: string, newText: string): string {
+  const existingParsed = parseIngredient(existingText);
+  const newParsed = parseIngredient(newText);
+
+  if (
+    existingParsed.confidence === 'high' &&
+    newParsed.confidence === 'high' &&
+    existingParsed.parsedQty !== null &&
+    newParsed.parsedQty !== null
+  ) {
+    const mergeScale = (existingParsed.parsedQty + newParsed.parsedQty) / existingParsed.parsedQty;
+    return scaleShoppingIngredientText(existingText, mergeScale);
+  }
+
+  // Low-confidence or mixed: sum trailing integer if present
+  const trailingNum = /(\d+(?:[.,]\d+)?)\s*$/;
+  const existingMatch = existingText.match(trailingNum);
+  const newMatch = newText.match(trailingNum);
+  if (existingMatch && newMatch) {
+    const sum = parseFloat(existingMatch[1].replace(',', '.')) + parseFloat(newMatch[1].replace(',', '.'));
+    const sumFormatted = Number.isInteger(sum) ? String(sum) : String(sum);
+    return existingText.slice(0, existingMatch.index!) + sumFormatted;
+  }
+
+  // Last resort: append × 2 suffix (or increment existing ×N)
+  const timesMatch = existingText.match(/\s*×\s*(\d+)$/);
+  if (timesMatch) {
+    return existingText.slice(0, timesMatch.index!) + ` × ${parseInt(timesMatch[1]) + 1}`;
+  }
+  return `${existingText} × 2`;
+}
 
 export const useShoppingListStore = defineStore('shoppingList', () => {
   const items = ref<ShoppingItem[]>([]);
@@ -73,21 +119,52 @@ export const useShoppingListStore = defineStore('shoppingList', () => {
   function addRecipeIngredients(recipe: Pick<Recipe, 'id' | 'name' | 'ingredients'>, options: { scaleFactor?: number } = {}): number {
     const timestamp = Date.now();
     const factor = Number.isFinite(options.scaleFactor) && (options.scaleFactor || 0) > 0 ? Number(options.scaleFactor) : 1;
-    const additions = (recipe.ingredients || [])
+    const recipeId = recipe.id || undefined;
+
+    const incomingItems: ShoppingItem[] = (recipe.ingredients || [])
       .map((text, index) => ({
         id: `shop-${timestamp}-${index}-${Math.random().toString(36).slice(2, 8)}`,
         text: scaleShoppingIngredientText(String(text), factor),
         checked: false,
-        sourceRecipeId: recipe.id || undefined,
+        sourceRecipeId: recipeId,
         sourceRecipeName: recipe.name || undefined,
         createdAt: timestamp,
       }))
       .filter(item => item.text) as ShoppingItem[];
 
-    if (additions.length === 0) return 0;
-    items.value = [ ...items.value, ...additions ];
+    if (incomingItems.length === 0) return 0;
+
+    // For recipe items (recipeId present), merge duplicates by normalized name + recipeId key.
+    // Manual items (no sourceRecipeId) are never touched.
+    if (!recipeId) {
+      items.value = [ ...items.value, ...incomingItems ];
+      persist(items.value);
+      return incomingItems.length;
+    }
+
+    const next = [...items.value];
+    let merged = 0;
+    const appended: ShoppingItem[] = [];
+
+    for (const incoming of incomingItems) {
+      const key = shoppingItemDedupKey(incoming);
+      const existingIndex = next.findIndex(
+        existing => existing.sourceRecipeId === recipeId && shoppingItemDedupKey(existing) === key,
+      );
+      if (existingIndex !== -1) {
+        next[existingIndex] = {
+          ...next[existingIndex],
+          text: mergeIngredientTexts(next[existingIndex].text, incoming.text),
+        };
+        merged++;
+      } else {
+        appended.push(incoming);
+      }
+    }
+
+    items.value = [ ...next, ...appended ];
     persist(items.value);
-    return additions.length;
+    return incomingItems.length;
   }
 
   function removeRecipeIngredients(recipeId: string): number {
