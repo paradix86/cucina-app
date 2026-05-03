@@ -212,7 +212,6 @@ test('planner to shopping list actions persist ingredients after reload', async 
   await page.locator('.planner-picker-item').first().click();
   await expect(page.locator('.planner-week-shopping')).toBeVisible();
 
-  await page.locator('.planner-day-card').first().locator('.planner-day-shopping').click();
   await page.locator('.planner-week-shopping').click();
 
   await gotoRoute(page, 'shopping-list');
