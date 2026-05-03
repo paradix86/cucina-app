@@ -20,6 +20,7 @@ export default {
         'release',
         'build',
         'e2e',
+        'smoke',
       ],
     ],
     'subject-case': [0],
