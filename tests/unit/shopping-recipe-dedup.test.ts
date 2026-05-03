@@ -96,4 +96,72 @@ describe('shopping list — recipe dedup', () => {
     // 2 manual + 1 recipe = 3 distinct items
     expect(store.items).toHaveLength(3);
   });
+
+  it('removeRecipeIngredients removes all items for a recipe', async () => {
+    const store = useShoppingListStore();
+    await store.hydrate();
+
+    store.addRecipeIngredients({ id: 'r1', name: 'Gulash', ingredients: ['2 patate', '300g carne'] });
+    expect(store.items).toHaveLength(2);
+
+    const removed = store.removeRecipeIngredients('r1');
+    expect(removed).toBe(2);
+    expect(store.items).toHaveLength(0);
+  });
+
+  it('removeRecipeIngredients removes only the target recipe when two recipes are present', async () => {
+    const store = useShoppingListStore();
+    await store.hydrate();
+
+    store.addRecipeIngredients({ id: 'r1', name: 'Gulash', ingredients: ['2 patate'] });
+    store.addRecipeIngredients({ id: 'r2', name: 'Gnocchi', ingredients: ['100g farina'] });
+    expect(store.items).toHaveLength(2);
+
+    store.removeRecipeIngredients('r1');
+    expect(store.items).toHaveLength(1);
+    expect(store.items[0].sourceRecipeId).toBe('r2');
+  });
+
+  it('removeRecipeIngredients does not touch manual items', async () => {
+    const store = useShoppingListStore();
+    await store.hydrate();
+
+    store.addManualItem('sale');
+    store.addRecipeIngredients({ id: 'r1', name: 'Gulash', ingredients: ['2 patate'] });
+    expect(store.items).toHaveLength(2);
+
+    store.removeRecipeIngredients('r1');
+    expect(store.items).toHaveLength(1);
+    expect(store.items[0].sourceRecipeId).toBeUndefined();
+    expect(store.items[0].text).toBe('sale');
+  });
+
+  it('adding same recipe 3 times (planner day with 3 slots) aggregates into one item', async () => {
+    const store = useShoppingListStore();
+    await store.hydrate();
+
+    store.addRecipeIngredients({ id: 'r1', name: 'Pasta', ingredients: ['200g pasta'] });
+    store.addRecipeIngredients({ id: 'r1', name: 'Pasta', ingredients: ['200g pasta'] });
+    store.addRecipeIngredients({ id: 'r1', name: 'Pasta', ingredients: ['200g pasta'] });
+
+    expect(store.items).toHaveLength(1);
+    expect(store.items[0].text).toMatch(/600/);
+  });
+
+  it('adding same planner day twice doubles the aggregated quantity', async () => {
+    const store = useShoppingListStore();
+    await store.hydrate();
+
+    // First "day add": recipe fills all 3 slots
+    store.addRecipeIngredients({ id: 'r1', name: 'Gulash', ingredients: ['2 patate'] });
+    store.addRecipeIngredients({ id: 'r1', name: 'Gulash', ingredients: ['2 patate'] });
+    store.addRecipeIngredients({ id: 'r1', name: 'Gulash', ingredients: ['2 patate'] });
+    // Second "day add" of the same day → 6 × 2 = 12
+    store.addRecipeIngredients({ id: 'r1', name: 'Gulash', ingredients: ['2 patate'] });
+    store.addRecipeIngredients({ id: 'r1', name: 'Gulash', ingredients: ['2 patate'] });
+    store.addRecipeIngredients({ id: 'r1', name: 'Gulash', ingredients: ['2 patate'] });
+
+    expect(store.items).toHaveLength(1);
+    expect(store.items[0].text).toMatch(/12/);
+  });
 });

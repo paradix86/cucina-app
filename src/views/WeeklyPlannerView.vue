@@ -224,7 +224,6 @@ function clearWeek() {
 function addRecipesToShoppingList(recipesToAdd: Recipe[]) {
   let totalIngredients = 0;
   recipesToAdd.forEach(recipe => {
-    if (recipe.id && shoppingList.hasRecipeItems(recipe.id)) return;
     totalIngredients += shoppingList.addRecipeIngredients(recipe);
   });
   if (totalIngredients > 0) {
@@ -234,15 +233,42 @@ function addRecipesToShoppingList(recipesToAdd: Recipe[]) {
   }
 }
 
-function addDayToShopping(day: PlannerDayId) {
+const dayShoppingState = computed<Record<string, boolean>>(() => {
+  const result: Record<string, boolean> = {};
+  for (const day of weekDays.value) {
+    result[day.id] = day.plannedRecipes.length > 0 &&
+      day.plannedRecipes.every(r => r.id ? shoppingList.hasRecipeItems(r.id) : false);
+  }
+  return result;
+});
+
+const isWeekInShopping = computed(() => {
+  const week = plannedWeekRecipes.value;
+  return week.length > 0 && week.every(r => r.id ? shoppingList.hasRecipeItems(r.id) : false);
+});
+
+function toggleDayInShopping(day: PlannerDayId) {
   const dayPlan = weekDays.value.find(entry => entry.id === day);
   if (!dayPlan?.plannedRecipes.length) return;
-  addRecipesToShoppingList(dayPlan.plannedRecipes);
+  if (dayShoppingState.value[day]) {
+    dayPlan.plannedRecipes.forEach(r => { if (r.id) shoppingList.removeRecipeIngredients(r.id); });
+    showToast(t('planner_removed_from_shopping_toast'), 'info');
+  } else {
+    addRecipesToShoppingList(dayPlan.plannedRecipes);
+  }
 }
 
-function addWeekToShopping() {
+function toggleWeekInShopping() {
   if (!plannedWeekRecipes.value.length) return;
-  addRecipesToShoppingList(plannedWeekRecipes.value);
+  if (isWeekInShopping.value) {
+    const seen = new Set<string>();
+    plannedWeekRecipes.value.forEach(r => {
+      if (r.id && !seen.has(r.id)) { seen.add(r.id); shoppingList.removeRecipeIngredients(r.id); }
+    });
+    showToast(t('planner_removed_from_shopping_toast'), 'info');
+  } else {
+    addRecipesToShoppingList(plannedWeekRecipes.value);
+  }
 }
 
 function openRecipe(recipeId: string) {
@@ -300,9 +326,9 @@ function suggestedLabel() {
           <button
             v-if="plannedWeekRecipes.length"
             class="btn-secondary planner-week-shopping"
-            @click="addWeekToShopping"
+            @click="toggleWeekInShopping"
           >
-            {{ t('planner_add_week_to_shopping') }}
+            {{ isWeekInShopping ? t('planner_remove_week_from_shopping') : t('planner_add_week_to_shopping') }}
           </button>
           <button
             class="btn-ghost planner-clear-week"
@@ -413,9 +439,9 @@ function suggestedLabel() {
               <button
                 v-if="day.plannedRecipes.length"
                 class="btn-secondary planner-day-shopping"
-                @click="addDayToShopping(day.id)"
+                @click="toggleDayInShopping(day.id)"
               >
-                {{ t('planner_add_day_to_shopping') }}
+                {{ dayShoppingState[day.id] ? t('planner_remove_day_from_shopping') : t('planner_add_day_to_shopping') }}
               </button>
               <button
                 class="btn-ghost planner-day-clear"
