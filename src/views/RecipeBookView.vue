@@ -132,7 +132,6 @@ const activeFilterCount = computed(() => {
   if (siteFilter.value !== 'all') count += 1;
   if (mealFilter.value !== 'all') count += 1;
   if (selectedTags.value.length > 0) count += 1;
-  if (sortBy.value !== 'none') count += 1;
   return count;
 });
 
