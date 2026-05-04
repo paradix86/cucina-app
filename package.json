@@ -18,7 +18,9 @@
     "commit": "cz",
     "typecheck": "vue-tsc --noEmit",
     "check-all": "node scripts/check-all.mjs",
-    "lint": "eslint src"
+    "lint": "eslint src",
+    "changelog": "node --no-warnings --experimental-strip-types scripts/generate-changelog.mjs",
+    "changelog:check": "node --no-warnings --experimental-strip-types scripts/generate-changelog.mjs --check"
   },
   "config": {
     "commitizen": {

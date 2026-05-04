@@ -279,6 +279,23 @@ If your change introduces a new functional area, workflow, persistence model, or
 
 ---
 
+## Changelog
+
+The canonical changelog lives in `src/lib/changelog.ts` (TypeScript module
+consumed by the in-app changelog modal). The Markdown file `CHANGELOG.md`
+at the repo root is **auto-generated** from it.
+
+When adding a new release entry:
+
+1. Edit `src/lib/changelog.ts` — add a new object at the top of the array
+2. Run `npm run changelog` to regenerate `CHANGELOG.md`
+3. Commit both files together
+
+CI will fail with `npm run changelog:check` if `CHANGELOG.md` is out of
+sync with the TS source.
+
+---
+
 ## Conventional Commits
 
 All commits are enforced via [commitlint](https://commitlint.js.org/) + Husky.
