@@ -29,8 +29,10 @@ function shoppingItemDedupKey(item: { text: string; sourceRecipeId?: string | nu
   if (parsed.parsedName) {
     nameKey = parsed.parsedName;
   } else {
-    // Low-confidence: strip trailing number to get a stable name key
-    const withoutTrailing = item.text.replace(/\s*\d+(?:[.,]\d+)?\s*$/, '').trim();
+    // Low-confidence: strip the " × N" merge-fallback artifact first, then the
+    // trailing data number, so the key stays stable across mergeIngredientTexts calls.
+    const withoutMergeArtifact = item.text.replace(/\s*×\s*\d+\s*$/, '').trim();
+    const withoutTrailing = withoutMergeArtifact.replace(/\s*\d+(?:[.,]\d+)?\s*$/, '').trim();
     nameKey = normalizeIngredientName(withoutTrailing) || normalizeIngredientName(item.text);
   }
   return `${nameKey}::${item.sourceRecipeId ?? ''}`;

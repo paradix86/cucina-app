@@ -148,6 +148,86 @@ describe('shopping list — recipe dedup', () => {
     expect(store.items[0].text).toMatch(/600/);
   });
 
+  // RT-04 regression: low-confidence inputs whose text does not end in a digit
+  // (so mergeIngredientTexts falls back to "× N") must keep a stable dedup key
+  // across repeated adds. Previously the "× N" suffix poisoned the key and
+  // produced extra rows on the 3rd, 5th, ... add.
+
+  it('RT-04: adding "Aglio 1 spicchio" 5 times yields exactly one row', async () => {
+    const store = useShoppingListStore();
+    await store.hydrate();
+
+    for (let i = 0; i < 5; i++) {
+      store.addRecipeIngredients({ id: 'r1', name: 'Gulash', ingredients: ['Aglio 1 spicchio'] });
+    }
+
+    expect(store.items).toHaveLength(1);
+    expect(store.items[0].text).toMatch(/× ?5|spicchi/i);
+  });
+
+  it('RT-04: adding "Acqua q.b." 5 times yields exactly one row', async () => {
+    const store = useShoppingListStore();
+    await store.hydrate();
+
+    for (let i = 0; i < 5; i++) {
+      store.addRecipeIngredients({ id: 'r1', name: 'Gulash', ingredients: ['Acqua q.b.'] });
+    }
+
+    expect(store.items).toHaveLength(1);
+    expect(store.items[0].text).toMatch(/× ?5/);
+  });
+
+  it('RT-04: adding "Paprika dolce 3 cucchiai" 5 times yields exactly one row', async () => {
+    const store = useShoppingListStore();
+    await store.hydrate();
+
+    for (let i = 0; i < 5; i++) {
+      store.addRecipeIngredients({ id: 'r1', name: 'Gulash', ingredients: ['Paprika dolce 3 cucchiai'] });
+    }
+
+    expect(store.items).toHaveLength(1);
+    expect(store.items[0].text).toMatch(/× ?5|15/);
+  });
+
+  it('RT-04: adding "Semi di cumino ½ cucchiaio" 5 times yields exactly one row', async () => {
+    const store = useShoppingListStore();
+    await store.hydrate();
+
+    for (let i = 0; i < 5; i++) {
+      store.addRecipeIngredients({ id: 'r1', name: 'Gulash', ingredients: ['Semi di cumino ½ cucchiaio'] });
+    }
+
+    expect(store.items).toHaveLength(1);
+    expect(store.items[0].text).toMatch(/× ?5/);
+  });
+
+  it('RT-04: full Gulash ingredient set added 5 times produces one row per unique ingredient', async () => {
+    const store = useShoppingListStore();
+    await store.hydrate();
+
+    const ingredients = [
+      'Aglio 1 spicchio',
+      'Acqua q.b.',
+      'Paprika dolce 3 cucchiai',
+      'Paprika piccante 1 cucchiaio',
+      'Semi di cumino ½ cucchiaio',
+      'Alloro 2 foglie',
+      'Cipolle 3',
+    ];
+
+    for (let i = 0; i < 5; i++) {
+      store.addRecipeIngredients({ id: 'r1', name: 'Gulash', ingredients });
+    }
+
+    expect(store.items).toHaveLength(ingredients.length);
+    const baseNames = store.items
+      .map(i => i.text)
+      .map(t =>
+        t.replace(/\s*×\s*\d+\s*$/, '').replace(/\s*\d+(?:[.,]\d+)?\s*$/, '').trim().toLowerCase(),
+      );
+    expect(new Set(baseNames).size).toBe(baseNames.length);
+  });
+
   it('adding same planner day twice doubles the aggregated quantity', async () => {
     const store = useShoppingListStore();
     await store.hydrate();
