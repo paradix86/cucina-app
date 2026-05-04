@@ -28,7 +28,6 @@ function buildReportProblemHref() {
 
 <template>
   <footer class="app-footer" id="app-footer">
-    <span class="footer-meta">{{ APP_META.authorLine }} · {{ year }} · {{ APP_META.version }}+{{ APP_META.commit }} · build {{ formatEuropeanDate(APP_META.buildDate) }} · {{ APP_META.cacheName }}</span>
     <div class="footer-actions">
       <button class="footer-link-btn" id="footer-whats-new-btn" @click="changelogOpen = true">{{ APP_META.version }} · {{ t('whats_new') }}</button>
       <button class="footer-link-btn" id="footer-credits-btn" @click="creditsOpen = true">{{ t('credits_link') }}</button>
@@ -43,6 +42,7 @@ function buildReportProblemHref() {
         <h3 id="changelog-title">{{ t('changelog_title') }}</h3>
         <button class="btn-ghost" id="changelog-close-btn" @click="changelogOpen = false">{{ t('changelog_close') }}</button>
       </div>
+      <p class="muted-label changelog-build-info">{{ APP_META.version }}+{{ APP_META.commit }} · build {{ formatEuropeanDate(APP_META.buildDate) }} · {{ APP_META.cacheName }}</p>
       <template v-if="latestEntry">
         <p class="muted-label changelog-version">{{ latestEntry.version }} · {{ latestEntry.date }}</p>
         <ul class="credits-list changelog-list">
@@ -67,6 +67,7 @@ function buildReportProblemHref() {
         </li>
       </ul>
       <p class="muted-label">{{ t('credits_license_note') }}</p>
+      <p class="muted-label credits-author-line">{{ APP_META.authorLine }} · {{ year }}</p>
     </div>
   </div>
 </template>

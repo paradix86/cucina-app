@@ -5386,7 +5386,7 @@ mark {
   }
   .footer-link-btn,
   .footer-refresh {
-    min-height: 40px;
+    min-height: 44px;
     padding: 7px 12px;
   }
 }
