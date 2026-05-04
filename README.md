@@ -52,6 +52,20 @@ npm run test:e2e:ui       # Playwright E2E with interactive UI
 npm run build:duemme-pack # build Duemme built-in recipe pack
 ```
 
+### Local validation: `check-all`
+
+`npm run check-all` runs the full local validation pipeline in sequence:
+**lint → typecheck → unit → e2e**. It is the canonical pre-push gate.
+
+```bash
+npm run check-all                    # run all four steps
+npm run check-all -- --skip=e2e      # skip one or more steps
+npm run check-all -- --skip=e2e,unit # multiple skips comma-separated
+```
+
+The Husky `pre-push` hook (`.husky/pre-push`) runs `npm run check-all` automatically on
+every `git push`. If a step fails, the push is aborted; fix and re-push.
+
 ## Testing
 
 Unit tests protect high-value logic (`storage`, ingredient parsing, import adapters, domain normalization, JSON-LD / WPRM structured-data parsing) using Vitest:
@@ -82,7 +96,7 @@ See `TESTING.md` for full test inventory and design decisions.
 ```text
 src/
   App.vue
-  main.js
+  main.ts
   types.ts
   router/index.ts
   views/
@@ -99,11 +113,11 @@ src/
     useServiceWorker.ts
   lib/
     storage.ts
-    recipes.js
-    i18n.js
-    i18nData.js
-    builtinData.js
-    appMeta.js
+    recipes.ts
+    i18n.ts
+    i18nData.ts
+    builtinData.ts
+    appMeta.ts
     nutrition.ts              # parsing, calculation, gram estimation, LIQUID_DENSITIES
     nutritionProviders.ts     # provider registry: manual → base_ingredients → openfoodfacts
     baseIngredientsData.ts    # curated dataset (~55 common Italian ingredients)
@@ -227,16 +241,33 @@ If hosting under a subpath, set `base` in `vite.config.js` accordingly.
 
 ## AI Agent Infrastructure
 
-Three repo-specific Claude Code subagents are registered in `.claude/agents/`. They are read-only auditors invoked during development to catch issues before they land.
+Seven repo-specific Claude Code subagents are registered in `.claude/agents/`, grouped by role.
+
+**Audit agents** — read-only, advisory, run on demand against changes in their area:
 
 | Agent | Trigger |
 |---|---|
-| `import-quality-auditor` | Before merging any change to `src/lib/import/` |
-| `cooking-ux-reviewer` | After changing cooking mode or the step timer |
-| `ui-consistency-enforcer` | After adding views, components, or visual CSS changes |
+| `import-quality-auditor` | Adding or modifying an import adapter, site import regression reports, before merging `src/lib/import/` changes |
+| `cooking-ux-reviewer` | Changes to `CookingModeView.vue`, the step timer, timer composables, cooking-related CSS, or wake-lock behavior |
+| `ui-consistency-enforcer` | After adding views, components, or visual CSS changes; checks i18n parity, touch targets, theme coverage, accessibility |
 
-See `AGENTS.md` for full trigger conditions, expected outputs, and maintenance rules.
+**Guardian agents** — read-only, run before every release:
+
+| Agent | Trigger |
+|---|---|
+| `storage-migration-guardian` | PRs touching `src/lib/persistence/**`, `src/lib/storage.ts`, Pinia stores, or any localStorage read/write; detects schema or key changes that could cause silent user-data loss |
+| `pwa-and-offline-validator` | PRs touching `public/sw.js`, `public/manifest.webmanifest`, `src/composables/useServiceWorker.ts`, `vite.config.js`, or `index.html`; validates SW invariants, manifest completeness, update flow, and offline behavior |
+
+**Workflow agents** — operate on git/release state directly:
+
+| Agent | Trigger |
+|---|---|
+| `commit-helper` | Has staged changes ready for commit and wants a Conventional Commit message generated and committed autonomously |
+| `release-agent` | Preparing a Cucina App release: classifies via Conventional Commits, builds, type-checks, tests, bumps version, updates changelog, prepares the release commit |
+
+See `AGENTS.md` for the three audit agents in depth.
 See `CLAUDE.md` for session-level coding guidance and non-negotiables.
+See `CHANGELOG.md` for the release history.
 
 ## License
 

@@ -2,7 +2,7 @@
 
 ## Prerequisites
 
-- Node.js 18+
+- Node.js 22 LTS (the repo pins `volta.node` to `22.20.0` in `package.json`; CI workflows and the `.nvmrc` file use the same major version)
 - npm
 
 ## Setup
