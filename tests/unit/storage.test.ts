@@ -287,6 +287,35 @@ describe('assignSection', () => {
     expect(assignSection('pasta spaghetti')).toBe('carbs');
   });
 
+  it('should assign Italian plural vegetables to vegetables_fruit', () => {
+    expect(assignSection('cipolle')).toBe('vegetables_fruit');
+    expect(assignSection('carote')).toBe('vegetables_fruit');
+    expect(assignSection('peperoni')).toBe('vegetables_fruit');
+    expect(assignSection('pomodori')).toBe('vegetables_fruit');
+    expect(assignSection('zucchine')).toBe('vegetables_fruit');
+    expect(assignSection('limoni')).toBe('vegetables_fruit');
+    expect(assignSection('arance')).toBe('vegetables_fruit');
+    expect(assignSection('funghi')).toBe('vegetables_fruit');
+  });
+
+  it('should still assign singular vegetables (regression guard)', () => {
+    expect(assignSection('cipolla')).toBe('vegetables_fruit');
+    expect(assignSection('carota')).toBe('vegetables_fruit');
+    expect(assignSection('peperone')).toBe('vegetables_fruit');
+    expect(assignSection('pomodoro')).toBe('vegetables_fruit');
+  });
+
+  it('should handle plural vegetables with descriptors', () => {
+    expect(assignSection('cipolle rosse')).toBe('vegetables_fruit');
+    expect(assignSection('peperoni gialli')).toBe('vegetables_fruit');
+    expect(assignSection('pomodori ramati')).toBe('vegetables_fruit');
+  });
+
+  it('should assign pastinaca to vegetables_fruit', () => {
+    expect(assignSection('pastinaca')).toBe('vegetables_fruit');
+    expect(assignSection('pastinache')).toBe('vegetables_fruit');
+  });
+
   it('should default to other for unknown items', () => {
     expect(assignSection('unknown ingredient xyz')).toBe('other');
     expect(assignSection('xyz')).toBe('other');

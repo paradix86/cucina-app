@@ -352,6 +352,7 @@ const SECTION_KEYWORDS: Record<ShoppingSectionId, string[]> = {
     'cucumber', 'cetriolo', 'pumpkin', 'potato', 'patata', 'patate',
     'artichoke', 'carciofo', 'asparagus', 'asparago', 'radish', 'ravanello',
     'leek', 'porro', 'celery', 'sedano', 'fennel', 'finocchio', 'mushroom', 'fungo',
+    'pastinaca', 'pastinache', 'parsnip',
   ],
   'dairy_eggs': [
     'milk', 'latte', 'butter', 'burro', 'yogurt', 'cheese', 'formaggio', 'cheddar',
@@ -389,7 +390,12 @@ function normalizeGroupingUnit(unit: ParsedIngredientUnit): ParsedIngredientUnit
 
 export function assignSection(ingredientName: string): ShoppingSectionId {
   if (!ingredientName) return 'other';
-  const normalized = String(ingredientName).toLowerCase().trim();
+  let normalized = String(ingredientName).toLowerCase().trim();
+  const parts = normalized.split(/\s+/);
+  if (parts.length && GROUPING_SINGULAR_MAP[parts[0]]) {
+    parts[0] = GROUPING_SINGULAR_MAP[parts[0]];
+    normalized = parts.join(' ');
+  }
   for (const [ section, keywords ] of Object.entries(SECTION_KEYWORDS) as Array<[ ShoppingSectionId, string[] ]>) {
     for (const keyword of keywords) {
       if (_keywordMatches(normalized, keyword)) return section;
