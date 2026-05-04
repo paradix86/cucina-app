@@ -47,6 +47,24 @@ function submitTimer() {
 
 <template>
   <section class="panel active">
+    <div class="lbl-row">
+      <span>{{ t('timer_label_name') }}</span>
+      <span>{{ t('timer_label_min') }}</span>
+      <span>{{ t('timer_label_sec') }}</span>
+      <span></span>
+    </div>
+    <div class="add-row">
+      <input v-model="name" type="text" :placeholder="t('timer_name_placeholder')" :aria-label="t('timer_label_name')" />
+      <div class="timer-num-group">
+        <span class="timer-num-label" aria-hidden="true">{{ t('timer_label_min') }}</span>
+        <input v-model="minutes" type="number" inputmode="numeric" pattern="[0-9]*" min="0" max="999" :aria-label="t('timer_label_min')" />
+      </div>
+      <div class="timer-num-group">
+        <span class="timer-num-label" aria-hidden="true">{{ t('timer_label_sec') }}</span>
+        <input v-model="seconds" type="number" inputmode="numeric" pattern="[0-9]*" min="0" max="59" :aria-label="t('timer_label_sec')" />
+      </div>
+      <button class="btn-primary" @click="submitTimer">{{ t('timer_add') }}</button>
+    </div>
     <div class="card timer-settings-card">
       <div class="timer-settings-head">
         <div>
@@ -96,24 +114,6 @@ function submitTimer() {
         </label>
       </div>
     </div>
-    <div class="lbl-row">
-      <span>{{ t('timer_label_name') }}</span>
-      <span>{{ t('timer_label_min') }}</span>
-      <span>{{ t('timer_label_sec') }}</span>
-      <span></span>
-    </div>
-    <div class="add-row">
-      <input v-model="name" type="text" :placeholder="t('timer_name_placeholder')" :aria-label="t('timer_label_name')" />
-      <div class="timer-num-group">
-        <span class="timer-num-label" aria-hidden="true">{{ t('timer_label_min') }}</span>
-        <input v-model="minutes" type="number" inputmode="numeric" pattern="[0-9]*" min="0" max="999" :aria-label="t('timer_label_min')" />
-      </div>
-      <div class="timer-num-group">
-        <span class="timer-num-label" aria-hidden="true">{{ t('timer_label_sec') }}</span>
-        <input v-model="seconds" type="number" inputmode="numeric" pattern="[0-9]*" min="0" max="59" :aria-label="t('timer_label_sec')" />
-      </div>
-      <button class="btn-primary" @click="submitTimer">{{ t('timer_add') }}</button>
-    </div>
     <div style="margin-top:1rem">
       <div v-if="timers.length" class="timer-grid" id="timer-grid">
         <div v-for="timer in timers" :key="timer.id" class="timer-card">
@@ -122,7 +122,7 @@ function submitTimer() {
           <div class="t-btns">
             <button @click="toggleTimer(timer.id)">{{ timer.buttonLabel }}</button>
             <button @click="resetTimer(timer.id)">{{ t('timer_reset') }}</button>
-            <button class="t-del" @click="deleteTimer(timer.id)">✕</button>
+            <button class="t-del" :aria-label="t('timer_delete_label')" @click="deleteTimer(timer.id)">✕</button>
           </div>
         </div>
       </div>
