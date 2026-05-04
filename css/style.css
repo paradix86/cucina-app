@@ -5710,3 +5710,32 @@ mark {
     align-self: stretch;
   }
 }
+
+/* ---- RECIPE BOOK FILTER PANEL: clear-all + mobile sticky close ---- */
+.saved-filter-clear-row {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 4px;
+}
+.saved-filter-clear-btn {
+  font-size: 12px;
+}
+.saved-filter-mobile-close-row {
+  display: none;
+}
+@media (max-width: 600px) {
+  .saved-filter-mobile-close-row {
+    display: block;
+    position: sticky;
+    bottom: calc(60px + env(safe-area-inset-bottom, 0px));
+    margin-top: 12px;
+    padding: 10px 0 6px;
+    background: color-mix(in srgb, var(--bg-secondary) 62%, var(--bg) 38%);
+    border-top: 1px solid var(--border);
+    z-index: 5;
+  }
+  .saved-filter-mobile-close-btn {
+    width: 100%;
+    min-height: 44px;
+  }
+}

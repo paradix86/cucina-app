@@ -505,6 +505,8 @@ export const TRANSLATIONS: Record<string, Record<string, string>> = {
     filter_reset: 'Reimposta filtri',
     filters_show: 'Mostra filtri',
     filters_hide: 'Nascondi filtri',
+    filters_clear_all: 'Cancella tutti i filtri',
+    filters_close: 'Chiudi filtri',
     results_showing: 'Mostra {n} di {total}',
 
     filter_favorites: 'Preferiti',
@@ -1061,6 +1063,8 @@ export const TRANSLATIONS: Record<string, Record<string, string>> = {
     filter_reset: 'Reset filters',
     filters_show: 'Show filters',
     filters_hide: 'Hide filters',
+    filters_clear_all: 'Clear all filters',
+    filters_close: 'Close filters',
     results_showing: 'Showing {n} of {total}',
 
     filter_favorites: 'Favorites',
@@ -1616,6 +1620,8 @@ export const TRANSLATIONS: Record<string, Record<string, string>> = {
     filter_reset: 'Filter zurücksetzen',
     filters_show: 'Filter zeigen',
     filters_hide: 'Filter ausblenden',
+    filters_clear_all: 'Alle Filter zurücksetzen',
+    filters_close: 'Filter schließen',
     results_showing: '{n} von {total}',
 
     filter_favorites: 'Favoriten',
@@ -2171,6 +2177,8 @@ export const TRANSLATIONS: Record<string, Record<string, string>> = {
     filter_reset: 'Réinitialiser les filtres',
     filters_show: 'Afficher les filtres',
     filters_hide: 'Masquer les filtres',
+    filters_clear_all: 'Effacer tous les filtres',
+    filters_close: 'Fermer les filtres',
     results_showing: '{n} sur {total}',
 
     filter_favorites: 'Favoris',
@@ -2726,6 +2734,8 @@ export const TRANSLATIONS: Record<string, Record<string, string>> = {
     filter_reset: 'Restablecer filtros',
     filters_show: 'Mostrar filtros',
     filters_hide: 'Ocultar filtros',
+    filters_clear_all: 'Borrar todos los filtros',
+    filters_close: 'Cerrar filtros',
     results_showing: '{n} de {total}',
 
     filter_favorites: 'Favoritos',

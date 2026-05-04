@@ -47,6 +47,16 @@ function toggleTag(tag) {
   }
 }
 
+function clearAllFilters() {
+  sourceFilter.value = 'all';
+  preparationFilter.value = 'all';
+  filterType.value = 'all';
+  siteFilter.value = 'all';
+  mealFilter.value = 'all';
+  selectedTags.value = [];
+  // sortBy intentionally not touched — sort is a presentation preference, not a filter.
+}
+
 // Source = where the recipe came from (YouTube / TikTok / Instagram / Web / Manual)
 const sourceOptions = [
   { value: 'all', label: () => t('filter_all') },
@@ -319,6 +329,9 @@ defineExpose({
       </div>
       <div v-if="recipes.length" id="saved-source-filter" class="saved-filter-panel mobile-collapsible" :class="{ 'is-mobile-open': mobileFiltersOpen }">
         <div class="saved-filter-content">
+          <div v-if="activeFilterCount > 0" class="saved-filter-clear-row">
+            <button class="btn-ghost saved-filter-clear-btn" @click="clearAllFilters">{{ t('filters_clear_all') }}</button>
+          </div>
           <div class="saved-filter-group filter-group--labeled">
             <span class="filter-group-label">{{ t('filter_source') }}</span>
             <div class="filter-row">
@@ -390,6 +403,9 @@ defineExpose({
               <button class="type-pill" :class="{ active: sortBy === 'recent' }" @click="sortBy = 'recent'">{{ t('filter_sort_recent') }}</button>
             </div>
           </div>
+        </div>
+        <div v-if="mobileFiltersOpen" class="saved-filter-mobile-close-row">
+          <button class="btn-primary saved-filter-mobile-close-btn" @click="mobileFiltersOpen = false">{{ t('filters_close') }}</button>
         </div>
       </div>
       <div v-if="recipes.length" id="saved-results-count" class="results-count">{{ resultsLabel }}</div>
