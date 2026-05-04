@@ -160,6 +160,57 @@ test('week shopping button adds all planned days then removes all on second clic
   await expect(page.locator('#shopping-list')).not.toContainText('potatoes');
 });
 
+test('RT-04 regression: same recipe in 5 planner slots produces 1 row per ingredient (no merge-artifact duplicates)', async ({ page }) => {
+  await seedState(page, {
+    recipes: [
+      {
+        id: 'rt04-gulash',
+        name: 'Gulash ungherese',
+        source: 'manual',
+        preparationType: 'classic',
+        ingredients: [
+          'Aglio 1 spicchio',
+          'Acqua q.b.',
+          'Paprika dolce 3 cucchiai',
+          'Semi di cumino ½ cucchiaio',
+          'Cipolle 3',
+          'Patate 2',
+        ],
+        steps: ['Cook.'],
+      },
+    ],
+    planner: {
+      ...EMPTY_PLANNER,
+      monday: { breakfast: 'rt04-gulash', lunch: 'rt04-gulash', dinner: 'rt04-gulash' },
+      tuesday: { breakfast: null, lunch: 'rt04-gulash', dinner: 'rt04-gulash' },
+    },
+  });
+  await gotoRoute(page, 'planner');
+  const weekBtn = page.locator('.planner-week-shopping');
+  await expect(weekBtn).toContainText('Add week');
+  await weekBtn.click();
+  await expect(weekBtn).toContainText('Remove week');
+
+  await gotoRoute(page, 'shopping-list');
+  const allRows = page.locator('#shopping-list').locator('.shopping-grouped-item, .shopping-item');
+  // Pre-fix this produced ~10 rows (Aglio/Acqua/Paprika/Semi each split into "× 2" + 1 separate).
+  await expect(allRows).toHaveCount(6);
+
+  const expectations: Array<[string, RegExp]> = [
+    ['Aglio', /× ?5/],
+    ['Acqua', /× ?5/],
+    ['Paprika dolce', /× ?5|15 cucchiai/],
+    ['Semi di cumino', /× ?5|2 ½ cucchiai/],
+    ['Cipolle', /15/],
+    ['Patate', /10/],
+  ];
+  for (const [label, qtyPattern] of expectations) {
+    const row = allRows.filter({ hasText: label });
+    await expect(row).toHaveCount(1);
+    await expect(row).toContainText(qtyPattern);
+  }
+});
+
 test('week button stays Add week when only some days are in the shopping list', async ({ page }) => {
   await seedState(page, {
     recipes: [
