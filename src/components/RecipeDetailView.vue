@@ -314,8 +314,9 @@ async function shareRecipe() {
 
 // QR state
 const showQr = ref(false);
-const qrDataUrl = ref('');
+const qrSvgHtml = ref('');
 const qrModalUrl = ref('');
+const qrError = ref(false);
 const qrCopyStatus = ref(''); // '' | 'ok' | 'err'
 let qrCopyTimer = null;
 
@@ -329,20 +330,38 @@ async function openQr() {
   }
   const { url } = result;
   qrModalUrl.value = url;
-  qrDataUrl.value = '';
+  qrSvgHtml.value = '';
+  qrError.value = false;
   showQr.value = true;
-  // Wait for modal to be fully rendered - use double nextTick to ensure
-  // the DOM is fully laid out with dimensions (important for mobile)
   await nextTick();
   await nextTick();
-  // Additional small delay for mobile browsers to complete layout
-  await new Promise(resolve => setTimeout(resolve, 50));
   try {
-    const QRCode = (await import('qrcode')).default;
-    qrDataUrl.value = await QRCode.toDataURL(url, { width: 240, margin: 2, color: { dark: '#1a1a18', light: '#ffffff' } });
+    const QRCodeStyling = (await import('qr-code-styling')).default;
+    const base = (import.meta.env.BASE_URL) || '/cucina-app/';
+    const qr = new QRCodeStyling({
+      width: 240,
+      height: 240,
+      type: 'svg',
+      data: url,
+      image: `${base}icons/icon-192.png`,
+      dotsOptions: { color: '#1a1a18', type: 'rounded' },
+      backgroundOptions: { color: '#ffffff' },
+      cornersSquareOptions: { type: 'extra-rounded', color: '#1a1a18' },
+      cornersDotOptions: { type: 'dot', color: '#1a1a18' },
+      imageOptions: {
+        hideBackgroundDots: true,
+        imageSize: 0.2,
+        margin: 4,
+        crossOrigin: 'anonymous',
+      },
+      qrOptions: { errorCorrectionLevel: 'Q' },
+    });
+    const blob = await qr.getRawData('svg');
+    if (!(blob instanceof Blob)) throw new Error('QR SVG not generated');
+    qrSvgHtml.value = await blob.text();
   } catch (e) {
     console.warn('QR code generation failed:', e);
-    // if QR generation fails, the modal still shows with copy-link option
+    qrError.value = true;
   }
 }
 
@@ -673,8 +692,14 @@ function closeQr() {
       <div class="qr-modal card">
         <p class="qr-modal-title">{{ t('share_recipe') }}</p>
         <p class="qr-modal-name">{{ recipe.emoji || '🍴' }} {{ recipe.name }}</p>
-        <img v-if="qrDataUrl" :src="qrDataUrl" class="qr-img" :alt="`QR code – ${recipe.name}`" width="240" height="240" />
-        <div v-else class="qr-placeholder">…</div>
+        <div v-if="qrSvgHtml" class="qr-img" :aria-label="`QR code – ${recipe.name}`" role="img" v-html="qrSvgHtml"></div>
+        <div v-else-if="qrError" class="qr-error">
+          <p class="qr-error-message">{{ t('share_qr_unavailable') }}</p>
+          <p class="qr-error-hint">{{ t('share_qr_unavailable_hint') }}</p>
+        </div>
+        <div v-else class="qr-placeholder">
+          <span class="qr-loading-text">{{ t('share_qr_loading') }}</span>
+        </div>
         <p class="qr-modal-hint">{{ t('share_qr_hint') }}</p>
         <input
           v-if="qrModalUrl"
@@ -777,8 +802,18 @@ function closeQr() {
 
 .qr-img {
   display: block;
+  width: 240px;
+  height: 240px;
   border-radius: 8px;
   border: 1px solid var(--border);
+  background: #ffffff;
+  overflow: hidden;
+}
+
+.qr-img > svg {
+  display: block;
+  width: 100%;
+  height: 100%;
 }
 
 .qr-placeholder {
@@ -787,10 +822,39 @@ function closeQr() {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--text-hint);
-  font-size: 2rem;
+  color: var(--text-muted, var(--text-hint));
   border: 1px solid var(--border);
   border-radius: 8px;
+}
+
+.qr-loading-text {
+  font-size: 0.875rem;
+}
+
+.qr-error {
+  width: 240px;
+  min-height: 120px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  text-align: center;
+  padding: 24px 16px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.qr-error-message {
+  margin: 0;
+  color: var(--text);
+  font-weight: 500;
+}
+
+.qr-error-hint {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--text-muted);
 }
 
 .qr-modal-hint {

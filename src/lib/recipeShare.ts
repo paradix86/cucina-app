@@ -6,7 +6,7 @@ import type { Recipe, PreparationType } from '../types';
 
 export const SHARE_SCHEMA_VERSION = 1;
 
-const MAX_SHARE_URL_LEN = 8000;
+const MAX_SHARE_URL_LEN = 1600;
 const MAX_ENCODED_DATA_LEN = 12000;
 
 export interface SharedRecipePayload {
