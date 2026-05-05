@@ -375,7 +375,7 @@ defineExpose({
               <button v-for="occ in MEAL_OCCASION_OPTIONS" :key="occ" class="type-pill" :class="{ active: mealFilter === occ }" @click="mealFilter = occ">{{ getMealOccasionLabel(occ) }}</button>
             </div>
           </div>
-          <div v-if="sortedDomains.length" class="saved-filter-group filter-group--labeled">
+          <div v-if="sortedDomains.length" class="saved-filter-group filter-group--labeled saved-filter-group--sites">
             <span class="filter-group-label">{{ t('filter_site') }}</span>
             <div class="filter-row">
               <button class="site-pill" :class="{ active: siteFilter === 'all' }" @click="siteFilter = 'all'">{{ t('filter_all_sites') }} <span class="pill-count">({{ recipes.length }})</span></button>
