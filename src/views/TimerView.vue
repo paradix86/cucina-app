@@ -126,7 +126,10 @@ function submitTimer() {
           </div>
         </div>
       </div>
-      <p v-else class="empty" id="timer-empty">{{ t('timer_empty') }}</p>
+      <div v-else class="empty-state-shell" id="timer-empty">
+        <p class="empty">{{ t('timer_empty') }}</p>
+        <p class="empty-next muted-label">{{ t('timer_empty_hint') }}</p>
+      </div>
     </div>
   </section>
 </template>
