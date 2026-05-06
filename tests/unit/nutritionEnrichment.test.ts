@@ -235,10 +235,10 @@ describe('enrichRecipeNutrition — immutability', () => {
 
   it('does not attach ingredientNutrition to the original recipe object', async () => {
     const recipe = makeRecipe({ ingredients: ['200 g pasta'] });
-    expect((recipe as Record<string, unknown>)['ingredientNutrition']).toBeUndefined();
+    expect(recipe.ingredientNutrition).toBeUndefined();
     await enrichRecipeNutrition(recipe, manualProvider);
 
-    expect((recipe as Record<string, unknown>)['ingredientNutrition']).toBeUndefined();
+    expect(recipe.ingredientNutrition).toBeUndefined();
   });
 
   it('does not attach nutrition to the original recipe object', async () => {
