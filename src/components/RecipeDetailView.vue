@@ -7,7 +7,7 @@ import { useOnline } from '../composables/useOnline';
 import { isOfflineError } from '../lib/errors';
 import { useShoppingListStore } from '../stores/shoppingList';
 import { useRecipeBookStore } from '../stores/recipeBook';
-import { buildShareUrl } from '../lib/recipeShare';
+import { buildShareUrl, MAX_QR_URL_LEN } from '../lib/recipeShare';
 import { enrichRecipeNutritionWithProviders } from '../lib/nutritionEnrichment';
 import { NUTRITION_PROVIDERS } from '../lib/nutritionProviders';
 import { computeIngredientsFingerprint } from '../lib/nutrition';
@@ -354,6 +354,10 @@ async function openQr() {
   qrSvgHtml.value = '';
   qrError.value = false;
   showQr.value = true;
+  if (url.length > MAX_QR_URL_LEN) {
+    qrError.value = true;
+    return;
+  }
   await nextTick();
   await nextTick();
   try {

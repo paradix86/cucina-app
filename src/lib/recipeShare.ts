@@ -6,7 +6,8 @@ import type { Recipe, PreparationType } from '../types';
 
 export const SHARE_SCHEMA_VERSION = 1;
 
-const MAX_SHARE_URL_LEN = 1600;
+export const MAX_QR_URL_LEN = 1600; // QR encoder capacity (ECC Q + logo)
+const MAX_SHARE_URL_LEN = 8000;     // copy/share global limit
 const MAX_ENCODED_DATA_LEN = 12000;
 
 export interface SharedRecipePayload {
