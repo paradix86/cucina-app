@@ -404,18 +404,14 @@ async function shareExportText() {
             </div>
 
             <div v-for="item in section.ungrouped" :key="item.id" class="shopping-item" :class="{ 'is-checked': item.checked }" v-show="!hideCompleted || !item.checked">
-              <div class="shopping-row-primary">
-                <label class="shopping-item-main">
-                  <input type="checkbox" class="shopping-item-checkbox" :checked="item.checked" @change="toggleItem(item.id)" />
-                  <span class="shopping-item-copy">
-                    <span class="shopping-item-text">{{ item.text }}</span>
-                  </span>
-                </label>
-              </div>
-              <div class="shopping-row-secondary">
-                <span v-if="sourceSummaryForItem(item)" class="shopping-item-sub">{{ sourceSummaryForItem(item) }}</span>
-                <button class="shopping-remove" :aria-label="t('shopping_remove')" @click="removeItem(item.id)">✕</button>
-              </div>
+              <label class="shopping-item-main">
+                <input type="checkbox" class="shopping-item-checkbox" :checked="item.checked" @change="toggleItem(item.id)" />
+                <span class="shopping-item-copy">
+                  <span class="shopping-item-text">{{ item.text }}</span>
+                  <span v-if="sourceSummaryForItem(item)" class="shopping-item-sub">{{ sourceSummaryForItem(item) }}</span>
+                </span>
+              </label>
+              <button class="shopping-remove" :aria-label="t('shopping_remove')" @click="removeItem(item.id)">✕</button>
             </div>
           </div>
         </div>
