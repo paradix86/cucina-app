@@ -12,7 +12,11 @@ interface Timer {
 }
 
 const timers = ref<Record<string, Timer>>({});
-let timerInterval: ReturnType<typeof window.setInterval> | null = null;
+// Browser timer ids are numeric. Avoid ReturnType<typeof window.setInterval>
+// because @types/node augments globals so the inferred type can resolve to
+// NodeJS.Timeout under tsconfig.test.json, even though production runs in the
+// browser where window.setInterval returns number.
+let timerInterval: number | null = null;
 let visibilityHandler: (() => void) | null = null;
 let activeConsumers = 0;
 let hiddenAt = 0;
