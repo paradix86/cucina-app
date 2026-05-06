@@ -132,6 +132,29 @@ Do not extend without explicit approval + test updates.
 
 ---
 
+## E2E test conventions
+
+E2E specs **must** import `test` and `expect` from `./fixtures`, not from
+`@playwright/test`. The fixture installs default route handlers (currently a
+stub for `**/world.openfoodfacts.org/**` that returns an empty product list)
+on every `page`, so any spec that exercises the calculate flow is
+automatically protected from live-network flakiness. Individual tests can
+override a default by calling `page.route(...)` again — Playwright matches
+handlers LIFO, so the per-test handler wins.
+
+```ts
+// Correct
+import { expect, test } from './fixtures';
+
+// Wrong — bypasses the fixture
+import { expect, test } from '@playwright/test';
+```
+
+Type-only imports such as `type Page` should still come from
+`@playwright/test`.
+
+---
+
 ## Visual bug diagnosis with Playwright MCP
 
 Visual layout bugs ("looks off", "not centered", "wrong size") are notoriously

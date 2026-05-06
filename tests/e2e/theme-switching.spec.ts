@@ -1,4 +1,5 @@
-import { expect, test, type Page } from '@playwright/test';
+import type { Page } from '@playwright/test';
+import { expect, test } from './fixtures';
 
 const APP_ROOT = 'http://127.0.0.1:4173/cucina-app/';
 
