@@ -327,6 +327,67 @@ describe('openFoodFactsProvider — error handling', () => {
   });
 });
 
+// ─── Fetch timeout ────────────────────────────────────────────────────────────
+
+describe('openFoodFactsProvider — fetch timeout', () => {
+  it('aborts and returns [] when fetch exceeds the timeout', async () => {
+    vi.useFakeTimers();
+    try {
+      // Mock fetch that never resolves on its own but rejects with AbortError
+      // when the abort signal fires — the standard browser fetch contract.
+      fetchMock.mockImplementationOnce(
+        (_url: string, init?: { signal?: AbortSignal }) =>
+          new Promise((_resolve, reject) => {
+            init?.signal?.addEventListener('abort', () => {
+              reject(new DOMException('aborted', 'AbortError'));
+            });
+          }),
+      );
+
+      const promise = openFoodFactsProvider.search({ query: 'pasta', maxResults: 5 });
+
+      // Advance past the 4 s timeout; setTimeout fires → controller.abort()
+      // → fetch promise rejects → catch path returns [].
+      await vi.advanceTimersByTimeAsync(4001);
+
+      const results = await promise;
+      expect(results).toEqual([]);
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('passes an AbortSignal to fetch', async () => {
+    fetchMock.mockResolvedValueOnce(offResponse([]));
+    await openFoodFactsProvider.search({ query: 'pasta', maxResults: 5 });
+    const init = fetchMock.mock.calls[0][1];
+    expect(init).toBeDefined();
+    expect(init.signal).toBeInstanceOf(AbortSignal);
+  });
+
+  it('does not abort when fetch resolves before the timeout', async () => {
+    vi.useFakeTimers();
+    try {
+      fetchMock.mockResolvedValueOnce(offResponse([makeProduct()]));
+
+      const promise = openFoodFactsProvider.search({ query: 'pasta', maxResults: 5 });
+      // Let microtasks drain so the resolved fetch settles before any timer fires.
+      await vi.advanceTimersByTimeAsync(0);
+      const results = await promise;
+
+      expect(results).toHaveLength(1);
+      expect(results[0].nutritionPer100g.kcal).toBe(350);
+
+      // The signal must not be aborted on the success path.
+      const init = fetchMock.mock.calls[0][1];
+      expect(init.signal.aborted).toBe(false);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+});
+
 // ─── Query building ───────────────────────────────────────────────────────────
 
 describe('openFoodFactsProvider — query building', () => {

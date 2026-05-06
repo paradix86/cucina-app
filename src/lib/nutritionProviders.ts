@@ -211,6 +211,11 @@ export const manualProvider: NutritionProviderClient = {
 
 const OFF_SEARCH_URL = 'https://world.openfoodfacts.org/cgi/search.pl';
 
+// Bound the OFF fetch so a slow or rate-limited upstream cannot stall the
+// enrichment chain. On timeout, the catch path returns [] (same as any other
+// fetch failure), which advances the chain to the next query / next provider.
+const OFF_FETCH_TIMEOUT_MS = 4000;
+
 // Safely parse a numeric field that may arrive as number, numeric string, or
 // comma-decimal string. Returns undefined for anything non-finite or negative.
 function offNum(value: unknown): number | undefined {
@@ -284,12 +289,16 @@ export const openFoodFactsProvider: NutritionProviderClient = {
 
     if (typeof navigator !== 'undefined' && navigator.onLine === false) throw new OfflineError();
     let data: unknown;
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), OFF_FETCH_TIMEOUT_MS);
     try {
-      const response = await fetch(url.toString());
+      const response = await fetch(url.toString(), { signal: controller.signal });
       if (!response.ok) return [];
       data = await response.json();
     } catch {
       return [];
+    } finally {
+      clearTimeout(timeoutId);
     }
 
     if (!data || typeof data !== 'object') return [];
