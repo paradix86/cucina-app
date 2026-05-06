@@ -192,6 +192,45 @@ Fixture convention (keep it lightweight):
 
 All styles are in `css/style.css`, organized with commented sections. Reuse existing CSS custom properties and utility classes. Check both light and dark theme after visual changes.
 
+### Vue scoped CSS and injected children
+
+Vue's scoped styles compile to attribute selectors (`.foo[data-v-abc]`).
+This means a scoped rule will NOT match DOM nodes that lack the component's
+`data-v-*` attribute, including:
+
+- Children injected via `v-html`
+- Slot content rendered by external libraries
+- Nodes appended imperatively by third-party libraries (e.g. `qr-code-styling`,
+  chart libraries, rich text editors)
+
+When a scoped style must reach such children, use `:deep()` and add a comment
+explaining why — otherwise the next reader (or the original author six months
+later) will assume the selector "just works" and won't understand why removing
+`:deep()` breaks layout.
+
+#### Pattern
+
+```vue
+<style scoped>
+/* :deep() is required here because the SVG is injected via v-html and
+   therefore does not carry the component's data-v-* attribute. Without
+   :deep(), `.qr-img > svg` compiles to `.qr-img[data-v-X] > svg[data-v-X]`
+   and never matches. */
+.qr-img :deep(svg) {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+</style>
+```
+
+#### Red flags during review
+
+- A scoped rule targeting a child of an element with `v-html`, `<slot>`, or
+  a third-party component instance — verify it actually applies in DevTools.
+- Computed styles in DevTools that show the rule struck through with no override
+  reason — almost always a scope mismatch, not specificity.
+
 ## Testing
 
 ### Unit tests
