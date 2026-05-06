@@ -132,6 +132,59 @@ Do not extend without explicit approval + test updates.
 
 ---
 
+## Visual bug diagnosis with Playwright MCP
+
+Visual layout bugs ("looks off", "not centered", "wrong size") are notoriously
+hard to debug from screenshots alone. The screenshot tells you *what* looks
+wrong; it rarely tells you *why*. Before guessing at CSS fixes, measure.
+
+### Standard procedure
+
+1. **Reproduce in Playwright** at the affected viewport(s). Mobile bugs often
+   don't repro on desktop and vice versa — always test at least 375px and
+   1024px.
+
+2. **Screenshot the broken state** (full page + scoped to the affected element)
+   for later comparison.
+
+3. **Walk the DOM tree** of the affected region. For each node from the outer
+   container down to the leaf, dump:
+
+   * `getBoundingClientRect()` — left, right, top, bottom, width, height
+   * Computed styles relevant to the symptom (for centering: `display`,
+     `margin`, `padding`, `justify-content`, `text-align`, `transform`; for
+     sizing: `width`, `height`, `box-sizing`, `overflow`; for stacking:
+     `position`, `z-index`, `transform`)
+
+4. **Locate the asymmetry.** For each parent/child pair, check whether the
+   child is symmetric within the parent (`child.left - parent.left` should
+   roughly equal `parent.right - child.right`). The first level where
+   symmetry breaks is the culprit.
+
+5. **Diagnose before fixing.** State which element is off, by how many pixels,
+   which CSS property is responsible, and *why* that property has its current
+   value. Only then write the fix.
+
+### Why this beats DevTools
+
+DevTools is faster for one-off inspection but worse for:
+
+* Comparing measurements across viewports
+* Capturing a reproducible diagnostic record in the PR
+* Catching bugs where the visible portion is correct but the element overflows
+  invisibly (the QR-clipping case — visually it looked off-center, in reality
+  it was rendering at 480px inside a 288px container with `overflow: hidden`)
+
+### Past examples
+
+* **Share Recipe QR centering** (`RecipeDetailView.vue`): SVG injected via
+  `v-html` rendered at intrinsic 480×480, clipped to top-left quarter by the
+  288px container's `overflow: hidden`. Bounding-rect measurement at two
+  viewports revealed the size mismatch immediately; the apparent off-centering
+  was a symptom, not the cause.
+
+---
+
 ## Specialized agents
 
 Use repo-specific auditors when relevant:
