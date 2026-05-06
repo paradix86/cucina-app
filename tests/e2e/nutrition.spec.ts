@@ -101,6 +101,23 @@ const estimatedRecipe = {
   servings:     '2',
 };
 
+// Stub OpenFoodFacts. The enrichment chain (manual → base_ingredients → OFF)
+// falls through to a live HTTP request for any ingredient unmatched by the two
+// offline providers; that live call is the root cause of intermittent failures
+// in this spec. An empty `products` array deterministically signals "no match",
+// which is exactly what the partial-recipe assertions need (the recipe lands in
+// `partial` state because at least one ingredient matched offline). Individual
+// tests can override the route locally if they need OFF to return a real product.
+test.beforeEach(async ({ page }) => {
+  await page.route('**/world.openfoodfacts.org/**', async (route) => {
+    await route.fulfill({
+      status:      200,
+      contentType: 'application/json',
+      body:        JSON.stringify({ products: [], count: 0, page: 1, page_size: 0 }),
+    });
+  });
+});
+
 test('complete recipe: calculates nutrition and persists after reload', async ({ page }) => {
   await seedState(page, { recipes: [completeRecipe] });
   await gotoRoute(page, 'recipe-book/nutrition-e2e-complete');
