@@ -42,6 +42,12 @@ const recipeBookStore = useRecipeBookStore();
 
 const isCalculatingNutrition  = ref(false);
 
+// Per-ingredient progress shown inline next to each ingredient during Calculate.
+// Each entry: { state: 'idle' | 'resolving' | 'resolved' | 'missing', provider?: string }
+// Indexed by position in recipe.ingredients. Replaced wholesale on each
+// Calculate invocation; reset to [] when done.
+const progress = ref([]);
+
 const nutritionContext = computed(() => {
   const n = props.recipe.nutrition;
   if (!n) return null;
@@ -61,8 +67,22 @@ const isOnline = useOnline();
 async function calculateNutrition() {
   if (isCalculatingNutrition.value || !props.recipe.id) return;
   isCalculatingNutrition.value = true;
+  const ingredients = props.recipe.ingredients ?? [];
+  progress.value = ingredients.map(() => ({ state: 'idle' }));
+  const onProgress = (event) => {
+    if (event.index < 0 || event.index >= progress.value.length) return;
+    const next = progress.value.slice();
+    if (event.status === 'resolving') {
+      next[event.index] = { state: 'resolving' };
+    } else if (event.status === 'resolved') {
+      next[event.index] = { state: 'resolved', provider: event.provider };
+    } else {
+      next[event.index] = { state: 'missing' };
+    }
+    progress.value = next;
+  };
   try {
-    const result = await enrichRecipeNutritionWithProviders(props.recipe, NUTRITION_PROVIDERS, { language: getLanguage() });
+    const result = await enrichRecipeNutritionWithProviders(props.recipe, NUTRITION_PROVIDERS, { language: getLanguage(), onProgress });
     const fingerprint = computeIngredientsFingerprint(props.recipe.ingredients);
     recipeBookStore.update(props.recipe.id, {
       ingredientNutrition: result.ingredientNutrition,
@@ -76,6 +96,7 @@ async function calculateNutrition() {
     }
   } finally {
     isCalculatingNutrition.value = false;
+    progress.value = [];
   }
 }
 
@@ -388,6 +409,14 @@ function closeQr() {
   showQr.value = false;
   qrCopyStatus.value = '';
 }
+
+function ingredientProgressLabel(p) {
+  if (p.state === 'resolving') return t('nutrition_progress_resolving');
+  if (p.state === 'missing') return t('nutrition_progress_missing');
+  if (p.state === 'resolved' && p.provider === 'openfoodfacts') return t('nutrition_progress_resolved_off');
+  if (p.state === 'resolved') return t('nutrition_progress_resolved');
+  return '';
+}
 </script>
 
 <template>
@@ -513,7 +542,22 @@ function closeQr() {
       <div v-if="recipe.ingredients && recipe.ingredients.length" class="ing-wrap">
         <p class="sec-label">{{ t('detail_ingredients') }}</p>
         <ul class="ing-list">
-          <li v-for="ingredient in scaledIngredients" :key="ingredient">{{ ingredient }}</li>
+          <li v-for="(ingredient, idx) in scaledIngredients" :key="ingredient">
+            <span class="ing-text">{{ ingredient }}</span>
+            <span
+              v-if="progress[idx] && progress[idx].state !== 'idle'"
+              class="ing-progress"
+              :class="`ing-progress--${progress[idx].state}${progress[idx].state === 'resolved' && progress[idx].provider === 'openfoodfacts' ? '-off' : ''}`"
+              role="status"
+              :aria-label="ingredientProgressLabel(progress[idx])"
+              :title="ingredientProgressLabel(progress[idx])"
+            >
+              <span v-if="progress[idx].state === 'resolving'" class="ing-progress-spinner" aria-hidden="true"></span>
+              <span v-else-if="progress[idx].state === 'resolved' && progress[idx].provider === 'openfoodfacts'" class="ing-progress-glyph" aria-hidden="true">●</span>
+              <span v-else-if="progress[idx].state === 'resolved'" class="ing-progress-glyph" aria-hidden="true">✓</span>
+              <span v-else class="ing-progress-glyph" aria-hidden="true">–</span>
+            </span>
+          </li>
         </ul>
       </div>
 
@@ -722,6 +766,56 @@ function closeQr() {
 </template>
 
 <style scoped>
+/* ── Per-ingredient nutrition progress (R1) ────────────────────────────── */
+.ing-list li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.ing-list .ing-text {
+  flex: 1;
+  min-width: 0;
+}
+.ing-progress {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  font-size: 11px;
+  line-height: 1;
+}
+.ing-progress-spinner {
+  display: block;
+  width: 12px;
+  height: 12px;
+  border: 1.5px solid var(--border);
+  border-top-color: var(--green);
+  border-radius: 50%;
+  animation: ing-progress-spin 0.8s linear infinite;
+}
+.ing-progress--resolved .ing-progress-glyph {
+  color: var(--green);
+  font-size: 13px;
+  font-weight: 700;
+}
+.ing-progress--resolved-off .ing-progress-glyph {
+  color: var(--nutrition-partial-text);
+  font-size: 9px;
+}
+.ing-progress--missing .ing-progress-glyph {
+  color: var(--text-hint);
+  font-size: 14px;
+  font-weight: 700;
+}
+@keyframes ing-progress-spin {
+  to { transform: rotate(360deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ing-progress-spinner { animation: none; border-top-color: var(--text-hint); }
+}
+
 .detail-top-bar {
   display: flex;
   align-items: center;

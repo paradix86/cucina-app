@@ -1,13 +1,25 @@
-import type { IngredientNutrition, Recipe, RecipeNutrition } from '../types';
+import type { IngredientNutrition, NutritionProvider, Recipe, RecipeNutrition } from '../types';
 import { parseIngredientAmount, calculateRecipeNutrition, estimateGrams } from './nutrition';
 import { buildIngredientNutritionMatch } from './nutritionProviders';
 import type { NutritionProviderClient, NutritionSearchResult } from './nutritionProviders';
 import { buildNutritionSearchQueries } from './ingredientMatching';
 import { OfflineError } from './errors';
 
+// Per-ingredient progress event emitted during enrichment so the UI can
+// surface live status while the chain is running (R1 — perceived latency).
+// One `resolving` event fires before each ingredient's provider lookup, then
+// exactly one `resolved` or `missing` event fires when its outcome is known.
+// The user-edited shortcut path emits `resolved` with provider `'manual'`
+// since `source.provider` on those entries is forced to `'manual'`.
+export type NutritionEnrichmentProgress =
+  | { index: number; ingredient: string; status: 'resolving' }
+  | { index: number; ingredient: string; status: 'resolved'; provider: NutritionProvider }
+  | { index: number; ingredient: string; status: 'missing' };
+
 export type NutritionEnrichmentOptions = {
   minConfidence?: number;  // default 0.7
   language?: string;
+  onProgress?: (event: NutritionEnrichmentProgress) => void;
 };
 
 const DEFAULT_MIN_CONFIDENCE = 0.7;
@@ -42,6 +54,7 @@ export async function enrichRecipeNutritionWithProviders(
 }> {
   const minConfidence = options?.minConfidence ?? DEFAULT_MIN_CONFIDENCE;
   const language = options?.language;
+  const onProgress = options?.onProgress;
   const ingredientNutrition: IngredientNutrition[] = [];
 
   // Build a lookup of user-edited entries keyed by ingredientName.
@@ -55,7 +68,9 @@ export async function enrichRecipeNutritionWithProviders(
     }
   }
 
-  for (const raw of recipe.ingredients) {
+  for (let index = 0; index < recipe.ingredients.length; index++) {
+    const raw = recipe.ingredients[index];
+    onProgress?.({ index, ingredient: raw, status: 'resolving' });
     const parsed = parseIngredientAmount(raw);
 
     // Preserve user-edited entries: skip provider lookup and reuse the stored entry.
@@ -67,13 +82,20 @@ export async function enrichRecipeNutritionWithProviders(
         ...userEntry,
         nutritionPer100g: userEntry.nutritionPer100g ? { ...userEntry.nutritionPer100g } : undefined,
       });
+      // User-edited entries carry source.provider === 'manual' (forced by
+      // applyNutritionOverrides), so emit that for color-coding consistency.
+      onProgress?.({ index, ingredient: raw, status: 'resolved', provider: userEntry.source?.provider ?? 'manual' });
       continue;
     }
 
     const queries = buildNutritionSearchQueries(parsed.normalizedName, parsed.name);
-    if (queries.length === 0) continue;
+    if (queries.length === 0) {
+      onProgress?.({ index, ingredient: raw, status: 'missing' });
+      continue;
+    }
 
     let ingredientMatched = false;
+    let resolvedProvider: NutritionProvider | undefined;
 
     for (const provider of providers) {
       if (ingredientMatched) break;
@@ -120,8 +142,15 @@ export async function enrichRecipeNutritionWithProviders(
           ingredientNutrition.push(match);
         }
         ingredientMatched = true;
+        resolvedProvider = match.source?.provider ?? best.provider;
         break;
       }
+    }
+
+    if (ingredientMatched && resolvedProvider) {
+      onProgress?.({ index, ingredient: raw, status: 'resolved', provider: resolvedProvider });
+    } else {
+      onProgress?.({ index, ingredient: raw, status: 'missing' });
     }
   }
 

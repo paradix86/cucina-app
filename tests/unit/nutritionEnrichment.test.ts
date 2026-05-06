@@ -1,8 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import { enrichRecipeNutrition, enrichRecipeNutritionWithProviders } from '../../src/lib/nutritionEnrichment';
+import type { NutritionEnrichmentProgress } from '../../src/lib/nutritionEnrichment';
 import { manualProvider } from '../../src/lib/nutritionProviders';
 import type { NutritionProviderClient, NutritionSearchResult } from '../../src/lib/nutritionProviders';
-import type { Recipe } from '../../src/types';
+import type { IngredientNutrition, Recipe } from '../../src/types';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -917,5 +918,139 @@ describe('enrichRecipeNutritionWithProviders — language option', () => {
     await enrichRecipeNutritionWithProviders(recipe, [provider], { language: 'de' });
 
     expect(capturedQueries[0].language).toBe('de');
+  });
+});
+
+// ─── enrichRecipeNutritionWithProviders — onProgress callback (R1) ────────────
+
+describe('enrichRecipeNutritionWithProviders — onProgress', () => {
+  it('emits resolving then resolved for a matched ingredient, with provider', async () => {
+    const recipe = makeRecipe({ ingredients: ['200 g pasta'] });
+    const events: NutritionEnrichmentProgress[] = [];
+
+    await enrichRecipeNutritionWithProviders(recipe, [manualProvider], {
+      onProgress: e => events.push(e),
+    });
+
+    expect(events).toHaveLength(2);
+    expect(events[0]).toEqual({ index: 0, ingredient: '200 g pasta', status: 'resolving' });
+    expect(events[1]).toEqual({ index: 0, ingredient: '200 g pasta', status: 'resolved', provider: 'manual' });
+  });
+
+  it('emits resolving then missing when no provider matches', async () => {
+    const noopProvider: NutritionProviderClient = {
+      provider: 'manual',
+      displayName: 'Noop',
+      search: async () => [] as NutritionSearchResult[],
+    };
+    const recipe = makeRecipe({ ingredients: ['xyz fictional ingredient'] });
+    const events: NutritionEnrichmentProgress[] = [];
+
+    await enrichRecipeNutritionWithProviders(recipe, [noopProvider], {
+      onProgress: e => events.push(e),
+    });
+
+    expect(events).toHaveLength(2);
+    expect(events[0].status).toBe('resolving');
+    expect(events[1].status).toBe('missing');
+    expect(events[1].index).toBe(0);
+  });
+
+  it('fires once per ingredient, in input order, with correct indices', async () => {
+    const recipe = makeRecipe({
+      ingredients: ['200 g pasta', 'xyz fictional', '100 g riso'],
+    });
+    const events: NutritionEnrichmentProgress[] = [];
+
+    await enrichRecipeNutritionWithProviders(recipe, [manualProvider], {
+      onProgress: e => events.push(e),
+    });
+
+    // 3 ingredients × (1 resolving + 1 final) = 6 events
+    expect(events).toHaveLength(6);
+    expect(events.map(e => e.index)).toEqual([0, 0, 1, 1, 2, 2]);
+    expect(events[0]).toMatchObject({ index: 0, status: 'resolving' });
+    expect(events[1]).toMatchObject({ index: 0, status: 'resolved', provider: 'manual' });
+    expect(events[2]).toMatchObject({ index: 1, status: 'resolving' });
+    expect(events[3]).toMatchObject({ index: 1, status: 'missing' });
+    expect(events[4]).toMatchObject({ index: 2, status: 'resolving' });
+    expect(events[5]).toMatchObject({ index: 2, status: 'resolved', provider: 'manual' });
+  });
+
+  it('reports the actual provider that resolved when chain has multiple', async () => {
+    // First provider returns nothing, second returns a match — expect provider='base_ingredients'
+    const noopProvider: NutritionProviderClient = {
+      provider: 'manual',
+      displayName: 'Noop',
+      search: async () => [],
+    };
+    const baseLikeProvider: NutritionProviderClient = {
+      provider: 'base_ingredients',
+      displayName: 'BaseLike',
+      search: async () => [{
+        provider:        'base_ingredients',
+        displayName:     'pasta (test)',
+        normalizedName:  'pasta',
+        nutritionPer100g: { kcal: 350, proteinG: 12, carbsG: 70, fatG: 1, fiberG: 3 },
+        confidence:      0.95,
+      }],
+    };
+    const recipe = makeRecipe({ ingredients: ['200 g pasta'] });
+    const events: NutritionEnrichmentProgress[] = [];
+
+    await enrichRecipeNutritionWithProviders(recipe, [noopProvider, baseLikeProvider], {
+      onProgress: e => events.push(e),
+    });
+
+    const finalEvent = events[events.length - 1];
+    expect(finalEvent.status).toBe('resolved');
+    if (finalEvent.status === 'resolved') {
+      expect(finalEvent.provider).toBe('base_ingredients');
+    }
+  });
+
+  it('reports provider=manual for user-edited shortcut path (no provider lookup)', async () => {
+    const userEdited: IngredientNutrition = {
+      ingredientName: '200 g pasta',
+      quantity: 200,
+      unit: 'g',
+      grams: 200,
+      nutritionPer100g: { kcal: 350, proteinG: 12, carbsG: 70, fatG: 1, fiberG: 3 },
+      source: { provider: 'manual', confidence: 1.0, fetchedAt: new Date().toISOString(), userEdited: true },
+    };
+    const trackingProvider: NutritionProviderClient = {
+      provider: 'manual',
+      displayName: 'Tracking',
+      search: async () => {
+        throw new Error('provider should not be consulted for user-edited entries');
+      },
+    };
+    const recipe: Recipe = {
+      id: 'r',
+      name: 'r',
+      steps: [],
+      ingredients: ['200 g pasta'],
+      ingredientNutrition: [userEdited],
+    };
+    const events: NutritionEnrichmentProgress[] = [];
+
+    await enrichRecipeNutritionWithProviders(recipe, [trackingProvider], {
+      onProgress: e => events.push(e),
+    });
+
+    expect(events).toHaveLength(2);
+    expect(events[0]).toMatchObject({ index: 0, status: 'resolving' });
+    expect(events[1]).toMatchObject({ index: 0, status: 'resolved', provider: 'manual' });
+  });
+
+  it('omitting onProgress does not crash and produces same result', async () => {
+    const recipe = makeRecipe({ ingredients: ['200 g pasta', '100 g riso'] });
+    const withCallback = await enrichRecipeNutritionWithProviders(recipe, [manualProvider], {
+      onProgress: () => { /* noop */ },
+    });
+    const withoutCallback = await enrichRecipeNutritionWithProviders(recipe, [manualProvider]);
+
+    expect(withCallback.ingredientNutrition).toHaveLength(withoutCallback.ingredientNutrition.length);
+    expect(withCallback.nutrition.status).toBe(withoutCallback.nutrition.status);
   });
 });
