@@ -2,6 +2,7 @@ import { computed, ref, type Ref } from "vue";
 import { useRecipeBookStore } from '../stores/recipeBook';
 import {
   ANTHROPIC_API_KEY,
+  ANTHROPIC_FETCH_TIMEOUT_MS,
   detectSource,
   normalizeSourceDomain,
   SOCIAL_IMPORT_ENABLED,
@@ -18,7 +19,8 @@ import {
 } from '../lib/import/adapters';
 import { normalizePreparationTypeValue } from '../lib/ingredientUtils';
 import { t } from '../lib/i18n';
-import { OfflineError, isOfflineError } from '../lib/errors';
+import { fetchWithTimeout } from '../lib/fetchWithTimeout';
+import { isOfflineError } from '../lib/errors';
 import type { ImportDiagnostic, ImportPreviewRecipe, ImportSource, PreparationType, StatusState } from '../types';
 
 const sourceMap: Record<ImportSource, string> = {
@@ -172,8 +174,7 @@ Rispondi SOLO con un oggetto JSON valido, senza backtick, senza testo aggiuntivo
         headers[ 'anthropic-version' ] = '2023-06-01';
       }
 
-      if (typeof navigator !== 'undefined' && navigator.onLine === false) throw new OfflineError();
-      const response = await fetch('https://api.anthropic.com/v1/messages', {
+      const response = await fetchWithTimeout('https://api.anthropic.com/v1/messages', {
         method: 'POST',
         headers,
         body: JSON.stringify({
@@ -181,6 +182,7 @@ Rispondi SOLO con un oggetto JSON valido, senza backtick, senza testo aggiuntivo
           max_tokens: 1000,
           messages: [ { role: 'user', content: prompt } ],
         }),
+        timeoutMs: ANTHROPIC_FETCH_TIMEOUT_MS,
       });
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
@@ -212,6 +214,7 @@ Rispondi SOLO con un oggetto JSON valido, senza backtick, senza testo aggiuntivo
         return false;
       }
       const rawError = String((error as Error)?.message || error).trim();
+      const isAbortTimeout = (error as Error)?.name === 'AbortError';
       const isDeadPage = source === 'web'
         && (rawError.includes('GZ_PAGE_NOT_FOUND') || rawError.includes('WEB_FETCH_404'));
       const isWebImportLimit = source === 'web'
@@ -234,7 +237,7 @@ Rispondi SOLO con un oggetto JSON valido, senza backtick, senza testo aggiuntivo
       setStatus(
         isDeadPage
           ? t('import_error_page_not_found')
-          : isWebTimeout
+          : isWebTimeout || isAbortTimeout
             ? t('import_error_timeout')
           : isWebImportLimit
             ? t('import_error_web_blocked')

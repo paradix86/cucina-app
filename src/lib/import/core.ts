@@ -3,6 +3,13 @@ import type { ImportSource } from '../../types';
 const ANTHROPIC_API_KEY = String(import.meta.env.VITE_ANTHROPIC_API_KEY || '').trim();
 const SOCIAL_IMPORT_ENABLED = ANTHROPIC_API_KEY.length > 0;
 
+// Anthropic Messages API typically responds in 1–10s for the small payloads we
+// send (max_tokens: 1000), with a long tail up to ~20s for slow completions.
+// 30s is comfortably above the p99 while still bounding indefinite hangs from
+// network-edge stalls — a stuck request would otherwise leave the import flow
+// spinner up forever with no escape for the user.
+const ANTHROPIC_FETCH_TIMEOUT_MS = 30000;
+
 function normalizeSourceDomain(url: string): string {
   try {
     let hostname = new URL(url).hostname.toLowerCase().replace(/^www\./, '');
@@ -30,5 +37,5 @@ function detectSource(url: string): ImportSource {
   return 'web';
 }
 
-export { ANTHROPIC_API_KEY, normalizeSourceDomain, detectSource };
+export { ANTHROPIC_API_KEY, ANTHROPIC_FETCH_TIMEOUT_MS, normalizeSourceDomain, detectSource };
 export { SOCIAL_IMPORT_ENABLED };
