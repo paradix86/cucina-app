@@ -6,6 +6,7 @@ import type {
 } from '../types';
 import { baseIngredientsProvider } from './baseIngredientsProvider';
 import { OfflineError } from './errors';
+import { fetchWithTimeout } from './fetchWithTimeout';
 
 // ─── Public types ─────────────────────────────────────────────────────────────
 
@@ -287,18 +288,16 @@ export const openFoodFactsProvider: NutritionProviderClient = {
     url.searchParams.set('page_size',    String(maxResults));
     url.searchParams.set('lc',           lang);
 
-    if (typeof navigator !== 'undefined' && navigator.onLine === false) throw new OfflineError();
     let data: unknown;
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), OFF_FETCH_TIMEOUT_MS);
     try {
-      const response = await fetch(url.toString(), { signal: controller.signal });
+      const response = await fetchWithTimeout(url.toString(), { timeoutMs: OFF_FETCH_TIMEOUT_MS });
       if (!response.ok) return [];
       data = await response.json();
-    } catch {
+    } catch (err) {
+      // Offline must propagate so the caller can surface it; timeouts and
+      // network errors degrade silently to "no match for this query".
+      if (err instanceof OfflineError) throw err;
       return [];
-    } finally {
-      clearTimeout(timeoutId);
     }
 
     if (!data || typeof data !== 'object') return [];

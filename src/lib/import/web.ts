@@ -1,5 +1,5 @@
 import type { ImportFailureStage } from '../../types';
-import { OfflineError } from '../errors';
+import { fetchWithTimeout } from '../fetchWithTimeout';
 
 export class ImportTimeoutError extends Error {
   name = 'ImportTimeoutError';
@@ -14,27 +14,23 @@ export class ImportFetchError extends Error {
 
 const IMPORT_FETCH_TIMEOUT_MS = 12000;
 
-async function fetchWithTimeout(input: string, init: RequestInit = {}): Promise<Response> {
-  // Fire only when navigator explicitly reports offline. In Node and other
-  // non-browser environments navigator.onLine is undefined, which we treat
-  // as "unknown" and let the request proceed.
-  if (typeof navigator !== 'undefined' && navigator.onLine === false) throw new OfflineError();
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), IMPORT_FETCH_TIMEOUT_MS);
+// Wrap the shared fetchWithTimeout with import-domain error translation.
+// AbortError on timeout becomes ImportTimeoutError so inferImportFailureStage
+// can route it to the 'fetch-readable-page' diagnostic; OfflineError and
+// other errors propagate unchanged.
+async function fetchImportPage(input: string, init: RequestInit = {}): Promise<Response> {
   try {
-    return await fetch(input, { ...init, signal: controller.signal });
+    return await fetchWithTimeout(input, { ...init, timeoutMs: IMPORT_FETCH_TIMEOUT_MS });
   } catch (error: unknown) {
     if ((error as Error)?.name === 'AbortError') {
       throw new ImportTimeoutError('Request timed out');
     }
     throw error;
-  } finally {
-    clearTimeout(timeoutId);
   }
 }
 
 async function fetchReadableImportPage(url: string): Promise<string> {
-  const resp = await fetchWithTimeout(`https://r.jina.ai/${url}`);
+  const resp = await fetchImportPage(`https://r.jina.ai/${url}`);
   if (!resp.ok) throw new ImportFetchError(resp.status, resp.statusText);
   return resp.text();
 }
@@ -49,7 +45,7 @@ async function fetchReadableImportPage(url: string): Promise<string> {
  * Head-only script blocks may be omitted depending on the site.
  */
 async function fetchHtmlForJsonLd(url: string): Promise<string> {
-  const resp = await fetchWithTimeout(`https://r.jina.ai/${url}`, {
+  const resp = await fetchImportPage(`https://r.jina.ai/${url}`, {
     headers: { 'x-return-format': 'html' },
   });
   if (!resp.ok) throw new ImportFetchError(resp.status, resp.statusText);
