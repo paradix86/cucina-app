@@ -1,4 +1,5 @@
-import { test, expect, type Page } from '@playwright/test';
+import type { Page } from '@playwright/test';
+import { test, expect } from './fixtures';
 
 const APP_ROOT = 'http://127.0.0.1:4173/cucina-app/';
 const STORAGE_KEY = 'cucina_recipebook_v3';
