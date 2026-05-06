@@ -2,6 +2,7 @@
 .claude/
 mcp-logs/
 *.mcp.log
+.agent-output/
 
 # Playwright test artifacts
 test-screenshots/
