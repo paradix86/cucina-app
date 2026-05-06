@@ -1221,3 +1221,42 @@ test('no_match: excluded ingredient appears in editor and can be completed manua
   expect(newEntry?.nutritionPer100g?.kcal).toBe(200);
   expect(stored?.nutrition?.status).toBe('manual');
 });
+
+// R1: per-ingredient progress feedback during Calculate.
+// Delay the OFF response so the second ingredient's resolving indicator stays
+// visible long enough to be observable, then assert final indicators settle to
+// resolved (pasta) and missing (unknown).
+test('progress: per-ingredient indicators appear during Calculate and settle correctly', async ({ page }) => {
+  await page.route('**/world.openfoodfacts.org/**', async (route) => {
+    await new Promise(resolve => setTimeout(resolve, 600));
+    await route.fulfill({
+      status:      200,
+      contentType: 'application/json',
+      body:        JSON.stringify({ products: [], count: 0, page: 1, page_size: 0 }),
+    });
+  });
+
+  await seedState(page, { recipes: [partialRecipe] });
+  await gotoRoute(page, 'recipe-book/nutrition-e2e-partial');
+  await expect(page.locator('#saved-detail-view')).toBeVisible();
+
+  // Ingredient list — second ingredient ('100 g ingrediente sconosciuto xyz')
+  // will fall through manual → base → OFF and only resolve after the 600ms delay.
+  const ingItems = page.locator('.ing-list li');
+  await expect(ingItems).toHaveCount(2);
+
+  await page.locator('.nutrition-footer button').click();
+
+  // While OFF is delayed, index 1's indicator must show resolving.
+  const resolvingIndicator = ingItems.nth(1).locator('.ing-progress--resolving');
+  await expect(resolvingIndicator).toBeVisible({ timeout: 2000 });
+
+  // Final state: badge no longer --missing, indicators have been cleared
+  // (component resets progress.value to [] when calculation completes).
+  await expect(page.locator('.nutrition-badge')).not.toHaveClass(/nutrition-badge--missing/, { timeout: 5000 });
+  await expect(page.locator('.ing-progress')).toHaveCount(0);
+
+  // Existing partial-state expectations still hold.
+  await expect(page.locator('.nutrition-badge')).toHaveClass(/nutrition-badge--partial/);
+});
+
