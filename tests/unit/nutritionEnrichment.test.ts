@@ -988,11 +988,11 @@ describe('enrichRecipeNutritionWithProviders — onProgress', () => {
       provider: 'base_ingredients',
       displayName: 'BaseLike',
       search: async () => [{
-        provider:        'base_ingredients',
-        displayName:     'pasta (test)',
-        normalizedName:  'pasta',
+        id:               'base-pasta',
+        name:             'pasta (test)',
+        provider:         'base_ingredients',
         nutritionPer100g: { kcal: 350, proteinG: 12, carbsG: 70, fatG: 1, fiberG: 3 },
-        confidence:      0.95,
+        confidence:       0.95,
       }],
     };
     const recipe = makeRecipe({ ingredients: ['200 g pasta'] });
