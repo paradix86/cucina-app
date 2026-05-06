@@ -6,6 +6,24 @@ export type ChangelogEntry = {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '0.11.0',
+    date: '2026-05-06',
+    changes: [
+      'QR code in recipe sharing is now responsive — larger on tablet and desktop, fills mobile width',
+      'QR code now displays the Cucina App logo at the center',
+      'Sharing a long recipe URL now shows a clear error state with a copyable link instead of a broken QR',
+      'Shopping list items are now more compact on mobile, cutting scroll length roughly in half',
+      'Filter panel now has a Clear all filters button and a sticky Close button on mobile',
+      'Per-ingredient nutrition progress is now shown while calculating (spinner, check, or missing indicator)',
+      'Adding the same recipe multiple times to the shopping list now sums quantities instead of duplicating rows',
+      'Weekly planner Add/Remove buttons now correctly toggle ingredients in and out of the shopping list',
+      'Italian plural vegetables (cipolle, carote, peperoni, etc.) now appear in the correct shopping section',
+      'Import and nutrition fetches now have bounded timeouts — no more infinite spinners on slow networks',
+      'Timer view now shows a helpful hint in the empty state',
+      'Timer delete button is now accessible to screen readers',
+    ],
+  },
+  {
     version: '0.10.13',
     date: '2026-05-02',
     changes: [
