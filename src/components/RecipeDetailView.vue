@@ -339,8 +339,8 @@ async function openQr() {
     const QRCodeStyling = (await import('qr-code-styling')).default;
     const base = (import.meta.env.BASE_URL) || '/cucina-app/';
     const qr = new QRCodeStyling({
-      width: 240,
-      height: 240,
+      width: 480,
+      height: 480,
       type: 'svg',
       data: url,
       image: `${base}icons/icon-192.png`,
@@ -778,12 +778,12 @@ function closeQr() {
 }
 
 .qr-modal {
-  width: min(320px, 100%);
+  width: min(480px, 90vw);
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 12px;
-  padding: 20px 16px;
+  padding: 24px;
   text-align: center;
 }
 
@@ -802,8 +802,10 @@ function closeQr() {
 
 .qr-img {
   display: block;
-  width: 240px;
-  height: 240px;
+  width: 100%;
+  aspect-ratio: 1;
+  max-width: 432px;
+  margin: 0 auto;
   border-radius: 8px;
   border: 1px solid var(--border);
   background: #ffffff;
@@ -822,8 +824,10 @@ function closeQr() {
 }
 
 .qr-placeholder {
-  width: 240px;
-  height: 240px;
+  width: 100%;
+  aspect-ratio: 1;
+  max-width: 432px;
+  margin: 0 auto;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -837,7 +841,9 @@ function closeQr() {
 }
 
 .qr-error {
-  width: 240px;
+  width: 100%;
+  max-width: 432px;
+  margin: 0 auto;
   min-height: 120px;
   display: flex;
   flex-direction: column;
