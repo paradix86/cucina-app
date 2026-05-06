@@ -2891,8 +2891,8 @@ input[type="number"] {
   opacity: 0.62;
 }
 .shopping-remove {
-  min-width: 42px;
-  min-height: 42px;
+  min-width: 44px;
+  min-height: 44px;
   border: none;
   border-radius: var(--radius-sm);
   background: transparent;
@@ -2900,6 +2900,7 @@ input[type="number"] {
   cursor: pointer;
   font-size: 16px;
   font-family: var(--font);
+  flex-shrink: 0;
 }
 .shopping-remove:hover {
   background: var(--red-light);
@@ -5336,8 +5337,6 @@ mark {
     padding: 6px 10px;
   }
   .shopping-item {
-    flex-direction: column;
-    align-items: stretch;
     padding: 12px 10px;
     gap: 8px;
   }
@@ -5348,20 +5347,12 @@ mark {
   .shopping-item-main {
     gap: 10px;
   }
-  .shopping-row-primary,
-  .shopping-row-secondary {
+  .shopping-group-header .shopping-row-primary,
+  .shopping-group-header .shopping-row-secondary {
     width: 100%;
   }
-  .shopping-row-primary .shopping-item-main {
+  .shopping-group-header .shopping-row-primary .shopping-item-main {
     width: 100%;
-  }
-  .shopping-row-secondary {
-    justify-content: space-between;
-    padding-left: 34px;
-  }
-  .shopping-row-secondary .shopping-item-sub {
-    margin-top: 0;
-    flex: 1 1 auto;
   }
   .shopping-group-header {
     flex-direction: column;
