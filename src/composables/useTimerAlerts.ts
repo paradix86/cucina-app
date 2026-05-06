@@ -35,7 +35,9 @@ const selectedTimerDuration = useLocalStorage(TIMER_DURATION_STORAGE_KEY, 5);
 const VALID_TIMER_DURATIONS = [2, 5, 10];
 
 let audioContext: AudioContext | null = null;
-let closeTimeout: ReturnType<typeof window.setTimeout> | null = null;
+// Browser timer ids are numeric. See useTimers.ts for the rationale on why
+// ReturnType<typeof window.setTimeout> is avoided here.
+let closeTimeout: number | null = null;
 const scheduledOscillators: OscillatorNode[] = [];
 
 function stopAllScheduledSounds(): void {

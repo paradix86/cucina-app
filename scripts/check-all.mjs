@@ -5,10 +5,11 @@ const skipArg = process.argv.find(a => a.startsWith('--skip='));
 const skipped = new Set(skipArg ? skipArg.slice('--skip='.length).split(',') : []);
 
 const steps = [
-  { name: 'lint',      command: 'npm', args: ['run', 'lint'] },
-  { name: 'typecheck', command: 'npx', args: ['vue-tsc', '--noEmit'] },
-  { name: 'unit',      command: 'npm', args: ['run', 'test:unit'] },
-  { name: 'e2e',       command: 'npm', args: ['run', 'test:e2e'] },
+  { name: 'lint',            command: 'npm', args: ['run', 'lint'] },
+  { name: 'typecheck',       command: 'npx', args: ['vue-tsc', '--noEmit'] },
+  { name: 'typecheck-tests', command: 'npx', args: ['vue-tsc', '-p', 'tsconfig.test.json', '--noEmit'] },
+  { name: 'unit',            command: 'npm', args: ['run', 'test:unit'] },
+  { name: 'e2e',             command: 'npm', args: ['run', 'test:e2e'] },
 ];
 
 const start = Date.now();

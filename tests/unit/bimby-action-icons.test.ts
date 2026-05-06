@@ -178,6 +178,6 @@ describe('buildStepsHtml — icon consistency', () => {
       detectBimbyAction('Istruzione generica senza marker'),
     ].filter(Boolean) as string[];
 
-    expect(detected.every(action => APPROVED_BIMBY_ACTION_KEYS.includes(action))).toBe(true);
+    expect(detected.every(action => (APPROVED_BIMBY_ACTION_KEYS as readonly string[]).includes(action))).toBe(true);
   });
 });

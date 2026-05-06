@@ -28,8 +28,8 @@ async function clearDexieDb(): Promise<void> {
 const sampleNutrition: RecipeNutrition = {
   status: 'complete',
   servingsUsed: 2,
-  perServing: { kcal: 350, protein: 12, carbs: 60, fat: 8 },
-  perRecipe: { kcal: 700, protein: 24, carbs: 120, fat: 16 },
+  perServing: { kcal: 350, proteinG: 12, carbsG: 60, fatG: 8 },
+  perRecipe: { kcal: 700, proteinG: 24, carbsG: 120, fatG: 16 },
   sources: [{ provider: 'manual', confidence: 1.0 }],
 };
 
@@ -40,7 +40,7 @@ const sampleIngredientNutrition: IngredientNutrition[] = [
     quantity: 200,
     unit: 'g',
     grams: 200,
-    nutritionPer100g: { kcal: 350, protein: 12, carbs: 70 },
+    nutritionPer100g: { kcal: 350, proteinG: 12, carbsG: 70 },
     source: { provider: 'manual', externalId: 'pasta', confidence: 1.0 },
   },
 ];

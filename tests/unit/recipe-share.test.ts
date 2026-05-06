@@ -53,7 +53,9 @@ describe('encodeSharePayload + decodeShareData roundtrip', () => {
 
   it('strips internal fields: id, favorite, lastViewedAt, source, bimby', () => {
     const encoded = encodeSharePayload(BASE_RECIPE);
-    const decoded = decodeShareData(encoded) as Record<string, unknown>;
+    // Cast is intentional: the test probes for fields that are deliberately
+    // NOT in SharedRecipePayload (id, favorite, lastViewedAt, source, bimby).
+    const decoded = decodeShareData(encoded) as unknown as Record<string, unknown>;
     expect(decoded[ 'id' ]).toBeUndefined();
     expect(decoded[ 'favorite' ]).toBeUndefined();
     expect(decoded[ 'lastViewedAt' ]).toBeUndefined();
@@ -110,7 +112,9 @@ describe('decodeShareData validation', () => {
 
   it('returns null for wrong schema version', () => {
     const encoded = encodeSharePayload(BASE_RECIPE);
-    const decoded = decodeShareData(encoded) as Record<string, unknown>;
+    // Cast is intentional: tampering by adding 'v: 99' which isn't a field
+    // of SharedRecipePayload — purpose of the test is to inject an invalid one.
+    const decoded = decodeShareData(encoded) as unknown as Record<string, unknown>;
     const tampered = JSON.stringify({ ...decoded, v: 99 });
     const reencoded = compressToEncodedURIComponent(tampered);
     expect(decodeShareData(reencoded)).toBeNull();
