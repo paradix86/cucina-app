@@ -810,7 +810,12 @@ function closeQr() {
   overflow: hidden;
 }
 
-.qr-img > svg {
+/* :deep() is required here because the SVG is injected via v-html by
+   qr-code-styling and therefore does not carry the component's data-v-*
+   attribute. Without :deep(), `.qr-img > svg` compiles to
+   `.qr-img[data-v-X] > svg[data-v-X]` and never matches. See
+   CONTRIBUTING.md → "Vue scoped styles and v-html". */
+.qr-img :deep(svg) {
   display: block;
   width: 100%;
   height: 100%;
