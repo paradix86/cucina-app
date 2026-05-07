@@ -6,6 +6,20 @@ export type ChangelogEntry = {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '0.12.0',
+    date: '2026-05-07',
+    changes: [
+      'Timer state now persists across page reload — cooking sessions survive refreshes',
+      'Weekly planner now shows the date for each day and the week range at the top',
+      'Nutrition progress indicators now stay visible after Calculate completes, with reduced visual weight',
+      'Importing a URL you already have now offers Replace, Add as copy, or Cancel',
+      '"Add to planner" from a recipe now highlights that recipe at the top of the slot picker',
+      'Deleting a running timer now requires confirmation to prevent accidental loss',
+      'Weekly planner day cards no longer overlap the title with action buttons on desktop',
+      'Nutrition accordion sections now correctly pair each heading with its own content',
+    ],
+  },
+  {
     version: '0.11.0',
     date: '2026-05-06',
     changes: [
