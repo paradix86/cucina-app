@@ -1273,3 +1273,71 @@ test('progress: per-ingredient indicators appear during Calculate and persist se
   await expect(page.locator('.nutrition-badge')).toHaveClass(/nutrition-badge--partial/);
 });
 
+// Regression guard: the DETTAGLI content panel must be rendered between the
+// DETTAGLI trigger and the OBIETTIVI trigger (not after OBIETTIVI). Before the
+// fix the template interleaved the two accordions, so opening DETTAGLI made
+// its content appear visually under the OBIETTIVI heading.
+test('accordion DOM order: DETTAGLI content sits between its own trigger and OBIETTIVI trigger', async ({ page }) => {
+  const seedRecipe = {
+    id:              'nutrition-e2e-accordion-order',
+    name:            'Accordion Order Test',
+    source:          'manual',
+    preparationType: 'classic',
+    ingredients:     ['200 g pasta'],
+    steps:           ['Cuoci'],
+    servings:        '2',
+    ingredientNutrition: [
+      {
+        ingredientName: '200 g pasta',
+        grams: 200,
+        gramsEstimated: false,
+        source: { provider: 'openfoodfacts' },
+        nutritionPer100g: { kcal: 350, proteinG: 13, carbsG: 70, fatG: 1.5, fiberG: 2.7 },
+      },
+    ],
+    nutrition: {
+      status: 'complete',
+      perServing: { kcal: 350, proteinG: 13, carbsG: 70, fatG: 1.5, fiberG: 2.7 },
+      perRecipe:  { kcal: 700, proteinG: 26, carbsG: 140, fatG: 3.0, fiberG: 5.4 },
+      servingsUsed: 2,
+      calculatedAt: new Date().toISOString(),
+      ingredientsFingerprint: '200 g pasta',
+    },
+  };
+
+  await seedState(page, { recipes: [seedRecipe] });
+  await gotoRoute(page, 'recipe-book/nutrition-e2e-accordion-order');
+  await expect(page.locator('#saved-detail-view')).toBeVisible();
+
+  const detailsToggle = page.locator('.nutrition-details-toggle:not(.nutrition-goals-toggle)');
+  const goalsToggle   = page.locator('.nutrition-details-toggle.nutrition-goals-toggle');
+  const detailsPanel  = page.locator('.nutrition-details-section');
+
+  // Open DETTAGLI; OBIETTIVI must remain closed.
+  await detailsToggle.click();
+  await expect(detailsToggle).toHaveAttribute('aria-expanded', 'true');
+  await expect(goalsToggle).toHaveAttribute('aria-expanded', 'false');
+
+  // Vertical position check: DETTAGLI content must lie between the two
+  // triggers, not below OBIETTIVI's trigger.
+  const detailsToggleBox = await detailsToggle.boundingBox();
+  const detailsPanelBox  = await detailsPanel.boundingBox();
+  const goalsToggleBox   = await goalsToggle.boundingBox();
+
+  expect(detailsToggleBox).not.toBeNull();
+  expect(detailsPanelBox).not.toBeNull();
+  expect(goalsToggleBox).not.toBeNull();
+
+  // detailsToggle.top < detailsPanel.top < goalsToggle.top
+  expect(detailsPanelBox!.y).toBeGreaterThan(detailsToggleBox!.y);
+  expect(goalsToggleBox!.y).toBeGreaterThan(detailsPanelBox!.y);
+
+  // Edit-quantities button is inside DETTAGLI's content; it must therefore
+  // appear above the OBIETTIVI trigger.
+  const editBtn = page.locator('.nutrition-details-edit button').filter({ hasText: /edit|quantit/i }).first();
+  await expect(editBtn).toBeVisible();
+  const editBtnBox = await editBtn.boundingBox();
+  expect(editBtnBox).not.toBeNull();
+  expect(editBtnBox!.y).toBeLessThan(goalsToggleBox!.y);
+});
+
