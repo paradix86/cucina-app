@@ -2,8 +2,9 @@
 import { computed, ref } from 'vue';
 import { storeToRefs } from 'pinia';
 import { useRouter } from 'vue-router';
-import { t } from '../lib/i18n';
+import { t, currentLang } from '../lib/i18n';
 import { PLANNER_DAYS, PLANNER_MEAL_SLOTS } from '../lib/planner';
+import { getWeekDates, formatDayShort, formatWeekRange } from '../lib/plannerDates';
 import { useToasts } from '../composables/useToasts';
 import { useRecipeBookStore } from '../stores/recipeBook';
 import { useShoppingListStore } from '../stores/shoppingList';
@@ -36,6 +37,15 @@ const activeSelection = ref<PlannerSelection | null>(null);
 const totalSlots = PLANNER_DAYS.length * PLANNER_MEAL_SLOTS.length;
 const today = new Date();
 const todayPlannerDay = PLANNER_DAYS[(today.getDay() + 6) % 7];
+const weekDates = getWeekDates(today);
+
+const weekRangeLabel = computed(() => {
+  const start = weekDates[PLANNER_DAYS[0]];
+  const end = weekDates[PLANNER_DAYS[PLANNER_DAYS.length - 1]];
+  return t('planner_week_range_label', {
+    range: formatWeekRange(start, end, currentLang.value),
+  });
+});
 
 const slotOccasionMap: Record<PlannerMealSlot, string> = {
   breakfast: 'Colazione',
@@ -160,6 +170,7 @@ const weekDays = computed(() => {
     return {
       id: day,
       label: t(`planner_day_${day}`),
+      dateLabel: formatDayShort(weekDates[day], currentLang.value),
       filledCount: slots.filter(slot => slot.recipeId).length,
       isToday: day === todayPlannerDay,
       plannedRecipes,
@@ -306,6 +317,7 @@ function suggestedLabel() {
       <div class="planner-summary-copy">
         <p class="planner-kicker">{{ t('planner_kicker') }}</p>
         <h1>{{ t('planner_title') }}</h1>
+        <p class="muted-label planner-week-range">{{ weekRangeLabel }}</p>
         <p class="muted-label planner-summary-desc">{{ t('planner_desc') }}</p>
       </div>
       <div class="planner-summary-side">
@@ -421,6 +433,7 @@ function suggestedLabel() {
               <div class="planner-day-title-row">
                 <div class="planner-day-title-copy">
                   <h2>{{ day.label }}</h2>
+                  <span class="muted-label planner-day-date">{{ day.dateLabel }}</span>
                   <span v-if="day.isToday" class="planner-today-badge">{{ t('planner_today') }}</span>
                 </div>
                 <span class="planner-day-count">{{ day.filledCount }}/{{ day.slots.length }}</span>
