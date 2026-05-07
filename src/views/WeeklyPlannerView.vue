@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import { storeToRefs } from 'pinia';
-import { useRouter } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import { t, currentLang } from '../lib/i18n';
 import { PLANNER_DAYS, PLANNER_MEAL_SLOTS } from '../lib/planner';
 import { getWeekDates, formatDayShort, formatWeekRange } from '../lib/plannerDates';
@@ -20,10 +20,23 @@ type PlannerSelection = {
 };
 
 const router = useRouter();
+const route = useRoute();
 const recipeBook = useRecipeBookStore();
 const shoppingList = useShoppingListStore();
 const plannerStore = useWeeklyPlannerStore();
 const { showToast } = useToasts();
+
+const pendingRecipeId = ref<string | null>(null);
+
+onMounted(() => {
+  const id = route.query.addRecipeId;
+  if (typeof id === 'string' && id) {
+    pendingRecipeId.value = id;
+    const { addRecipeId: _omit, ...rest } = route.query;
+    void _omit;
+    router.replace({ query: rest }).catch(() => {});
+  }
+});
 
 const { recipes } = storeToRefs(recipeBook);
 const { plan, plannedMealsCount } = storeToRefs(plannerStore);
@@ -110,6 +123,7 @@ function fmt(val: number | undefined): string | number {
 const pickerRecipes = computed(() => {
   const query = searchQuery.value.trim().toLowerCase();
   const desiredOccasion = activeSelection.value ? slotOccasionMap[activeSelection.value.slot] : '';
+  const pinnedId = pendingRecipeId.value;
 
   return [ ...recipes.value ]
     .filter(recipe => {
@@ -122,6 +136,12 @@ const pickerRecipes = computed(() => {
       return haystack.includes(query);
     })
     .sort((a, b) => {
+      // Pinned recipe (from /planner?addRecipeId=) always lands at the top,
+      // regardless of search-score or alphabetical fallback below. RD-S3.
+      if (pinnedId) {
+        if (a.id === pinnedId && b.id !== pinnedId) return -1;
+        if (b.id === pinnedId && a.id !== pinnedId) return 1;
+      }
       const score = (recipe: Recipe) => {
         let total = 0;
         if (desiredOccasion && (recipe.mealOccasion || []).includes(desiredOccasion)) total += 3;
@@ -202,6 +222,9 @@ function assignRecipe(recipeId: string) {
   const ok = plannerStore.setSlot(activeSelection.value.day, activeSelection.value.slot, recipeId);
   if (ok && recipe) {
     showToast(t('planner_slot_saved_toast', { recipe: recipe.name }), 'success');
+  }
+  if (pendingRecipeId.value === recipeId) {
+    pendingRecipeId.value = null;
   }
   closePicker();
 }
@@ -396,12 +419,18 @@ function suggestedLabel() {
             v-for="recipe in pickerRecipes"
             :key="recipe.id"
             class="planner-picker-item"
-            :class="{ active: selectedRecipeId === recipe.id }"
+            :class="{
+              active: selectedRecipeId === recipe.id,
+              'planner-picker-item--pinned': pendingRecipeId === recipe.id,
+            }"
             @click="assignRecipe(recipe.id)"
           >
             <span class="planner-picker-item-main">
               <span class="planner-picker-item-title">{{ recipe.name }}</span>
               <span class="planner-picker-item-meta">
+                <span v-if="pendingRecipeId === recipe.id" class="planner-picker-pill planner-picker-pill--pinned">
+                  {{ t('planner_picker_pinned') }}
+                </span>
                 <span v-if="recipe.favorite" class="planner-picker-pill">{{ t('planner_recipe_favorite') }}</span>
                 <span v-if="isSuggested(recipe)" class="planner-picker-pill planner-picker-pill--suggested">
                   {{ suggestedLabel() }}
