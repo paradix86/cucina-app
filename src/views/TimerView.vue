@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref } from 'vue';
+import { computed, inject, ref } from 'vue';
 import { useTimers } from '../composables/useTimers';
 import { useTimerAlerts } from '../composables/useTimerAlerts';
 import { useCookingPreferences } from '../composables/useCookingPreferences';
@@ -10,6 +10,20 @@ const minutes = ref(5);
 const seconds = ref(0);
 
 const { timers, addTimer, toggleTimer, resetTimer, deleteTimer } = useTimers();
+const requestConfirm = inject('requestConfirm', null);
+
+async function onDeleteTimer(timer) {
+  if (timer.running && timer.remaining > 0 && requestConfirm) {
+    const confirmed = await requestConfirm({
+      title: t('timer_delete_running_title'),
+      message: t('timer_delete_running_message', { name: timer.name }),
+      confirmLabel: t('timer_delete_confirm'),
+      cancelLabel: t('confirm_cancel'),
+    });
+    if (!confirmed) return;
+  }
+  deleteTimer(timer.id);
+}
 const {
   timerSound,
   timerVolume,
@@ -122,7 +136,7 @@ function submitTimer() {
           <div class="t-btns">
             <button @click="toggleTimer(timer.id)">{{ timer.buttonLabel }}</button>
             <button @click="resetTimer(timer.id)">{{ t('timer_reset') }}</button>
-            <button class="t-del" :aria-label="t('timer_delete_label')" @click="deleteTimer(timer.id)">✕</button>
+            <button class="t-del" :aria-label="t('timer_delete_label')" @click="onDeleteTimer(timer)">✕</button>
           </div>
         </div>
       </div>
