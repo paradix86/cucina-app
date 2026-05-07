@@ -563,38 +563,6 @@ function saveEditor() {
       <span class="nutrition-details-chevron" :class="{ open: showDetails }" aria-hidden="true">&#9660;</span>
     </button>
 
-    <!-- Goals editor toggle -->
-    <button
-      class="nutrition-details-toggle nutrition-goals-toggle"
-      type="button"
-      :aria-expanded="showGoalsEditor"
-      @click="showGoalsEditor ? cancelGoalsEditor() : openGoalsEditor()"
-    >
-      <p class="sec-label">{{ t('nutrition_goals_title') }}</p>
-      <span class="nutrition-details-chevron" :class="{ open: showGoalsEditor }" aria-hidden="true">&#9660;</span>
-    </button>
-
-    <!-- Goals editor -->
-    <div v-show="showGoalsEditor" class="nutrition-goals-editor" role="region" :aria-label="t('nutrition_goals_title')">
-      <div v-for="field in GOAL_FIELDS" :key="field.key" class="nutrition-goal-editor-row">
-        <label :for="`goal-${field.key}`" class="nutrition-goal-editor-label">{{ t(field.labelKey) }}</label>
-        <input
-          :id="`goal-${field.key}`"
-          class="nutrition-goals-editor-input"
-          type="text"
-          inputmode="decimal"
-          :placeholder="field.unit"
-          :value="goalsDraft[field.key]"
-          @input="goalsDraft[field.key] = $event.target.value"
-        />
-        <span class="nutrition-editor-unit">{{ field.unit }}</span>
-      </div>
-      <div class="nutrition-goals-editor-actions">
-        <button class="btn-primary" type="button" @click="saveGoalsEditor">{{ t('nutrition_goals_save') }}</button>
-        <button class="btn-ghost" type="button" @click="cancelGoalsEditor">{{ t('recipe_edit_cancel') }}</button>
-      </div>
-    </div>
-
     <!-- Collapsible details section (v-show keeps editor inputs alive) -->
     <div
       v-show="showDetails && hasDetails"
@@ -686,6 +654,38 @@ function saveEditor() {
             <button class="btn-ghost" type="button" @click="cancelEditor">{{ t('recipe_edit_cancel') }}</button>
           </div>
         </div>
+      </div>
+    </div>
+
+    <!-- Goals editor toggle -->
+    <button
+      class="nutrition-details-toggle nutrition-goals-toggle"
+      type="button"
+      :aria-expanded="showGoalsEditor"
+      @click="showGoalsEditor ? cancelGoalsEditor() : openGoalsEditor()"
+    >
+      <p class="sec-label">{{ t('nutrition_goals_title') }}</p>
+      <span class="nutrition-details-chevron" :class="{ open: showGoalsEditor }" aria-hidden="true">&#9660;</span>
+    </button>
+
+    <!-- Goals editor -->
+    <div v-show="showGoalsEditor" class="nutrition-goals-editor" role="region" :aria-label="t('nutrition_goals_title')">
+      <div v-for="field in GOAL_FIELDS" :key="field.key" class="nutrition-goal-editor-row">
+        <label :for="`goal-${field.key}`" class="nutrition-goal-editor-label">{{ t(field.labelKey) }}</label>
+        <input
+          :id="`goal-${field.key}`"
+          class="nutrition-goals-editor-input"
+          type="text"
+          inputmode="decimal"
+          :placeholder="field.unit"
+          :value="goalsDraft[field.key]"
+          @input="goalsDraft[field.key] = $event.target.value"
+        />
+        <span class="nutrition-editor-unit">{{ field.unit }}</span>
+      </div>
+      <div class="nutrition-goals-editor-actions">
+        <button class="btn-primary" type="button" @click="saveGoalsEditor">{{ t('nutrition_goals_save') }}</button>
+        <button class="btn-ghost" type="button" @click="cancelGoalsEditor">{{ t('recipe_edit_cancel') }}</button>
       </div>
     </div>
   </div>
