@@ -7,9 +7,10 @@ const props = defineProps({
   message: { type: String, default: '' },
   confirmLabel: { type: String, default: '' },
   cancelLabel: { type: String, default: '' },
+  tertiaryLabel: { type: String, default: '' },
 });
 
-const emit = defineEmits(['confirm', 'cancel']);
+const emit = defineEmits(['confirm', 'cancel', 'tertiary']);
 const dialogEl = ref(null);
 
 watch(() => props.open, async (open) => {
@@ -71,6 +72,11 @@ function onBackdropClick(event) {
       <p id="confirm-msg" class="confirm-message">{{ props.message }}</p>
       <div class="confirm-actions">
         <button class="btn-ghost confirm-cancel" @click="emit('cancel')">{{ props.cancelLabel }}</button>
+        <button
+          v-if="props.tertiaryLabel"
+          class="btn-secondary confirm-tertiary"
+          @click="emit('tertiary')"
+        >{{ props.tertiaryLabel }}</button>
         <button class="btn-danger confirm-ok" @click="emit('confirm')">{{ props.confirmLabel }}</button>
       </div>
     </div>

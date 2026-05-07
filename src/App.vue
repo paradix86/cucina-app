@@ -30,8 +30,10 @@ const confirmState = ref({
   message: '',
   confirmLabel: '',
   cancelLabel: '',
+  tertiaryLabel: '',
 });
 let confirmResolver = null;
+let confirmResolveAs = 'boolean';
 
 const { showToast } = useToasts();
 const recipeBook = useRecipeBookStore();
@@ -87,29 +89,66 @@ function requestConfirm(options = {}) {
   } = options;
   return new Promise(resolve => {
     confirmResolver = resolve;
+    confirmResolveAs = 'boolean';
     confirmState.value = {
       open: true,
       title,
       message,
       confirmLabel,
       cancelLabel,
+      tertiaryLabel: '',
     };
   });
 }
 
-function resolveConfirm(value) {
-  if (confirmResolver) confirmResolver(value);
+function requestConfirmThreeWay(options = {}) {
+  const {
+    title = t('confirm_title'),
+    message = '',
+    confirmLabel = t('confirm_confirm'),
+    cancelLabel = t('confirm_cancel'),
+    tertiaryLabel = '',
+  } = options;
+  return new Promise(resolve => {
+    confirmResolver = resolve;
+    confirmResolveAs = 'three-way';
+    confirmState.value = {
+      open: true,
+      title,
+      message,
+      confirmLabel,
+      cancelLabel,
+      tertiaryLabel,
+    };
+  });
+}
+
+function resolveConfirm(intent /* 'confirm' | 'cancel' | 'tertiary' */) {
+  if (confirmResolver) {
+    if (confirmResolveAs === 'three-way') {
+      confirmResolver(intent);
+    } else {
+      // Legacy 2-button callers (Timer T-4, Shopping List clear) consume a
+      // boolean: true means proceed, false means abort. The dialog can't
+      // emit 'tertiary' here because the third button is hidden when
+      // tertiaryLabel is empty.
+      confirmResolver(intent === 'confirm');
+    }
+  }
   confirmResolver = null;
+  confirmResolveAs = 'boolean';
   confirmState.value = {
     open: false,
     title: '',
     message: '',
     confirmLabel: '',
     cancelLabel: '',
+    tertiaryLabel: '',
   };
 }
 
 provide('requestConfirm', requestConfirm);
+provide('requestConfirmThreeWay', requestConfirmThreeWay);
 
 function goHome() {
   cookingRecipe.value = null;
@@ -295,8 +334,10 @@ watch(() => route.fullPath, () => {
     :message="confirmState.message"
     :confirm-label="confirmState.confirmLabel"
     :cancel-label="confirmState.cancelLabel"
-    @confirm="resolveConfirm(true)"
-    @cancel="resolveConfirm(false)"
+    :tertiary-label="confirmState.tertiaryLabel"
+    @confirm="resolveConfirm('confirm')"
+    @cancel="resolveConfirm('cancel')"
+    @tertiary="resolveConfirm('tertiary')"
   />
   <TimerAlertModal
     :open="timerAlert.open"

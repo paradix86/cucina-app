@@ -1,5 +1,5 @@
 <script setup>
-import { computed, nextTick, onMounted, ref, watch } from 'vue';
+import { computed, inject, nextTick, onMounted, ref, watch } from 'vue';
 import { storeToRefs } from 'pinia';
 import { useRoute } from 'vue-router';
 import { useImportFlow } from '../composables/useImportFlow';
@@ -9,6 +9,9 @@ import { useOnline } from '../composables/useOnline';
 import { useRecipeBookStore } from '../stores/recipeBook';
 import { DUEMME_VETTED_RECIPE_PACK } from '../lib/duemmeVettedPack';
 import { getNinjaVettedPack } from '../lib/ninjaVettedPack';
+import { normalizeUrl } from '../lib/urlNormalize';
+
+const requestConfirmThreeWay = inject('requestConfirmThreeWay', null);
 
 const emit = defineEmits(['toast', 'go-home']);
 const route = useRoute();
@@ -450,8 +453,7 @@ function saveManualRecipe() {
   });
 }
 
-function savePreview() {
-  const ok = savePreviewedRecipe();
+function emitSaveResult(ok) {
   emit('toast', ok ? t('builtin_saved_ok') : t('builtin_already_saved'), ok ? 'success' : 'info');
   if (ok) {
     setSuccessNotice({
@@ -460,6 +462,48 @@ function savePreview() {
       showGoHome: true,
     });
   }
+}
+
+function findDuplicateByUrl() {
+  const incoming = normalizeUrl(previewRecipe.value?.url ?? '');
+  if (!incoming) return null;
+  return savedRecipes.value.find(r => normalizeUrl(r.url ?? '') === incoming) ?? null;
+}
+
+async function savePreview() {
+  if (!previewRecipe.value) return;
+
+  // Audit I-3: detect re-import of a URL already in the book and let the
+  // user choose to replace, copy, or cancel. Only attempt the prompt when
+  // the App.vue provider is available (it is, in the running app); when
+  // unavailable we fall through to the legacy add path.
+  const existing = findDuplicateByUrl();
+  if (existing && requestConfirmThreeWay) {
+    const choice = await requestConfirmThreeWay({
+      title: t('import_duplicate_title'),
+      message: t('import_duplicate_message', { name: existing.name }),
+      confirmLabel: t('import_duplicate_replace'),
+      cancelLabel: t('confirm_cancel'),
+      tertiaryLabel: t('import_duplicate_add_copy'),
+    });
+
+    if (choice === 'cancel') return;
+
+    if (choice === 'confirm') {
+      const fresh = previewRecipe.value;
+      const ok = recipeBookStore.replaceImported(existing.id, fresh);
+      emitSaveResult(ok);
+      if (ok) {
+        url.value = '';
+        discardPreview();
+      }
+      return;
+    }
+    // 'tertiary' falls through to the standard add-as-copy path below.
+  }
+
+  const ok = savePreviewedRecipe();
+  emitSaveResult(ok);
 }
 </script>
 
