@@ -4254,6 +4254,15 @@ mark {
 .planner-summary-desc {
   max-width: 60ch;
 }
+.planner-week-range {
+  margin-top: 4px;
+  font-weight: 500;
+  color: var(--text-secondary, var(--text-muted));
+}
+.planner-day-date {
+  font-weight: 500;
+  white-space: nowrap;
+}
 .planner-summary-side {
   display: flex;
   align-items: center;
