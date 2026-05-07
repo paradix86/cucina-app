@@ -96,7 +96,9 @@ async function calculateNutrition() {
     }
   } finally {
     isCalculatingNutrition.value = false;
-    progress.value = [];
+    // R1 v2: keep progress.value populated so indicators stay visible after
+    // completion at reduced opacity (settled state). Reset happens at the
+    // next Calculate run (line above this fn) and on component unmount.
   }
 }
 
@@ -551,7 +553,10 @@ function ingredientProgressLabel(p) {
             <span
               v-if="progress[idx] && progress[idx].state !== 'idle'"
               class="ing-progress"
-              :class="`ing-progress--${progress[idx].state}${progress[idx].state === 'resolved' && progress[idx].provider === 'openfoodfacts' ? '-off' : ''}`"
+              :class="[
+                `ing-progress--${progress[idx].state}${progress[idx].state === 'resolved' && progress[idx].provider === 'openfoodfacts' ? '-off' : ''}`,
+                { 'ing-progress--settled': !isCalculatingNutrition }
+              ]"
               role="status"
               :aria-label="ingredientProgressLabel(progress[idx])"
               :title="ingredientProgressLabel(progress[idx])"
@@ -789,6 +794,20 @@ function ingredientProgressLabel(p) {
   flex-shrink: 0;
   font-size: 11px;
   line-height: 1;
+  opacity: 1;
+  transition: opacity 220ms ease-out;
+}
+/* R1 v2: settled state — indicators persist after completion at reduced
+   visual weight so the page at rest doesn't look "still calculating". */
+.ing-progress--settled {
+  opacity: 0.55;
+}
+/* If the chain ended while a per-ingredient state was still 'resolving'
+   (offline-error path), freeze the spinner ring at the same green hue
+   instead of letting it keep spinning post-completion. */
+.ing-progress--settled .ing-progress-spinner {
+  animation: none;
+  border-top-color: var(--green);
 }
 .ing-progress-spinner {
   display: block;

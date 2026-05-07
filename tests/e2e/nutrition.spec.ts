@@ -1226,7 +1226,7 @@ test('no_match: excluded ingredient appears in editor and can be completed manua
 // Delay the OFF response so the second ingredient's resolving indicator stays
 // visible long enough to be observable, then assert final indicators settle to
 // resolved (pasta) and missing (unknown).
-test('progress: per-ingredient indicators appear during Calculate and settle correctly', async ({ page }) => {
+test('progress: per-ingredient indicators appear during Calculate and persist settled afterwards', async ({ page }) => {
   await page.route('**/world.openfoodfacts.org/**', async (route) => {
     await new Promise(resolve => setTimeout(resolve, 600));
     await route.fulfill({
@@ -1247,14 +1247,27 @@ test('progress: per-ingredient indicators appear during Calculate and settle cor
 
   await page.locator('.nutrition-footer button').click();
 
-  // While OFF is delayed, index 1's indicator must show resolving.
+  // While OFF is delayed, index 1's indicator must show resolving (active state,
+  // no --settled modifier yet because isCalculatingNutrition is still true).
   const resolvingIndicator = ingItems.nth(1).locator('.ing-progress--resolving');
   await expect(resolvingIndicator).toBeVisible({ timeout: 2000 });
+  await expect(resolvingIndicator).not.toHaveClass(/ing-progress--settled/);
 
-  // Final state: badge no longer --missing, indicators have been cleared
-  // (component resets progress.value to [] when calculation completes).
+  // Wait for completion (badge transitions out of --missing).
   await expect(page.locator('.nutrition-badge')).not.toHaveClass(/nutrition-badge--missing/, { timeout: 5000 });
-  await expect(page.locator('.ing-progress')).toHaveCount(0);
+
+  // R1 v2: indicators now PERSIST after completion at reduced opacity.
+  // All ingredients should still have an indicator, all marked --settled.
+  await expect(page.locator('.ing-progress')).toHaveCount(2);
+  await expect(page.locator('.ing-progress--settled')).toHaveCount(2);
+
+  // Computed opacity of the settled indicator must be < 1 (we don't pin the
+  // exact value — the CSS rule sets 0.55, but the test stays robust to tweaks).
+  const opacity = await page.locator('.ing-progress').first().evaluate(
+    (el) => parseFloat(getComputedStyle(el).opacity),
+  );
+  expect(opacity).toBeGreaterThan(0);
+  expect(opacity).toBeLessThan(1);
 
   // Existing partial-state expectations still hold.
   await expect(page.locator('.nutrition-badge')).toHaveClass(/nutrition-badge--partial/);
