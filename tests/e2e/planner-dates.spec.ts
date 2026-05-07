@@ -67,3 +67,83 @@ test('weekly planner shows week range and per-day dates', async ({ page }) => {
   await expect(page.locator('.planner-week-range'))
     .toContainText(/gen|feb|mar|apr|mag|giu|lug|ago|set|ott|nov|dic/i);
 });
+
+const FILLED_TUESDAY_PLANNER = {
+  ...EMPTY_PLANNER,
+  tuesday: { breakfast: SEED_RECIPE.id, lunch: null, dinner: null },
+};
+
+async function seedFilledPlanner(page: Page): Promise<void> {
+  await page.goto(APP_ROOT);
+  await expect(page.locator('main.app')).toBeVisible();
+  await page.evaluate(
+    ({ lang, plannerKey, planner, recipeKey, recipes, langKey }) => {
+      localStorage.clear();
+      localStorage.setItem(langKey, lang);
+      localStorage.setItem(plannerKey, JSON.stringify(planner));
+      localStorage.setItem(recipeKey, JSON.stringify(recipes));
+    },
+    {
+      lang: 'en',
+      plannerKey: WEEKLY_PLANNER_KEY,
+      planner: FILLED_TUESDAY_PLANNER,
+      recipeKey: RECIPE_BOOK_KEY,
+      recipes: [SEED_RECIPE],
+      langKey: LANG_KEY,
+    },
+  );
+  await page.goto(APP_ROOT);
+  await expect(page.locator('main.app')).toBeVisible();
+  await page.goto(`${APP_ROOT}#/planner`);
+  await expect(page.locator('.planner-view')).toBeVisible();
+}
+
+interface RectPair {
+  title: { x: number; y: number; width: number; height: number };
+  actions: { x: number; y: number; width: number; height: number };
+}
+
+async function readTuesdayHeadRects(page: Page): Promise<RectPair> {
+  return page.evaluate(() => {
+    const tuesday = document.querySelectorAll<HTMLElement>('.planner-day-card')[1];
+    if (!tuesday) throw new Error('Tuesday card not found');
+    const titleRow = tuesday.querySelector<HTMLElement>('.planner-day-title-row');
+    const actions = tuesday.querySelector<HTMLElement>('.planner-day-actions');
+    if (!titleRow) throw new Error('.planner-day-title-row not found on Tuesday card');
+    if (!actions) throw new Error('.planner-day-actions not found on Tuesday card');
+    const t = titleRow.getBoundingClientRect();
+    const a = actions.getBoundingClientRect();
+    return {
+      title: { x: t.x, y: t.y, width: t.width, height: t.height },
+      actions: { x: a.x, y: a.y, width: a.width, height: a.height },
+    };
+  });
+}
+
+for (const viewport of [
+  { width: 768, height: 1024, label: 'tablet 768' },
+  { width: 1024, height: 768, label: 'desktop 1024' },
+  { width: 1280, height: 800, label: 'wide 1280' },
+] as const) {
+  test(`day-card title row does not overlap action buttons at ${viewport.label}`, async ({ page }) => {
+    await page.setViewportSize({ width: viewport.width, height: viewport.height });
+    await seedFilledPlanner(page);
+
+    await expect(page.locator('.planner-day-card').nth(1).locator('.planner-day-actions'))
+      .toBeVisible();
+
+    const { title, actions } = await readTuesdayHeadRects(page);
+
+    const sameRowNoOverlap = title.x + title.width <= actions.x + 0.5;
+    const stackedVertically = title.y + title.height <= actions.y + 0.5;
+
+    expect(
+      sameRowNoOverlap || stackedVertically,
+      `Tuesday day-card head overlap at ${viewport.label}: ` +
+        `title-row right=${(title.x + title.width).toFixed(2)}, ` +
+        `actions left=${actions.x.toFixed(2)}, ` +
+        `title-row bottom=${(title.y + title.height).toFixed(2)}, ` +
+        `actions top=${actions.y.toFixed(2)}`,
+    ).toBe(true);
+  });
+}
