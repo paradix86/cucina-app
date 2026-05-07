@@ -155,6 +155,34 @@ export const useRecipeBookStore = defineStore('recipeBook', () => {
     return true;
   }
 
+  /**
+   * Replace an existing recipe's imported fields with a freshly-fetched
+   * version while preserving the user's local touches. Used by the
+   * import-duplicate flow (audit I-3): when the user re-imports a URL that
+   * already exists in the book and chooses "Replace with updated version",
+   * we want the new content but not to wipe their personal state.
+   *
+   * Preserved from the existing recipe: `id` (so any planner / shopping-list
+   * references keep working), `favorite`, `lastViewedAt`, and `notes`
+   * (the user's personal text). Everything else is taken from `fresh`.
+   */
+  function replaceImported(id: string, fresh: Recipe): boolean {
+    const index = recipes.value.findIndex(recipe => recipe.id === id);
+    if (index === -1) return false;
+    const previous = recipes.value[index];
+    const next = cloneRecipes(recipes.value);
+    next[index] = cloneRecipe({
+      ...fresh,
+      id: previous.id,
+      favorite: previous.favorite,
+      lastViewedAt: previous.lastViewedAt,
+      notes: previous.notes ?? '',
+    });
+    recipes.value = next;
+    persist(next);
+    return true;
+  }
+
   function viewed(id: string): void {
     const index = recipes.value.findIndex(recipe => recipe.id === id);
     if (index === -1) return;
@@ -193,6 +221,7 @@ export const useRecipeBookStore = defineStore('recipeBook', () => {
     add,
     duplicate,
     update,
+    replaceImported,
     remove,
     toggleFavorite,
     saveNotes,
