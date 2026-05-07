@@ -35,13 +35,48 @@ export function stripImportLinksAndImages(value: string | null | undefined): str
   );
 }
 
+// Common named entities. The browser's DOMParser covers all of HTML5's named
+// entities, but in non-DOM environments (Node test runner, edge cases where
+// the parser is stripped) we fall back to this map for the most likely
+// occurrences in scraped Italian-recipe content.
+const NAMED_ENTITY_FALLBACK: Record<string, string> = {
+  amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: ' ',
+  rsquo: '’', lsquo: '‘', ldquo: '“', rdquo: '”',
+  hellip: '…', mdash: '—', ndash: '–',
+  eacute: 'é', egrave: 'è', agrave: 'à', ograve: 'ò', ugrave: 'ù',
+  iacute: 'í', oacute: 'ó', uacute: 'ú', acirc: 'â', ecirc: 'ê',
+  deg: '°',
+};
+
+function decodeWithFallback(s: string): string {
+  return s.replace(/&(#[xX][0-9a-fA-F]+|#\d+|[a-zA-Z]+);/g, (full, ref: string) => {
+    if (ref[ 0 ] === '#') {
+      const isHex = ref[ 1 ] === 'x' || ref[ 1 ] === 'X';
+      const code = parseInt(ref.slice(isHex ? 2 : 1), isHex ? 16 : 10);
+      if (!Number.isFinite(code) || code < 0 || code > 0x10ffff) return full;
+      try { return String.fromCodePoint(code); } catch { return full; }
+    }
+    return NAMED_ENTITY_FALLBACK[ ref ] ?? full;
+  });
+}
+
 export function decodeImportEntities(value: string | null | undefined): string {
-  return String(value || '')
-    .replace(/&#39;|&apos;/g, "'")
-    .replace(/&quot;/g, '"')
-    .replace(/&nbsp;/g, ' ')
-    .replace(/&deg;/gi, '°')
-    .replace(/&amp;/g, '&');
+  const s = String(value || '');
+  if (!s) return '';
+  // Fast path: no entity markers, return unchanged.
+  if (!/&[#a-zA-Z][^;\s]*;/.test(s)) return s;
+  // Browser path: DOMParser handles every HTML5 entity correctly.
+  if (typeof DOMParser !== 'undefined') {
+    try {
+      const decoded = new DOMParser()
+        .parseFromString(s, 'text/html')
+        .documentElement.textContent;
+      if (decoded != null) return decoded;
+    } catch {
+      // Fall through to the hand-rolled fallback.
+    }
+  }
+  return decodeWithFallback(s);
 }
 
 export function parseImportMinutes(value: string | null | undefined): number {
@@ -169,7 +204,7 @@ export function suggestImportTags(
 }
 
 export function buildImportedRecipe(url: string, fields: Partial<ImportPreviewRecipe>): ImportPreviewRecipe {
-  return {
+  const merged: ImportPreviewRecipe = {
     id: `imp_${Date.now()}`,
     name: '',
     category: '',
@@ -188,6 +223,15 @@ export function buildImportedRecipe(url: string, fields: Partial<ImportPreviewRe
     tags: [],
     ...fields,
   };
+  // Chokepoint: decode HTML entities for every text field that might come
+  // from a parser that didn't pre-decode (JSON-LD, generic markdown, named
+  // adapters). Applying it here means a future adapter can never forget.
+  // Notes are user-typed and skipped. URLs are skipped (entities in URLs are
+  // valid percent-encoded syntax that must not be decoded).
+  merged.name = decodeImportEntities(merged.name);
+  merged.ingredients = (merged.ingredients || []).map(decodeImportEntities);
+  merged.steps = (merged.steps || []).map(decodeImportEntities);
+  return merged;
 }
 
 /**

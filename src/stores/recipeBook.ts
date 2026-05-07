@@ -8,6 +8,7 @@ import {
   saveRecipeBookAsync,
   StorageWriteError,
 } from '../lib/storage';
+import { migrateRecipeEntities } from '../lib/htmlEntityMigration';
 import { useToasts } from '../composables/useToasts';
 import type { Recipe } from '../types';
 
@@ -52,8 +53,17 @@ export const useRecipeBookStore = defineStore('recipeBook', () => {
     if (hydratePromise && !force) return hydratePromise;
 
     hydratePromise = (async () => {
-      recipes.value = cloneRecipes(await loadRecipeBookAsync());
+      const loaded = await loadRecipeBookAsync();
+      // One-time HTML-entity migration. Idempotent: clean recipes are
+      // returned unchanged; dirty ones are decoded and persisted so the
+      // next hydrate is a no-op. Audit: HTML entity leak (post-v0.12.0).
+      const { recipes: migrated, migratedCount } = migrateRecipeEntities(loaded);
+      recipes.value = cloneRecipes(migrated);
       isHydrated.value = true;
+      if (migratedCount > 0) {
+        console.info(`[migration] decoded HTML entities in ${migratedCount} recipe(s)`);
+        persist(recipes.value);
+      }
     })().finally(() => {
       hydratePromise = null;
     });
