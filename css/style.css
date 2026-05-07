@@ -396,6 +396,7 @@ body {
   color: inherit;
   font: inherit;
   padding: 0;
+  min-height: 44px;
 }
 .app-brand:hover { opacity: .9; }
 .app-brand:focus-visible {
@@ -2798,23 +2799,19 @@ input[type="number"] {
   color: var(--text-muted);
   line-height: 1.45;
 }
-.shopping-export-mode-btn {
-  font-size: 11px;
-  color: var(--text-hint);
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  font-family: var(--font);
-  padding: 0;
-  text-align: left;
-  text-decoration: underline;
-  text-underline-offset: 3px;
-  text-decoration-color: color-mix(in srgb, var(--text-hint) 50%, transparent);
-  line-height: 1.3;
+.shopping-export-mode-toggle {
+  display: inline-flex;
+  gap: 4px;
+  margin-top: 4px;
+  align-self: flex-start;
 }
-.shopping-export-mode-btn:hover {
-  color: var(--text-muted);
-  text-decoration-color: var(--text-hint);
+.shopping-export-mode-segment {
+  flex: 0 0 auto;
+  min-width: 0;
+  min-height: 32px;
+  padding: 6px 12px;
+  font-size: 12px;
+  white-space: nowrap;
 }
 .shopping-toolbar-actions {
   display: flex;
@@ -2822,7 +2819,7 @@ input[type="number"] {
   flex-wrap: wrap;
 }
 .shopping-toolbar-btn {
-  min-height: 42px;
+  min-height: 44px;
   padding-inline: 14px;
   white-space: nowrap;
 }
@@ -4975,7 +4972,7 @@ mark {
     opacity: 1;
   }
   .header-controls select {
-    min-height: 40px;
+    min-height: 44px;
     font-size: 12px;
     padding: 5px 6px;
     max-width: 86px;

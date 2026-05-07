@@ -434,6 +434,7 @@ function ingredientProgressLabel(p) {
           class="detail-quick-btn detail-quick-fav"
           :class="{ 'is-fav': recipe.favorite }"
           :title="recipe.favorite ? t('favorite_remove') : t('favorite_add')"
+          :aria-label="recipe.favorite ? t('favorite_remove') : t('favorite_add')"
           type="button"
           @click="emit('toggle-favorite', recipe)"
         >
@@ -444,6 +445,7 @@ function ingredientProgressLabel(p) {
         <button
           class="detail-quick-btn detail-quick-del"
           :title="t('delete_recipe')"
+          :aria-label="t('delete_recipe')"
           type="button"
           @click="emit('delete-recipe', recipe)"
         >

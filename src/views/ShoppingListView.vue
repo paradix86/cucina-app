@@ -320,9 +320,22 @@ async function shareExportText() {
             <p class="shopping-toolbar-note">
               {{ exportableItems.length === items.length ? t('shopping_export_all_hint') : t('shopping_export_remaining_hint') }}
             </p>
-            <button class="shopping-export-mode-btn" @click="compactExport = !compactExport">
-              {{ compactExport ? t('shopping_export_mode_full') : t('shopping_export_mode_compact') }}
-            </button>
+            <div class="shopping-export-mode-toggle" role="group" :aria-label="t('shopping_export_mode_compact')">
+              <button
+                class="tab shopping-export-mode-segment"
+                :class="{ active: !compactExport }"
+                type="button"
+                :aria-pressed="!compactExport"
+                @click="compactExport = false"
+              >{{ t('shopping_export_mode_full') }}</button>
+              <button
+                class="tab shopping-export-mode-segment"
+                :class="{ active: compactExport }"
+                type="button"
+                :aria-pressed="compactExport"
+                @click="compactExport = true"
+              >{{ t('shopping_export_mode_compact') }}</button>
+            </div>
           </div>
           <div class="shopping-toolbar-actions">
             <button class="btn-ghost shopping-toolbar-btn" @click="copyExportText">{{ t('shopping_copy') }}</button>
