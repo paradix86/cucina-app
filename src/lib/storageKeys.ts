@@ -10,6 +10,7 @@ export const MEAL_COMPOSER_LEGACY_DRAFT_KEY = 'cucina_meal_composer_draft';
 export const NUTRITION_GOALS_KEY = 'cucina_nutrition_goals_v1';
 export const LANG_KEY = 'cucina_lang';
 export const GUIDE_CHECKS_KEY = 'cucina_guide_checks_v1';
+export const TIMERS_KEY = 'cucina_timers_v1';
 
 export function getCookingProgressKey(recipe: { id?: string; name?: string }): string {
   return `cucina_cooking_${recipe.id || recipe.name || 'default'}`;
