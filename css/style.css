@@ -4397,6 +4397,7 @@ mark {
 }
 .planner-day-head {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
   align-items: flex-start;
   gap: 10px;
@@ -4405,7 +4406,7 @@ mark {
   display: grid;
   gap: 6px;
   min-width: 0;
-  flex: 1;
+  flex: 1 1 auto;
 }
 .planner-day-title-row {
   display: flex;
